@@ -864,7 +864,7 @@ export default {
 
   .placar-table.mobile-compact-no-scroll .placar thead th:first-child,
   .placar-table.mobile-compact-no-scroll .placar tbody td:first-child {
-    width: 45%;
+    width: 43%;
     min-width: 0;
     max-width: none;
   }
@@ -877,7 +877,7 @@ export default {
   }
 
   .placar-table.mobile-compact-no-scroll .time-info {
-    gap: 3px;
+    gap: 2px;
   }
 
   .placar-table.mobile-compact-no-scroll .time-image {
@@ -895,15 +895,11 @@ export default {
   .placar-table.mobile-compact-no-scroll .nome-time {
     max-width: 100%;
     font-size: 10px;
-    line-height: 1.08;
-    white-space: normal;
+    line-height: 1.1;
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    word-break: break-word;
+    display: block;
   }
 }
 </style>
-
