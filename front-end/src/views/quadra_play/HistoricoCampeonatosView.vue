@@ -511,59 +511,49 @@ export default {
 @media (max-width: 768px) {
   .conteudo {
     margin-left: 0;
+    margin-top: 34px;
     padding: 16px 14px 24px;
   }
 
   .header-card {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 10px;
-    flex-wrap: nowrap;
-    padding: 18px 16px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 8px 10px;
+    padding: 14px;
     border-radius: 24px;
     margin-bottom: 16px;
   }
 
-  .header-copy {
-    flex: 1;
-    min-width: 0;
-  }
-
   .section-kicker {
     margin-bottom: 6px;
-    font-size: 12px;
-    letter-spacing: 0.14em;
   }
 
   .title {
-    font-size: 30px;
-    line-height: 1.04;
-    margin: 0 0 8px;
+    font-size: 26px;
+    line-height: 1.02;
   }
 
   .subtitle {
-    margin-top: 0;
+    margin-top: 8px;
     font-size: 14px;
     line-height: 1.55;
   }
 
   .filtro-ano {
-    flex: 0 0 auto;
-    width: 116px;
-    min-width: 116px;
-    gap: 4px;
+    width: 124px;
+    min-width: 124px;
+    gap: 6px;
   }
 
   .filtro-ano label {
     font-size: 11px;
     letter-spacing: 0.12em;
-    line-height: 1;
   }
 
   .filtro-ano select {
-    min-height: 34px;
-    border-radius: 12px;
+    min-height: 40px;
+    border-radius: 14px;
     padding: 0 10px;
   }
 
