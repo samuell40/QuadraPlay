@@ -515,44 +515,55 @@ export default {
   }
 
   .header-card {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: start;
-    gap: 8px 10px;
-    padding: 14px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: nowrap;
+    padding: 18px 16px;
     border-radius: 24px;
     margin-bottom: 16px;
   }
 
+  .header-copy {
+    flex: 1;
+    min-width: 0;
+  }
+
   .section-kicker {
     margin-bottom: 6px;
+    font-size: 12px;
+    letter-spacing: 0.14em;
   }
 
   .title {
-    font-size: 26px;
-    line-height: 1.02;
+    font-size: 30px;
+    line-height: 1.04;
+    margin: 0 0 8px;
   }
 
   .subtitle {
-    margin-top: 8px;
+    margin-top: 0;
     font-size: 14px;
     line-height: 1.55;
   }
 
   .filtro-ano {
-    width: 124px;
-    min-width: 124px;
-    gap: 6px;
+    flex: 0 0 auto;
+    width: 116px;
+    min-width: 116px;
+    gap: 4px;
   }
 
   .filtro-ano label {
     font-size: 11px;
     letter-spacing: 0.12em;
+    line-height: 1;
   }
 
   .filtro-ano select {
-    min-height: 40px;
-    border-radius: 14px;
+    min-height: 34px;
+    border-radius: 12px;
     padding: 0 10px;
   }
 

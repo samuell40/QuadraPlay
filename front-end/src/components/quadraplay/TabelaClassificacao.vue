@@ -864,14 +864,14 @@ export default {
 
   .placar-table.mobile-compact-no-scroll .placar thead th:first-child,
   .placar-table.mobile-compact-no-scroll .placar tbody td:first-child {
-    width: 46%;
+    width: 58%;
     min-width: 0;
     max-width: none;
   }
 
   .placar-table.mobile-compact-no-scroll .placar thead th:not(:first-child),
   .placar-table.mobile-compact-no-scroll .placar tbody td:not(:first-child) {
-    width: 13.5%;
+    width: auto;
     min-width: 0;
     max-width: none;
   }
@@ -895,6 +895,14 @@ export default {
   .placar-table.mobile-compact-no-scroll .nome-time {
     max-width: 100%;
     font-size: 10px;
+    line-height: 1.08;
+    white-space: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    word-break: break-word;
   }
 }
 </style>

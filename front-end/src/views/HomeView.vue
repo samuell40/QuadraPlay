@@ -126,6 +126,7 @@
               :colunas-visiveis="colunasClassificacaoHome"
               :grupos-config="gruposClassificacao"
               theme="navegacao"
+              compact-mobile-no-scroll
               @time-click="abrirModalPartidasTime"
             />
 

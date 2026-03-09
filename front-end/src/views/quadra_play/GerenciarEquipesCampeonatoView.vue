@@ -1645,16 +1645,16 @@ export default {
   }
 
   .tabela-jogadores thead th:nth-child(1) {
-    width: 41%;
+    width: 36%;
   }
 
   .tabela-jogadores thead th:nth-child(2),
   .tabela-jogadores thead th:nth-child(3) {
-    width: 8%;
+    width: 6%;
   }
 
   .tabela-jogadores thead th:nth-child(4) {
-    width: 15%;
+    width: 24%;
   }
 
   .tabela-jogadores thead th:nth-child(5) {
@@ -1662,15 +1662,15 @@ export default {
   }
 
   .tabela-jogadores.tabela-sem-cartoes thead th:nth-child(1) {
-    width: 50%;
+    width: 44%;
   }
 
   .tabela-jogadores.tabela-sem-cartoes:not(.tabela-sem-acoes) thead th:nth-child(2) {
-    width: 17%;
+    width: 24%;
   }
 
   .tabela-jogadores.tabela-sem-cartoes:not(.tabela-sem-acoes) thead th:nth-child(3) {
-    width: 33%;
+    width: 32%;
   }
 
   .tabela-jogadores.tabela-sem-cartoes.tabela-sem-acoes thead th:nth-child(2) {
@@ -1723,6 +1723,10 @@ export default {
     width: 100%;
     padding: 4px 4px;
     font-size: 10px;
+    line-height: 1.15;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-align: center;
   }
 
   .cell-acoes {
