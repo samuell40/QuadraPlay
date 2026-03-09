@@ -864,9 +864,15 @@ export default {
 
   .placar-table.mobile-compact-no-scroll .placar thead th:first-child,
   .placar-table.mobile-compact-no-scroll .placar tbody td:first-child {
-    width: 43%;
+    width: 48%;
     min-width: 0;
     max-width: none;
+    padding-right: 0;
+  }
+
+  .placar-table.mobile-compact-no-scroll .placar thead th:nth-child(2),
+  .placar-table.mobile-compact-no-scroll .placar tbody td:nth-child(2) {
+    padding-left: 0;
   }
 
   .placar-table.mobile-compact-no-scroll .placar thead th:not(:first-child),
@@ -877,7 +883,7 @@ export default {
   }
 
   .placar-table.mobile-compact-no-scroll .time-info {
-    gap: 2px;
+    gap: 3px;
   }
 
   .placar-table.mobile-compact-no-scroll .time-image {
