@@ -864,7 +864,7 @@ export default {
 
   .placar-table.mobile-compact-no-scroll .placar thead th:first-child,
   .placar-table.mobile-compact-no-scroll .placar tbody td:first-child {
-    width: 52%;
+    width: 45%;
     min-width: 0;
     max-width: none;
   }
