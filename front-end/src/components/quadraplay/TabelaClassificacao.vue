@@ -864,7 +864,7 @@ export default {
 
   .placar-table.mobile-compact-no-scroll .placar thead th:first-child,
   .placar-table.mobile-compact-no-scroll .placar tbody td:first-child {
-    width: 48%;
+    width: 56%;
     min-width: 0;
     max-width: none;
     padding-right: 0;
@@ -884,6 +884,7 @@ export default {
 
   .placar-table.mobile-compact-no-scroll .time-info {
     gap: 3px;
+    align-items: flex-start;
   }
 
   .placar-table.mobile-compact-no-scroll .time-image {
@@ -901,10 +902,11 @@ export default {
   .placar-table.mobile-compact-no-scroll .nome-time {
     max-width: 100%;
     font-size: 10px;
-    line-height: 1.1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    line-height: 1.2;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
     display: block;
   }
 }
