@@ -515,18 +515,45 @@ export default {
   }
 
   .header-card {
-    flex-direction: column;
-    gap: 12px;
-    padding: 16px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 8px 10px;
+    padding: 14px;
+    border-radius: 24px;
+    margin-bottom: 16px;
+  }
+
+  .section-kicker {
+    margin-bottom: 6px;
   }
 
   .title {
-    font-size: 31px;
+    font-size: 26px;
+    line-height: 1.02;
+  }
+
+  .subtitle {
+    margin-top: 8px;
+    font-size: 14px;
+    line-height: 1.55;
   }
 
   .filtro-ano {
-    width: 100%;
-    min-width: 0;
+    width: 124px;
+    min-width: 124px;
+    gap: 6px;
+  }
+
+  .filtro-ano label {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+  }
+
+  .filtro-ano select {
+    min-height: 40px;
+    border-radius: 14px;
+    padding: 0 10px;
   }
 
   .historico-grid {

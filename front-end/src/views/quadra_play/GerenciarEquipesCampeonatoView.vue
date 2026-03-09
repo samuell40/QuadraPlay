@@ -20,7 +20,12 @@
                 <path
                   d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0M8.5 4.5a.5.5 0 0 0-1 0v3h-3a.5.5 0 0 0 0 1h3v3a.5.5 0 0 0 1 0v-3h3a.5.5 0 0 0 0-1h-3z" />
               </svg>
-              {{ isAdicionandoEquipe ? 'Adicionando...' : (isLoadingEquipesDisponiveis ? 'Carregando...' : 'Adicionar time') }}
+              <span class="btn-add-label-desktop">
+                {{ isAdicionandoEquipe ? 'Adicionando...' : (isLoadingEquipesDisponiveis ? 'Carregando...' : 'Adicionar time') }}
+              </span>
+              <span class="btn-add-label-mobile">
+                {{ isAdicionandoEquipe ? 'Adicionando...' : (isLoadingEquipesDisponiveis ? 'Carregando...' : 'Adicionar') }}
+              </span>
             </button>
           </div>
 
@@ -779,6 +784,10 @@ export default {
   height: 16px;
 }
 
+.btn-add-label-mobile {
+  display: none;
+}
+
 .painel-card {
   border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 28px;
@@ -1523,6 +1532,14 @@ export default {
     margin-left: auto;
   }
 
+  .btn-add-label-desktop {
+    display: none;
+  }
+
+  .btn-add-label-mobile {
+    display: inline;
+  }
+
   .painel-card {
     padding: 18px;
     border-radius: 24px;
@@ -1628,36 +1645,36 @@ export default {
   }
 
   .tabela-jogadores thead th:nth-child(1) {
-    width: 48%;
+    width: 41%;
   }
 
   .tabela-jogadores thead th:nth-child(2),
   .tabela-jogadores thead th:nth-child(3) {
-    width: 9%;
+    width: 8%;
   }
 
   .tabela-jogadores thead th:nth-child(4) {
-    width: 14%;
+    width: 15%;
   }
 
   .tabela-jogadores thead th:nth-child(5) {
-    width: 20%;
+    width: 28%;
   }
 
   .tabela-jogadores.tabela-sem-cartoes thead th:nth-child(1) {
-    width: 62%;
+    width: 50%;
   }
 
   .tabela-jogadores.tabela-sem-cartoes:not(.tabela-sem-acoes) thead th:nth-child(2) {
-    width: 18%;
+    width: 17%;
   }
 
   .tabela-jogadores.tabela-sem-cartoes:not(.tabela-sem-acoes) thead th:nth-child(3) {
-    width: 20%;
+    width: 33%;
   }
 
   .tabela-jogadores.tabela-sem-cartoes.tabela-sem-acoes thead th:nth-child(2) {
-    width: 38%;
+    width: 50%;
   }
 
   .tabela-jogadores tbody td {
@@ -1670,7 +1687,7 @@ export default {
   }
 
   .cell-jogador-inner {
-    gap: 6px;
+    gap: 4px;
   }
 
   .jogador-foto {
@@ -1719,8 +1736,11 @@ export default {
   .btn-acao {
     min-width: 0;
     width: 100%;
-    padding: 4px 6px;
+    padding: 4px 5px;
     font-size: 10px;
+    line-height: 1.15;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 }
 </style>

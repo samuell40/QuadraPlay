@@ -7,6 +7,15 @@
           <h2 class="modal-title">{{ quadraNome }}</h2>
           <p class="modal-subtitle">{{ subtituloPeriodo }}</p>
         </div>
+
+        <button
+          type="button"
+          class="btn-close-x-modal"
+          aria-label="Fechar modal"
+          @click="$emit('fechar')"
+        >
+          x
+        </button>
       </div>
 
       <div v-if="isLoading" class="dias-wrapper dias-wrapper-loading">
@@ -429,18 +438,20 @@ export default {
   align-items: center;
   justify-content: center;
   z-index: 1200;
-  padding: 10px;
+  padding: 24px;
+  backdrop-filter: blur(4px);
 }
 
 .modal-content {
-  width: min(1200px, calc(100vw - 20px));
-  max-height: calc(100vh - 20px);
+  width: 100%;
+  max-width: 920px;
+  max-height: 88vh;
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-gutter: stable both-edges;
   background: #ffffff;
-  padding: 20px 22px;
-  border-radius: 18px;
+  padding: 24px;
+  border-radius: 28px;
   border: 1px solid rgba(15, 23, 42, 0.08);
   box-shadow: 0 22px 60px rgba(0, 0, 0, 0.28);
   box-sizing: border-box;
@@ -457,6 +468,29 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.btn-close-x-modal {
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(37, 99, 235, 0.24);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #2563eb;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 38px;
+  padding: 0;
+}
+
+.btn-close-x-modal:hover {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
 }
 
 .modal-kicker {
@@ -735,9 +769,13 @@ export default {
 }
 
 @media (max-width: 768px) {
+  .modal-overlay {
+    padding: 14px;
+  }
+
   .modal-content {
-    padding: 18px 16px;
-    border-radius: 16px;
+    padding: 18px;
+    border-radius: 22px;
     scrollbar-gutter: auto;
   }
 
