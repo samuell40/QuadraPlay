@@ -41,9 +41,22 @@
           />
         </div>
 
-        <a v-else-if="campeonatos.length === 0" class="feedback-card feedback-ematy">
-          Nenhum campeonato encontrado.
-        </a>
+        <div v-else-if="campeonatos.length === 0" class="feedback-card feedback-empty-state">
+          <p class="feedback-empty-title">Crie o seu primeiro campeonato.</p>
+          <button
+            v-if="!isMesario"
+            type="button"
+            class="btn-add btn-add-empty"
+            @click="abrirModalAdicionarCampeonato"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+              class="bi bi-plus-circle-fill btn-add-icon" viewBox="0 0 16 16" aria-hidden="true">
+              <path
+                d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0M8.5 4.5a.5.5 0 0 0-1 0v3h-3a.5.5 0 0 0 0 1h3v3a.5.5 0 0 0 1 0v-3h3a.5.5 0 0 0 0-1h-3z" />
+            </svg>
+            <span>Criar campeonato</span>
+          </button>
+        </div>
 
         <div v-else class="quadras-grid">
           <div class="card-quadra" v-for="campeonato in campeonatos" :key="campeonato.id"
@@ -1015,8 +1028,23 @@ a {
   gap: 14px;
 }
 
-.feedback-ematy {
+.feedback-empty-state {
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px;
+}
+
+.feedback-empty-title {
   margin: 0;
+  color: #475569;
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.btn-add-empty {
+  min-height: 46px;
+  border-radius: 14px;
 }
 
 
@@ -1131,6 +1159,15 @@ a {
   .feedback-card {
     min-height: 120px;
     border-radius: 20px;
+  }
+
+  .feedback-empty-title {
+    font-size: 17px;
+  }
+
+  .btn-add-empty {
+    width: 100%;
+    max-width: 280px;
   }
 }
 

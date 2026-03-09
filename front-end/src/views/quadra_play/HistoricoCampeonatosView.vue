@@ -13,7 +13,7 @@
             <p class="subtitle">Consulte campeonatos encerrados por ano.</p>
           </div>
 
-          <div class="filtro-ano">
+          <div v-if="anosDisponiveis.length" class="filtro-ano">
             <label for="filtro-ano">Ano</label>
             <select id="filtro-ano" v-model="anoSelecionado">
               <option v-for="ano in anosDisponiveis" :key="ano" :value="ano">
