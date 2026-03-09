@@ -83,6 +83,7 @@
 import DetalharPartidaModal from '@/components/quadraplay/DetalharPartidaModal.vue'
 import LoadingState from '@/components/loading/LoadingState.vue'
 import { obterRotuloStatusPartida, obterStatusExibicaoPartida } from '@/utils/partidaStatus'
+import { ordenarPartidasPorStatusEDataDesc } from '@/utils/partidaOrdenacao'
 import { obterFotoTime } from '@/utils/timeImagem'
 
 const STATUS_CONFIG = {
@@ -129,13 +130,10 @@ export default {
       const timeId = Number(this.timeSelecionado?.id)
       if (!Number.isFinite(timeId) || timeId <= 0) return []
 
-      return (Array.isArray(this.partidas) ? this.partidas : [])
+      const listaTime = (Array.isArray(this.partidas) ? this.partidas : [])
         .filter((p) => Number(p?.timeAId) === timeId || Number(p?.timeBId) === timeId)
-        .sort((a, b) => {
-          const da = new Date(a?.data || a?.createdAt || 0).getTime()
-          const db = new Date(b?.data || b?.createdAt || 0).getTime()
-          return db - da
-        })
+
+      return ordenarPartidasPorStatusEDataDesc(listaTime)
     }
   },
   watch: {

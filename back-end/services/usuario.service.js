@@ -2,6 +2,38 @@ const { enviarEmailAlteracaoPermissao, enviarEmailVinculoTime } = require('./ema
 const prisma = require('../lib/prisma');
 const { validarNumeroUnicoNoTime } = require('./jogador.service');
 
+const REGEX_EMAIL_BASICO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function calcularAproveitamento(partidas, vitorias, empates) {
+  const totalPartidas = Number(partidas) || 0;
+  if (totalPartidas <= 0) return 0;
+
+  const pontosObtidos = (Number(vitorias) || 0) * 3 + (Number(empates) || 0);
+  return Math.round((pontosObtidos / (totalPartidas * 3)) * 100);
+}
+
+function classificarResultadoPartida({ timeId, partida }) {
+  const idTime = Number(timeId);
+  const timeAId = Number(partida?.timeAId);
+  const timeBId = Number(partida?.timeBId);
+  const pontosTimeA = Number(partida?.pontosTimeA) || 0;
+  const pontosTimeB = Number(partida?.pontosTimeB) || 0;
+
+  if (idTime === timeAId) {
+    if (pontosTimeA > pontosTimeB) return { codigo: 'V', label: 'Vitoria' };
+    if (pontosTimeA < pontosTimeB) return { codigo: 'D', label: 'Derrota' };
+    return { codigo: 'E', label: 'Empate' };
+  }
+
+  if (idTime === timeBId) {
+    if (pontosTimeB > pontosTimeA) return { codigo: 'V', label: 'Vitoria' };
+    if (pontosTimeB < pontosTimeA) return { codigo: 'D', label: 'Derrota' };
+    return { codigo: 'E', label: 'Empate' };
+  }
+
+  return { codigo: '-', label: 'Sem resultado' };
+}
+
 async function cadastrarUsuario(user) {
   return prisma.usuario.create({
     data: {
@@ -89,6 +121,169 @@ async function atualizarUsuario(user) {
   }
 
   return usuarioAtualizado;
+}
+
+async function atualizarMeuPerfil({ usuarioId, nome, email, telefone, foto }) {
+  const usuarioIdNum = Number(usuarioId);
+  if (!Number.isInteger(usuarioIdNum) || usuarioIdNum <= 0) {
+    throw new Error('Usuario invalido');
+  }
+
+  const nomeNormalizado = String(nome || '').trim();
+  const emailNormalizado = String(email || '').trim().toLowerCase();
+  const telefoneNormalizado = typeof telefone === 'string' ? telefone.trim() : '';
+  const fotoInformada = typeof foto === 'string';
+  const fotoNormalizada = fotoInformada ? String(foto).trim() : '';
+
+  if (!nomeNormalizado || !emailNormalizado) {
+    throw new Error('Nome e email sao obrigatorios.');
+  }
+
+  if (!REGEX_EMAIL_BASICO.test(emailNormalizado)) {
+    throw new Error('Informe um email valido.');
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const usuarioDb = await tx.usuario.findFirst({
+      where: {
+        id: usuarioIdNum,
+        ativo: true,
+        deletedAt: null,
+      },
+      include: {
+        permissao: true,
+        quadra: true,
+      },
+    });
+
+    if (!usuarioDb) {
+      throw new Error('Usuario nao encontrado');
+    }
+
+    const emailEmUso = await tx.usuario.findFirst({
+      where: {
+        email: emailNormalizado,
+        id: { not: usuarioIdNum },
+      },
+      select: { id: true },
+    });
+
+    if (emailEmUso) {
+      throw new Error('Este email ja esta em uso por outro usuario.');
+    }
+
+    const dadosAtualizados = {
+      nome: nomeNormalizado,
+      email: emailNormalizado,
+      telefone: telefoneNormalizado || null,
+      ...(fotoInformada ? { foto: fotoNormalizada || null } : {}),
+    };
+
+    const usuarioAtualizado = await tx.usuario.update({
+      where: { id: usuarioIdNum },
+      data: dadosAtualizados,
+      include: {
+        permissao: true,
+        quadra: true,
+        jogador: {
+          select: {
+            id: true,
+            nome: true,
+            foto: true,
+            numero: true,
+            funcao: {
+              select: {
+                id: true,
+                nome: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (usuarioAtualizado.jogadorId && fotoInformada) {
+      await tx.jogador.update({
+        where: { id: usuarioAtualizado.jogadorId },
+        data: { foto: fotoNormalizada || null },
+      });
+    }
+
+    return usuarioAtualizado;
+  });
+}
+
+async function excluirMinhaConta(usuarioId) {
+  const usuarioIdNum = Number(usuarioId);
+  if (!Number.isInteger(usuarioIdNum) || usuarioIdNum <= 0) {
+    throw new Error('Usuario invalido');
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const usuarioDb = await tx.usuario.findFirst({
+      where: {
+        id: usuarioIdNum,
+        ativo: true,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!usuarioDb) {
+      throw new Error('Usuario nao encontrado');
+    }
+
+    const agora = new Date();
+    const emailAnonimizado = `conta.excluida.${usuarioIdNum}.${agora.getTime()}@quadralivre.local`;
+
+    await tx.usuarioTime.updateMany({
+      where: {
+        usuarioId: usuarioIdNum,
+        ativo: true,
+        deletedAt: null,
+      },
+      data: {
+        ativo: false,
+        deletedAt: agora,
+      },
+    });
+
+    await tx.treinadorTime.updateMany({
+      where: {
+        usuarioId: usuarioIdNum,
+        ativo: true,
+        deletedAt: null,
+      },
+      data: {
+        ativo: false,
+        deletedAt: agora,
+      },
+    });
+
+    await tx.pushSubscription.deleteMany({
+      where: {
+        usuarioId: usuarioIdNum,
+      },
+    });
+
+    await tx.usuario.update({
+      where: { id: usuarioIdNum },
+      data: {
+        nome: 'Conta excluida',
+        email: emailAnonimizado,
+        telefone: null,
+        foto: null,
+        quadraId: null,
+        jogadorId: null,
+        ativo: false,
+        deletedAt: agora,
+      },
+    });
+
+    return { ok: true };
+  });
 }
 
 async function getUsuarios() {
@@ -319,20 +514,49 @@ async function listarPermissoes() {
 }
 
 async function vincularUsuarioTime(usuarioId, timeId, jogadorId) {
-  const resultado = await prisma.$transaction(async (tx) => {
-    const usuarioIdNum = Number(usuarioId);
-    const timeIdNum = Number(timeId);
-    const jogadorIdNum = jogadorId ? Number(jogadorId) : null;
+  const usuarioIdNum = Number(usuarioId);
+  const timeIdNum = Number(timeId);
+  const jogadorIdNum = jogadorId ? Number(jogadorId) : null;
 
+  if (!Number.isInteger(usuarioIdNum) || usuarioIdNum <= 0) {
+    throw new Error('Usuario invalido');
+  }
+
+  if (!Number.isInteger(timeIdNum) || timeIdNum <= 0) {
+    throw new Error('Time invalido');
+  }
+
+  if (jogadorId != null && (!Number.isInteger(jogadorIdNum) || jogadorIdNum <= 0)) {
+    throw new Error('Jogador invalido');
+  }
+
+  const resultado = await prisma.$transaction(async (tx) => {
     const usuario = await tx.usuario.findUnique({
       where: { id: usuarioIdNum },
-      include: { permissao: true },
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        foto: true,
+        jogadorId: true,
+        deletedAt: true,
+      },
     });
     if (!usuario || usuario.deletedAt) throw new Error('Usuario nao encontrado');
 
     const time = await tx.time.findUnique({
       where: { id: timeIdNum },
-      include: { modalidade: true },
+      select: {
+        id: true,
+        nome: true,
+        modalidadeId: true,
+        deletedAt: true,
+        modalidade: {
+          select: {
+            nome: true,
+          },
+        },
+      },
     });
     if (!time || time.deletedAt) throw new Error('Time nao encontrado');
 
@@ -347,24 +571,32 @@ async function vincularUsuarioTime(usuarioId, timeId, jogadorId) {
     if (!jogadorIdNum) {
       return {
         vinculo: { usuarioId: usuarioIdNum, timeId: timeIdNum },
-        jogador: null,
+        jogadorIdVinculado: null,
+        jogadorNomeVinculado: null,
         notificacaoEmail: null,
       };
     }
 
     const jogador = await tx.jogador.findUnique({
       where: { id: jogadorIdNum },
-      include: {
-        times: {
-          where: { ativo: true },
-          include: {
-            time: true,
-            modalidade: true,
-          },
-        },
+      select: {
+        id: true,
+        nome: true,
+        numero: true,
+        foto: true,
+        deletedAt: true,
       },
     });
     if (!jogador || jogador.deletedAt) throw new Error('Jogador nao encontrado');
+
+    const fotoJogadorAtual = String(jogador.foto || '').trim();
+    const fotoUsuarioVinculado = String(usuario.foto || '').trim();
+    if (fotoUsuarioVinculado && fotoJogadorAtual !== fotoUsuarioVinculado) {
+      await tx.jogador.update({
+        where: { id: jogadorIdNum },
+        data: { foto: fotoUsuarioVinculado },
+      });
+    }
 
     if (Number(usuario.jogadorId) !== jogadorIdNum) {
       await tx.usuario.update({
@@ -395,8 +627,23 @@ async function vincularUsuarioTime(usuarioId, timeId, jogadorId) {
       },
     });
 
-    const jogadorAtualizado = await tx.jogador.findUnique({
-      where: { id: jogadorIdNum },
+    return {
+      vinculo: { usuarioId: usuarioIdNum, timeId: timeIdNum },
+      jogadorIdVinculado: jogadorIdNum,
+      jogadorNomeVinculado: jogador.nome || null,
+      notificacaoEmail: {
+        usuario,
+        time,
+      },
+    };
+  }, {
+    timeout: 20000,
+  });
+
+  let jogadorAtualizado = null;
+  if (resultado.jogadorIdVinculado) {
+    jogadorAtualizado = await prisma.jogador.findUnique({
+      where: { id: resultado.jogadorIdVinculado },
       include: {
         times: {
           where: { ativo: true },
@@ -407,24 +654,14 @@ async function vincularUsuarioTime(usuarioId, timeId, jogadorId) {
         },
       },
     });
-
-    return {
-      vinculo: { usuarioId: usuarioIdNum, timeId: timeIdNum },
-      jogador: jogadorAtualizado,
-      notificacaoEmail: {
-        usuario,
-        time,
-        jogador: jogadorAtualizado,
-      },
-    };
-  });
+  }
 
   if (resultado.notificacaoEmail) {
     try {
       await enviarEmailVinculoTime(
         resultado.notificacaoEmail.usuario,
         resultado.notificacaoEmail.time,
-        resultado.notificacaoEmail.jogador
+        jogadorAtualizado || { nome: resultado.jogadorNomeVinculado }
       );
     } catch (erroEmail) {
       console.error('Erro ao enviar email de vinculo com time:', erroEmail);
@@ -433,7 +670,318 @@ async function vincularUsuarioTime(usuarioId, timeId, jogadorId) {
 
   return {
     vinculo: resultado.vinculo,
-    jogador: resultado.jogador,
+    jogador: jogadorAtualizado,
+  };
+}
+
+async function getEstatisticasJogadorVinculado(usuarioId) {
+  const usuarioIdNum = Number(usuarioId);
+  if (!Number.isInteger(usuarioIdNum) || usuarioIdNum <= 0) {
+    throw new Error('Usuario invalido');
+  }
+
+  const usuario = await prisma.usuario.findFirst({
+    where: {
+      id: usuarioIdNum,
+      ativo: true,
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+      jogadorId: true,
+      jogador: {
+        select: {
+          id: true,
+          nome: true,
+          foto: true,
+          numero: true,
+          funcao: {
+            select: {
+              id: true,
+              nome: true,
+            },
+          },
+          times: {
+            where: {
+              ativo: true,
+              deletedAt: null,
+            },
+            select: {
+              time: {
+                select: {
+                  id: true,
+                  nome: true,
+                  foto: true,
+                  ativo: true,
+                  deletedAt: true,
+                },
+              },
+              modalidade: {
+                select: {
+                  id: true,
+                  nome: true,
+                  ativo: true,
+                  deletedAt: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!usuario) {
+    throw new Error('Usuario nao encontrado');
+  }
+
+  const jogadorId = Number(usuario.jogadorId);
+  if (!Number.isInteger(jogadorId) || jogadorId <= 0 || !usuario.jogador) {
+    const erro = new Error('Usuario nao possui jogador vinculado.');
+    erro.code = 'USUARIO_SEM_JOGADOR';
+    throw erro;
+  }
+
+  const atuacoes = await prisma.jogadorPartida.findMany({
+    where: {
+      jogadorId,
+      partida: {
+        status: 'FINALIZADA',
+      },
+    },
+    select: {
+      id: true,
+      partidaId: true,
+      timeId: true,
+      gols: true,
+      cartoesAmarelos: true,
+      cartoesVermelhos: true,
+      partida: {
+        select: {
+          id: true,
+          data: true,
+          pontosTimeA: true,
+          pontosTimeB: true,
+          timeAId: true,
+          timeBId: true,
+          timeA: {
+            select: {
+              id: true,
+              nome: true,
+              foto: true,
+            },
+          },
+          timeB: {
+            select: {
+              id: true,
+              nome: true,
+              foto: true,
+            },
+          },
+          campeonatoId: true,
+          campeonato: {
+            select: {
+              id: true,
+              nome: true,
+              status: true,
+              modalidade: {
+                select: {
+                  id: true,
+                  nome: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    orderBy: [
+      { partidaId: 'desc' },
+      { id: 'desc' },
+    ],
+  });
+
+  const partidasMap = new Map();
+
+  for (const atuacao of atuacoes) {
+    const partidaId = Number(atuacao?.partidaId);
+    if (!Number.isInteger(partidaId) || partidaId <= 0) continue;
+
+    if (!partidasMap.has(partidaId)) {
+      const idTime = Number(atuacao?.timeId);
+      partidasMap.set(partidaId, {
+        partidaId,
+        timeId: Number.isInteger(idTime) && idTime > 0 ? idTime : null,
+        gols: 0,
+        cartoesAmarelos: 0,
+        cartoesVermelhos: 0,
+        partida: atuacao?.partida || null,
+      });
+    }
+
+    const acumulado = partidasMap.get(partidaId);
+    const idTimeAtual = Number(atuacao?.timeId);
+    if (
+      (!Number.isInteger(acumulado.timeId) || acumulado.timeId <= 0) &&
+      Number.isInteger(idTimeAtual) &&
+      idTimeAtual > 0
+    ) {
+      acumulado.timeId = idTimeAtual;
+    }
+
+    acumulado.gols += Number(atuacao?.gols) || 0;
+    acumulado.cartoesAmarelos += Number(atuacao?.cartoesAmarelos) || 0;
+    acumulado.cartoesVermelhos += Number(atuacao?.cartoesVermelhos) || 0;
+  }
+
+  const partidasConsolidadas = Array.from(partidasMap.values()).sort((a, b) => {
+    const dataA = new Date(a?.partida?.data || 0).getTime();
+    const dataB = new Date(b?.partida?.data || 0).getTime();
+    const tsA = Number.isFinite(dataA) ? dataA : 0;
+    const tsB = Number.isFinite(dataB) ? dataB : 0;
+    return tsB - tsA;
+  });
+
+  const campanhasMap = new Map();
+  let totalPartidas = 0;
+  let totalGols = 0;
+  let totalAmarelos = 0;
+  let totalVermelhos = 0;
+  let totalVitorias = 0;
+  let totalEmpates = 0;
+  let totalDerrotas = 0;
+
+  const ultimasPartidas = [];
+
+  for (const item of partidasConsolidadas) {
+    const partida = item?.partida || {};
+    const resultado = classificarResultadoPartida({
+      timeId: item?.timeId,
+      partida,
+    });
+
+    totalPartidas += 1;
+    totalGols += Number(item?.gols) || 0;
+    totalAmarelos += Number(item?.cartoesAmarelos) || 0;
+    totalVermelhos += Number(item?.cartoesVermelhos) || 0;
+
+    if (resultado.codigo === 'V') totalVitorias += 1;
+    if (resultado.codigo === 'E') totalEmpates += 1;
+    if (resultado.codigo === 'D') totalDerrotas += 1;
+
+    const idCampeonato = Number(partida?.campeonatoId);
+    const campanhaKey = Number.isInteger(idCampeonato) && idCampeonato > 0
+      ? `campeonato:${idCampeonato}`
+      : 'avulso';
+
+    if (!campanhasMap.has(campanhaKey)) {
+      campanhasMap.set(campanhaKey, {
+        campeonatoId: Number.isInteger(idCampeonato) && idCampeonato > 0 ? idCampeonato : null,
+        campeonatoNome: partida?.campeonato?.nome || 'Partidas avulsas',
+        statusCampeonato: partida?.campeonato?.status || null,
+        modalidadeNome: partida?.campeonato?.modalidade?.nome || null,
+        timeNome: null,
+        partidas: 0,
+        gols: 0,
+        cartoesAmarelos: 0,
+        cartoesVermelhos: 0,
+        vitorias: 0,
+        empates: 0,
+        derrotas: 0,
+        aproveitamento: 0,
+      });
+    }
+
+    const campanha = campanhasMap.get(campanhaKey);
+    campanha.partidas += 1;
+    campanha.gols += Number(item?.gols) || 0;
+    campanha.cartoesAmarelos += Number(item?.cartoesAmarelos) || 0;
+    campanha.cartoesVermelhos += Number(item?.cartoesVermelhos) || 0;
+    if (resultado.codigo === 'V') campanha.vitorias += 1;
+    if (resultado.codigo === 'E') campanha.empates += 1;
+    if (resultado.codigo === 'D') campanha.derrotas += 1;
+
+    if (!campanha.timeNome) {
+      if (Number(item?.timeId) === Number(partida?.timeAId)) {
+        campanha.timeNome = partida?.timeA?.nome || null;
+      } else if (Number(item?.timeId) === Number(partida?.timeBId)) {
+        campanha.timeNome = partida?.timeB?.nome || null;
+      }
+    }
+
+    const meuTime = Number(item?.timeId) === Number(partida?.timeAId)
+      ? partida?.timeA
+      : Number(item?.timeId) === Number(partida?.timeBId)
+        ? partida?.timeB
+        : null;
+
+    const adversario = Number(item?.timeId) === Number(partida?.timeAId)
+      ? partida?.timeB
+      : Number(item?.timeId) === Number(partida?.timeBId)
+        ? partida?.timeA
+        : null;
+
+    ultimasPartidas.push({
+      partidaId: Number(partida?.id) || item.partidaId,
+      data: partida?.data || null,
+      campeonatoId: campanha.campeonatoId,
+      campeonatoNome: campanha.campeonatoNome,
+      meuTimeNome: meuTime?.nome || campanha.timeNome || 'Meu time',
+      adversarioNome: adversario?.nome || 'Adversario',
+      placar: `${Number(partida?.pontosTimeA) || 0} x ${Number(partida?.pontosTimeB) || 0}`,
+      resultado: resultado.codigo,
+      resultadoLabel: resultado.label,
+      gols: Number(item?.gols) || 0,
+      cartoesAmarelos: Number(item?.cartoesAmarelos) || 0,
+      cartoesVermelhos: Number(item?.cartoesVermelhos) || 0,
+    });
+  }
+
+  const campanhas = Array.from(campanhasMap.values())
+    .map((campanha) => ({
+      ...campanha,
+      aproveitamento: calcularAproveitamento(campanha.partidas, campanha.vitorias, campanha.empates),
+    }))
+    .sort((a, b) => {
+      if (b.partidas !== a.partidas) return b.partidas - a.partidas;
+      return String(a.campeonatoNome || '').localeCompare(String(b.campeonatoNome || ''));
+    });
+
+  const timesVinculados = (Array.isArray(usuario.jogador.times) ? usuario.jogador.times : [])
+    .filter((item) => item?.time?.ativo && !item?.time?.deletedAt)
+    .filter((item) => item?.modalidade?.ativo && !item?.modalidade?.deletedAt)
+    .map((item) => ({
+      timeId: Number(item?.time?.id) || null,
+      timeNome: item?.time?.nome || '',
+      timeFoto: item?.time?.foto || null,
+      modalidadeId: Number(item?.modalidade?.id) || null,
+      modalidadeNome: item?.modalidade?.nome || '',
+    }));
+
+  return {
+    usuarioId: usuarioIdNum,
+    jogador: {
+      id: usuario.jogador.id,
+      nome: usuario.jogador.nome,
+      foto: usuario.jogador.foto || null,
+      numero: Number(usuario.jogador.numero) || null,
+      funcao: usuario.jogador.funcao || null,
+      times: timesVinculados,
+    },
+    resumo: {
+      partidas: totalPartidas,
+      gols: totalGols,
+      cartoesAmarelos: totalAmarelos,
+      cartoesVermelhos: totalVermelhos,
+      vitorias: totalVitorias,
+      empates: totalEmpates,
+      derrotas: totalDerrotas,
+      aproveitamento: calcularAproveitamento(totalPartidas, totalVitorias, totalEmpates),
+      mediaGols: totalPartidas > 0 ? Number((totalGols / totalPartidas).toFixed(2)) : 0,
+    },
+    campanhas,
+    ultimasPartidas: ultimasPartidas.slice(0, 8),
+    atualizadoEm: new Date().toISOString(),
   };
 }
 
@@ -442,6 +990,23 @@ async function getUsuarioTimesService(usuarioId) {
     where: { id: Number(usuarioId) },
     include: {
       times: {
+        where: {
+          ativo: true,
+          deletedAt: null,
+        },
+        include: {
+          time: {
+            include: {
+              modalidade: true,
+            },
+          },
+        },
+      },
+      treinadorTimes: {
+        where: {
+          ativo: true,
+          deletedAt: null,
+        },
         include: {
           time: {
             include: {
@@ -457,9 +1022,12 @@ async function getUsuarioTimesService(usuarioId) {
 module.exports = {
   cadastrarUsuario,
   atualizarUsuario,
+  atualizarMeuPerfil,
+  excluirMinhaConta,
   getUsuarios,
   getUsuariosResumo,
   getUsuarioTimesService,
   listarPermissoes,
   vincularUsuarioTime,
+  getEstatisticasJogadorVinculado,
 };

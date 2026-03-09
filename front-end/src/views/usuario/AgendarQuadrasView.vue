@@ -122,7 +122,7 @@
       <AgendamentoModal
         v-if="mostrarModalAgendamento"
         :quadra="quadraSelecionada"
-        :times="times"
+        :times="podeSelecionarTime ? times : []"
         :usar-dados-precarregados="true"
         :modalidades-precarregadas="modalidadesPrecarregadasModal"
         :grade-config-precarregada="gradeConfigPrecarregadaModal"
@@ -163,6 +163,9 @@ export default {
 
   computed: {
     ...mapState(useAuthStore, ["usuario"]),
+    podeSelecionarTime() {
+      return [1, 2, 5].includes(Number(this.usuario?.permissaoId));
+    },
     quadrasDisponiveis() {
       return this.quadras.filter((quadra) => !quadra.interditada).length;
     },
@@ -171,9 +174,11 @@ export default {
   watch: {
     usuario: {
       handler(novoUsuario) {
-        if (novoUsuario?.id) {
+        if (novoUsuario?.id && this.podeSelecionarTime) {
           this.carregarTimes(novoUsuario.id);
+          return;
         }
+        this.times = [];
       },
       immediate: true,
     },
@@ -181,7 +186,7 @@ export default {
 
   mounted() {
     this.carregarQuadras();
-    if (this.usuario?.id) {
+    if (this.usuario?.id && this.podeSelecionarTime) {
       this.carregarTimes(this.usuario.id);
     }
     window.addEventListener("avisos-atualizados", this.carregarAvisoDestaque);
@@ -213,10 +218,14 @@ export default {
     async carregarTimes(userId) {
       if (!userId) return;
       try {
-        const { data } = await api.get(`/usuarios/${userId}/times`);
+        const permissaoId = Number(this.usuario?.permissaoId);
+        const endpoint =
+          permissaoId === 1 || permissaoId === 2 ? "/times" : `/usuarios/${userId}/times`;
+        const { data } = await api.get(endpoint);
         this.times = Array.isArray(data) ? data : [];
       } catch (error) {
         console.error("Erro ao carregar times na tela principal:", error);
+        this.times = [];
       }
     },
 
@@ -230,7 +239,7 @@ export default {
 
       try {
         const promessas = [this.carregarDadosAgendamentoDaQuadra(Number(quadra.id))];
-        if (this.usuario?.id && this.times.length === 0) {
+        if (this.podeSelecionarTime && this.usuario?.id && this.times.length === 0) {
           promessas.push(this.carregarTimes(this.usuario.id));
         }
 

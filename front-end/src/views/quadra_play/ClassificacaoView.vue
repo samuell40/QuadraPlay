@@ -3,7 +3,7 @@
     <NavBarQuadras />
     <SidebarCampeonato @sidebar-toggle="sidebarCollapsed = $event" />
 
-    <div class="conteudo" :class="{ collapsed: sidebarCollapsed }">
+    <div class="conteudo" :class="{ collapsed: sidebarCollapsed, 'campeonato-finalizado': isCampeonatoEncerrado }">
       <div class="header">
         <div class="header-copy">
           <h1 class="title">Classificação {{ campeonato?.nome }}</h1>
@@ -12,11 +12,23 @@
           </a>
         </div>
 
-        <button class="btn-add" @click="abrirConfiguracoes">
-          Configuracoes
+        <button v-if="!isCampeonatoEncerrado" class="btn-add" @click="abrirConfiguracoes">
+          <span class="btn-add-icon" aria-hidden="true">⚙</span>
+          <span class="btn-add-label">Configuracoes</span>
         </button>
       </div>
 
+      <template v-if="isLoading">
+        <div class="loader-container-centralizado">
+          <LoadingState
+            :theme="isCampeonatoEncerrado ? 'danger' : 'default'"
+            title="Carregando campeonato"
+            description="Buscando fases, rodadas, classificacao e partidas."
+          />
+        </div>
+      </template>
+
+      <template v-else>
       <div v-if="campeonato" class="painel-card filtros-card">
         <div class="section-head">
           <div class="section-head-copy">
@@ -89,6 +101,8 @@
           v-if="!faseAtualEhEliminatoria"
           :times="Array.isArray(timesPlacar) ? timesPlacar : []"
           :loading="timesPlacar === null"
+          :loading-theme="isCampeonatoEncerrado ? 'danger' : 'default'"
+          :theme="isCampeonatoEncerrado ? 'finalizado' : 'default'"
           :modalidade="modalidadeNormalizada"
           :colunas-visiveis="colunasClassificacaoVisiveis"
           :grupos-config="gruposClassificacao"
@@ -110,6 +124,7 @@
           @time-click="abrirModalPartidasTime"
         />
       </div>
+      </template>
       
       <PartidasDoTimeModal
         v-model="mostrarModalPartidasTime"
@@ -121,9 +136,15 @@
         :loading="isLoadingPartidas"
       />
       <ModalConfiguracoesPlacar
-        v-if="campeonato"
+        v-if="campeonato && !isCampeonatoEncerrado"
         v-model="modalConfiguracoes"
         :campeonato="campeonato"
+        :times-placar="Array.isArray(timesPlacar) ? timesPlacar : []"
+        :colunas-visiveis="colunasVisiveisClassificacao"
+        :grupos-config="gruposClassificacao"
+        :exibir-por-grupos="exibirClassificacaoPorGrupo"
+        :fase-nome="nomeFaseSelecionada"
+        :rodada-nome="nomeRodadaSelecionada"
         @faseCriada="carregarFases"
         @colunas="atualizarColunasClassificacao"
         @grupos="abrirModalGrupos"
@@ -149,6 +170,7 @@ import ModalConfigurarGrupos from '@/components/quadraplay/ModalConfigurarGrupos
 import PartidasDoTimeModal from '@/components/quadraplay/PartidasDoTimeModal.vue'
 import TabelaClassificacao from '@/components/quadraplay/TabelaClassificacao.vue'
 import ListaPartidas from '@/components/quadraplay/ListaPartidas.vue'
+import LoadingState from '@/components/loading/LoadingState.vue'
 import api from '@/axios'
 import {
   getColunasClassificacaoPorModalidade,
@@ -160,6 +182,7 @@ import {
   inscreverCampeonatoSocket,
   desinscreverCampeonatoSocket
 } from '@/services/socket'
+import { ordenarPartidasPorStatusEDataDesc } from '@/utils/partidaOrdenacao'
 
 export default {
   name: 'ClassificacaoView',
@@ -170,7 +193,8 @@ export default {
     ModalConfigurarGrupos,
     PartidasDoTimeModal,
     TabelaClassificacao,
-    ListaPartidas
+    ListaPartidas,
+    LoadingState
   },
 
   data() {
@@ -314,6 +338,11 @@ export default {
       }
 
       return 'Toque em um time para abrir o historico completo de partidas.'
+    },
+
+    isCampeonatoEncerrado() {
+      const status = String(this.campeonato?.status || '').toUpperCase()
+      return ['FINALIZADO', 'FINALIZADA', 'CANCELADO', 'CANCELADA', 'DELETADO', 'DELETADA'].includes(status)
     }
   },
 
@@ -429,6 +458,7 @@ export default {
     },
 
     abrirConfiguracoes() {
+      if (this.isCampeonatoEncerrado) return
       this.modalConfiguracoes = true
     },
 
@@ -632,11 +662,7 @@ export default {
         const { data } = await api.get(`/partidas/${this.campeonato.id}/${this.faseSelecionada}/${this.rodadaSelecionada}`)
         const lista = Array.isArray(data) ? data : []
 
-        this.partidas = lista.sort((a, b) => {
-          const da = new Date(a?.data || a?.createdAt || 0).getTime()
-          const db = new Date(b?.data || b?.createdAt || 0).getTime()
-          return db - da
-        })
+        this.partidas = ordenarPartidasPorStatusEDataDesc(lista)
       } catch (err) {
         console.error('Erro ao carregar partidas por rodada:', err)
         this.partidas = []
@@ -794,7 +820,8 @@ a {
 }
 
 .header-copy {
-  max-width: 760px;
+  flex: 1;
+  min-width: 0;
 }
 
 .title {
@@ -811,6 +838,39 @@ a {
   color: #475569;
   font-size: 17px;
   line-height: 1.6;
+  white-space: nowrap;
+}
+
+.conteudo.campeonato-finalizado .title {
+  color: #b91c1c;
+}
+
+.conteudo.campeonato-finalizado .section-kicker {
+  color: #b91c1c;
+}
+
+.conteudo.campeonato-finalizado .filtro-titulo {
+  color: #b91c1c;
+}
+
+.conteudo.campeonato-finalizado .filtros-card .section-head h2 {
+  color: #991b1b;
+}
+
+.conteudo.campeonato-finalizado .filtro-select:hover {
+  border-color: rgba(239, 68, 68, 0.38);
+}
+
+.conteudo.campeonato-finalizado .filtro-select:focus {
+  border-color: rgba(185, 28, 28, 0.58);
+  box-shadow: 0 0 0 4px rgba(248, 113, 113, 0.2);
+}
+
+.conteudo.campeonato-finalizado .btn-add,
+.conteudo.campeonato-finalizado .grupo-toggle.ativo {
+  background: linear-gradient(135deg, #b91c1c, #ef4444);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fff;
 }
 
 .btn-add {
@@ -827,6 +887,20 @@ a {
   letter-spacing: -0.02em;
   white-space: nowrap;
   box-shadow: 0 14px 26px rgba(59, 130, 246, 0.22);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-add-icon {
+  display: inline-block;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.btn-add-label {
+  line-height: 1.2;
 }
 
 .btn-add:hover {
@@ -874,8 +948,11 @@ a {
 
 .loader-container-centralizado {
   display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
-  margin-top: 140px;
+  gap: 16px;
+  margin-top: 0;
 }
 
 .loader {
@@ -1292,11 +1369,15 @@ a {
     margin: 0 0 8px;
     font-size: 30px;
     line-height: 1.04;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   .page-subtitle {
     font-size: 14px;
     line-height: 1.55;
+    white-space: normal;
   }
 
   .btn-add {
@@ -1305,13 +1386,14 @@ a {
     min-height: 42px;
     padding: 0 14px;
     border-radius: 14px;
-    font-size: 0;
+    font-size: 13px;
+    letter-spacing: -0.01em;
+    white-space: normal;
+    text-align: left;
+    gap: 6px;
   }
 
-  .btn-add::after {
-    content: "⚙";
-    font-size: 18px;
-  }
+  .btn-add-icon { font-size: 16px; }
 
   .painel-card {
     padding: 18px;

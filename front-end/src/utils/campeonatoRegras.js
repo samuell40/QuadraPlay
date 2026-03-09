@@ -35,6 +35,7 @@ function regrasPadrao(grupo) {
     pontosVitoria: 3,
     pontosEmpate: 1,
     pontosDerrota: 0,
+    duracaoSuspensaoPartidas: 1,
     suspensaoAmarelos: null,
     suspensaoVermelhos: null,
     separarCartoesPorFase: false,

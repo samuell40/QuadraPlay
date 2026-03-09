@@ -10,7 +10,10 @@
         <h3 class="card-title">{{ quadraNome }}</h3>
       </div>
 
-      <span class="status-pill" :class="statusClass">{{ statusTexto }}</span>
+      <div class="status-wrap">
+        <span class="status-pill" :class="statusClass">{{ statusTexto }}</span>
+        <span v-if="ehEncaixe && limiteSemanalAtingido" class="limit-pill">LIMITE ATINGIDO</span>
+      </div>
     </div>
 
     <div class="meta-grid">
@@ -19,7 +22,7 @@
         <strong class="meta-value">{{ solicitanteNome }}</strong>
       </div>
 
-      <div class="meta-item">
+      <div v-if="exibirCampoTime" class="meta-item">
         <span class="meta-label">Time</span>
         <strong class="meta-value">{{ timeNome }}</strong>
       </div>
@@ -41,7 +44,7 @@
 
       <div class="meta-item">
         <span class="meta-label">Tipo</span>
-        <strong class="meta-value">{{ tipoLabel }}</strong>
+        <strong class="meta-value">{{ tipoLabelExibicao }}</strong>
       </div>
     </div>
 
@@ -92,6 +95,8 @@ const statusClass = computed(() => {
 
 const statusTexto = computed(() => String(props.agendamento?.status || 'Sem status').toUpperCase())
 const isPendente = computed(() => statusNormalizado.value === 'pendente')
+const ehEncaixe = computed(() => Boolean(props.agendamento?.encaixe))
+const limiteSemanalAtingido = computed(() => Boolean(props.agendamento?.limiteSemanalAtingido))
 
 const quadraNome = computed(() => props.agendamento?.quadraNome || props.agendamento?.quadra?.nome || 'Quadra')
 const solicitanteNome = computed(() => props.agendamento?.solicitanteNome || props.agendamento?.usuario || props.agendamento?.usuario?.nome || 'Sem usuario')
@@ -99,6 +104,14 @@ const timeNome = computed(() => props.agendamento?.timeNome || props.agendamento
 const codigoVerificacao = computed(() => props.agendamento?.codigoVerificacao || 'N/A')
 const motivoRecusa = computed(() => props.agendamento?.motivoRecusa || '')
 const tipoLabel = computed(() => props.agendamento?.tipo || 'Não informado')
+const tipoNormalizado = computed(() => String(props.agendamento?.tipo || '').trim().toLowerCase())
+const permissaoSolicitanteId = computed(() =>
+  Number(props.agendamento?.usuario?.permissaoId ?? props.agendamento?.solicitantePermissaoId ?? 0)
+)
+const tipoPermiteCampoTime = computed(() => !['amistoso', 'evento', 'campeonato'].includes(tipoNormalizado.value))
+const permissaoPermiteCampoTime = computed(() => [1, 2, 5].includes(permissaoSolicitanteId.value))
+const exibirCampoTime = computed(() => tipoPermiteCampoTime.value && permissaoPermiteCampoTime.value)
+const tipoLabelExibicao = computed(() => (ehEncaixe.value ? `${tipoLabel.value} (ENCAIXE)` : tipoLabel.value))
 const duracaoLabel = computed(() => `${props.agendamento?.duracao || 0} hora(s)`)
 
 const formatarData = (agendamento) => {
@@ -231,6 +244,32 @@ const horaFormatada = computed(() => formatarHora(props.agendamento))
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.status-wrap {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.limit-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #7c2d12;
+  background: rgba(249, 115, 22, 0.16);
+  border: 1px solid rgba(249, 115, 22, 0.28);
   white-space: nowrap;
 }
 

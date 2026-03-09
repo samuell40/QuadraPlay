@@ -30,7 +30,7 @@ router.put('/:partidaId/:jogadorId/remover', controller.removerJogadorDeCampoCon
 
 router.get('/detalhar/partida/:id', controller.detalharPartidaController)
 
-router.get('/partidas/:campeonatoId/:faseId/:rodadaId',controller.listarPartidasDaRodadaDaFaseController)
+router.get('/partidas/:campeonatoId/:faseId/:rodadaId', [validarJWT.opcional], controller.listarPartidasDaRodadaDaFaseController)
 
 router.get('/partidas/status', controller.listarStatusPartidaController);
 

@@ -35,9 +35,9 @@
                 />
 
                 <div class="jogador-info">
+                  <span v-if="temNumeroJogador(j.numero)" class="numero-jogador">{{ j.numero }}</span>
                   <img :src="j.foto" alt="Foto" class="foto-jogador" />
                   <div class="dados-jogador">
-                    <span v-if="temNumeroJogador(j.numero)" class="numero-jogador">#{{ j.numero }}</span>
                     <span class="nome" :class="{ suspenso: jogadorSuspenso(j) }">{{ j.nome }}</span>
                     <span v-if="jogadorSuspenso(j)" class="tag-suspenso" :title="j.motivoSuspensao || 'Jogador suspenso'">
                       Suspenso
@@ -74,9 +74,9 @@
                 />
 
                 <div class="jogador-info">
+                  <span v-if="temNumeroJogador(j.numero)" class="numero-jogador">{{ j.numero }}</span>
                   <img :src="j.foto" alt="Foto" class="foto-jogador" />
                   <div class="dados-jogador">
-                    <span v-if="temNumeroJogador(j.numero)" class="numero-jogador">#{{ j.numero }}</span>
                     <span class="nome" :class="{ suspenso: jogadorSuspenso(j) }">{{ j.nome }}</span>
                     <span v-if="jogadorSuspenso(j)" class="tag-suspenso" :title="j.motivoSuspensao || 'Jogador suspenso'">
                       Suspenso
@@ -440,14 +440,16 @@ export default {
   align-items: center;
   justify-content: center;
   min-width: 34px;
-  padding: 2px 8px;
+  height: 24px;
+  padding: 0 9px;
   border-radius: 999px;
-  border: 1px solid #bfdbfe;
-  background: #dbeafe;
+  border: 1px solid #93c5fd;
+  background: #eff6ff;
   color: #1d4ed8;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 800;
   line-height: 1;
+  flex-shrink: 0;
 }
 
 .foto-jogador {
@@ -532,6 +534,13 @@ export default {
 
   .coluna {
     max-height: 35vh;
+  }
+
+  .numero-jogador {
+    min-width: 28px;
+    height: 20px;
+    padding: 0 7px;
+    font-size: 11px;
   }
 }
 </style>

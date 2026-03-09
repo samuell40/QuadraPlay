@@ -159,6 +159,7 @@ function regrasPadraoPorModalidade(nomeModalidade) {
     pontosVitoria: 3,
     pontosEmpate: 1,
     pontosDerrota: 0,
+    duracaoSuspensaoPartidas: 1,
     suspensaoAmarelos: null,
     suspensaoVermelhos: null,
     separarCartoesPorFase: false,
@@ -645,6 +646,54 @@ async function validarSuspensaoJogador({ campeonatoId, faseId, jogadorId }) {
   throw new Error(status.motivoSuspensao || 'Jogador suspenso.');
 }
 
+function extrairSuspensoesManuais(regras) {
+  const lista = Array.isArray(regras?.suspensoesManuais) ? regras.suspensoesManuais : [];
+  const mapa = new Map();
+
+  for (const item of lista) {
+    const jogadorId = Number(item?.jogadorId);
+    if (!Number.isInteger(jogadorId) || jogadorId <= 0) continue;
+
+    const suspenso = Boolean(item?.suspenso);
+    const motivo = String(item?.motivo || '').trim();
+    const timeId = Number(item?.timeId);
+    const tipoDuracaoBase = String(item?.tipoDuracao || '').toUpperCase();
+    const tipoDuracao = tipoDuracaoBase === 'PARTIDAS' ? 'PARTIDAS' : 'CAMPEONATO';
+    const quantidadePartidasBruta = Number(item?.quantidadePartidas);
+    const quantidadePartidas = tipoDuracao === 'PARTIDAS'
+      && Number.isInteger(quantidadePartidasBruta)
+      && quantidadePartidasBruta > 0
+      && quantidadePartidasBruta <= 10
+      ? quantidadePartidasBruta
+      : null;
+
+    mapa.set(jogadorId, {
+      suspenso,
+      motivoSuspensao: motivo || (suspenso
+        ? 'Jogador suspenso manualmente pela administracao.'
+        : 'Suspensao retirada manualmente pela administracao.'),
+      atualizadoEm: item?.atualizadoEm || null,
+      timeId: Number.isInteger(timeId) && timeId > 0 ? timeId : null,
+      tipoDuracao: quantidadePartidas ? 'PARTIDAS' : 'CAMPEONATO',
+      quantidadePartidas
+    });
+  }
+
+  return mapa;
+}
+
+function normalizarDuracaoSuspensaoPartidas(valor) {
+  const duracao = Number(valor);
+  if (!Number.isFinite(duracao) || duracao <= 0) return 1;
+  return Math.max(1, Math.trunc(duracao));
+}
+
+function possuiLimitesSuspensaoPorCartoes({ limiteAmarelos = NaN, limiteVermelhos = NaN } = {}) {
+  const usaLimiteAmarelos = Number.isFinite(limiteAmarelos) && limiteAmarelos > 0;
+  const usaLimiteVermelhos = Number.isFinite(limiteVermelhos) && limiteVermelhos > 0;
+  return usaLimiteAmarelos || usaLimiteVermelhos;
+}
+
 async function carregarContextoSuspensao(campeonatoId, faseId) {
   if (!campeonatoId) return null;
 
@@ -661,32 +710,44 @@ async function carregarContextoSuspensao(campeonatoId, faseId) {
   const regras = normalizarRegrasCampeonato(campeonato.regras, campeonato.modalidade?.nome);
   const limiteAmarelos = Number(regras.suspensaoAmarelos);
   const limiteVermelhos = Number(regras.suspensaoVermelhos);
-  const usaLimiteAmarelos = Number.isFinite(limiteAmarelos) && limiteAmarelos > 0;
-  const usaLimiteVermelhos = Number.isFinite(limiteVermelhos) && limiteVermelhos > 0;
+  const usaLimitesPorCartoes = possuiLimitesSuspensaoPorCartoes({
+    limiteAmarelos,
+    limiteVermelhos
+  });
+  const duracaoSuspensaoPartidas = normalizarDuracaoSuspensaoPartidas(regras.duracaoSuspensaoPartidas);
+  const suspensoesManuais = extrairSuspensoesManuais(regras);
 
-  if (!usaLimiteAmarelos && !usaLimiteVermelhos) {
+  if (!usaLimitesPorCartoes && !suspensoesManuais.size) {
     return {
       ativo: false,
       limiteAmarelos,
       limiteVermelhos,
-      filtrosPartida: null
+      duracaoSuspensaoPartidas,
+      filtrosPartida: null,
+      suspensoesManuais
     };
   }
 
-  const filtrosPartida = {
-    campeonatoId: Number(campeonatoId),
-    status: 'FINALIZADA'
-  };
+  let filtrosPartida = null;
+  if (usaLimitesPorCartoes) {
+    filtrosPartida = {
+      campeonatoId: Number(campeonatoId),
+      status: 'FINALIZADA'
+    };
 
-  if (regras.separarCartoesPorFase || regras.resetarCartoesCadaFase) {
-    filtrosPartida.faseId = faseId ? Number(faseId) : null;
+    const faseIdNum = Number(faseId);
+    if ((regras.separarCartoesPorFase || regras.resetarCartoesCadaFase) && Number.isFinite(faseIdNum) && faseIdNum > 0) {
+      filtrosPartida.faseId = faseIdNum;
+    }
   }
 
   return {
     ativo: true,
     limiteAmarelos,
     limiteVermelhos,
-    filtrosPartida
+    duracaoSuspensaoPartidas,
+    filtrosPartida,
+    suspensoesManuais
   };
 }
 
@@ -773,6 +834,286 @@ async function mapearCartoesAcumuladosJogadores(jogadorIds, filtrosPartida) {
   return porJogador;
 }
 
+function criarChaveJogadorPartida(jogadorId, partidaId) {
+  return `${Number(jogadorId)}:${Number(partidaId)}`;
+}
+
+async function mapearTimePorJogadorNoCampeonato(campeonatoId, jogadorIds) {
+  const ids = Array.from(
+    new Set((Array.isArray(jogadorIds) ? jogadorIds : [])
+      .map(id => Number(id))
+      .filter(id => Number.isFinite(id) && id > 0))
+  );
+
+  const resultado = new Map();
+  if (!Number.isFinite(Number(campeonatoId)) || Number(campeonatoId) <= 0 || !ids.length) {
+    return resultado;
+  }
+
+  const vinculos = await prisma.jogadorTime.findMany({
+    where: {
+      jogadorId: { in: ids },
+      ativo: true,
+      deletedAt: null,
+      time: {
+        campeonatos: {
+          some: {
+            campeonatoId: Number(campeonatoId),
+            ativo: true,
+            deletedAt: null
+          }
+        }
+      }
+    },
+    select: {
+      jogadorId: true,
+      timeId: true
+    },
+    orderBy: [
+      { jogadorId: 'asc' },
+      { timeId: 'asc' }
+    ]
+  });
+
+  for (const vinculo of vinculos) {
+    const jogadorId = Number(vinculo?.jogadorId);
+    const timeId = Number(vinculo?.timeId);
+    if (!Number.isInteger(jogadorId) || jogadorId <= 0) continue;
+    if (!Number.isInteger(timeId) || timeId <= 0) continue;
+    if (!resultado.has(jogadorId)) {
+      resultado.set(jogadorId, timeId);
+    }
+  }
+
+  return resultado;
+}
+
+async function listarPartidasFinalizadasPorTimes(filtrosPartida, timeIds) {
+  const ids = Array.from(
+    new Set((Array.isArray(timeIds) ? timeIds : [])
+      .map(id => Number(id))
+      .filter(id => Number.isFinite(id) && id > 0))
+  );
+
+  if (!ids.length || !filtrosPartida) return [];
+
+  return prisma.partida.findMany({
+    where: {
+      ...filtrosPartida,
+      OR: [
+        { timeAId: { in: ids } },
+        { timeBId: { in: ids } }
+      ]
+    },
+    select: {
+      id: true,
+      timeAId: true,
+      timeBId: true,
+      data: true,
+      updatedAt: true,
+      ultimaEdicaoEm: true
+    },
+    orderBy: [
+      { data: 'asc' },
+      { id: 'asc' }
+    ]
+  });
+}
+
+function indexarPartidasPorTime(partidas) {
+  const mapa = new Map();
+
+  for (const partida of Array.isArray(partidas) ? partidas : []) {
+    const timeAId = Number(partida?.timeAId);
+    const timeBId = Number(partida?.timeBId);
+
+    if (Number.isInteger(timeAId) && timeAId > 0) {
+      if (!mapa.has(timeAId)) mapa.set(timeAId, []);
+      mapa.get(timeAId).push(partida);
+    }
+
+    if (Number.isInteger(timeBId) && timeBId > 0) {
+      if (!mapa.has(timeBId)) mapa.set(timeBId, []);
+      mapa.get(timeBId).push(partida);
+    }
+  }
+
+  return mapa;
+}
+
+async function mapearAtuacoesJogadoresPorPartida(jogadorIds, partidaIds) {
+  const idsJogadores = Array.from(
+    new Set((Array.isArray(jogadorIds) ? jogadorIds : [])
+      .map(id => Number(id))
+      .filter(id => Number.isFinite(id) && id > 0))
+  );
+
+  const idsPartidas = Array.from(
+    new Set((Array.isArray(partidaIds) ? partidaIds : [])
+      .map(id => Number(id))
+      .filter(id => Number.isFinite(id) && id > 0))
+  );
+
+  const resultado = new Map();
+  if (!idsJogadores.length || !idsPartidas.length) return resultado;
+
+  const atuacoes = await prisma.jogadorPartida.findMany({
+    where: {
+      jogadorId: { in: idsJogadores },
+      partidaId: { in: idsPartidas }
+    },
+    select: {
+      jogadorId: true,
+      partidaId: true,
+      cartoesAmarelos: true,
+      cartoesVermelhos: true
+    }
+  });
+
+  for (const atuacao of atuacoes) {
+    const jogadorId = Number(atuacao?.jogadorId);
+    const partidaId = Number(atuacao?.partidaId);
+    if (!Number.isInteger(jogadorId) || jogadorId <= 0) continue;
+    if (!Number.isInteger(partidaId) || partidaId <= 0) continue;
+
+    const chave = criarChaveJogadorPartida(jogadorId, partidaId);
+    const acumulado = resultado.get(chave) || {
+      cartoesAmarelos: 0,
+      cartoesVermelhos: 0
+    };
+
+    acumulado.cartoesAmarelos += Number(atuacao?.cartoesAmarelos) || 0;
+    acumulado.cartoesVermelhos += Number(atuacao?.cartoesVermelhos) || 0;
+    resultado.set(chave, acumulado);
+  }
+
+  return resultado;
+}
+
+function formatarMensagemSuspensaoPendente(motivoBase, partidasRestantes) {
+  const quantidade = Number(partidasRestantes) || 0;
+  if (quantidade <= 0) return motivoBase || 'Jogador suspenso.';
+
+  const textoPartidas = `${quantidade} ${quantidade === 1 ? 'partida' : 'partidas'}`;
+  const motivo = String(motivoBase || 'Jogador suspenso.').trim();
+  return `${motivo} Suspensao em andamento: restam ${textoPartidas} para cumprir.`;
+}
+
+function obterTimestampValido(valor) {
+  if (!valor) return null;
+  const timestamp = new Date(valor).getTime();
+  return Number.isFinite(timestamp) ? timestamp : null;
+}
+
+function obterTimestampReferenciaPartidaFinalizada(partida) {
+  return obterTimestampValido(partida?.ultimaEdicaoEm)
+    ?? obterTimestampValido(partida?.updatedAt)
+    ?? obterTimestampValido(partida?.data)
+    ?? 0;
+}
+
+function calcularPartidasRestantesSuspensaoManual({
+  suspensaoManual = {},
+  partidasDoTime = []
+}) {
+  const quantidade = Number(suspensaoManual?.quantidadePartidas);
+  if (!Number.isInteger(quantidade) || quantidade <= 0) return 0;
+
+  const aplicadoEm = obterTimestampValido(suspensaoManual?.atualizadoEm);
+  if (!aplicadoEm) return quantidade;
+
+  let partidasCumpridas = 0;
+  for (const partida of Array.isArray(partidasDoTime) ? partidasDoTime : []) {
+    const referenciaPartida = obterTimestampReferenciaPartidaFinalizada(partida);
+    if (referenciaPartida > aplicadoEm) {
+      partidasCumpridas += 1;
+    }
+  }
+
+  return Math.max(quantidade - partidasCumpridas, 0);
+}
+
+function calcularStatusSuspensaoAutomaticaComHistorico({
+  jogadorId,
+  partidasDoTime = [],
+  atuacoesPorPartida = new Map(),
+  limiteAmarelos = NaN,
+  limiteVermelhos = NaN,
+  duracaoSuspensaoPartidas = 1
+}) {
+  const idJogador = Number(jogadorId);
+  if (!Number.isInteger(idJogador) || idJogador <= 0) {
+    return {
+      suspenso: false,
+      motivo: null,
+      motivoSuspensao: null,
+      partidasRestantesSuspensao: 0
+    };
+  }
+
+  const duracao = normalizarDuracaoSuspensaoPartidas(duracaoSuspensaoPartidas);
+  let amarelosAcumulados = 0;
+  let vermelhosAcumulados = 0;
+  let suspensoesPendentes = 0;
+  let ultimoMotivoSuspensao = null;
+
+  for (const partida of Array.isArray(partidasDoTime) ? partidasDoTime : []) {
+    if (suspensoesPendentes > 0) {
+      suspensoesPendentes -= 1;
+    }
+
+    const chave = criarChaveJogadorPartida(idJogador, Number(partida?.id));
+    const atuacao = atuacoesPorPartida.get(chave);
+    if (!atuacao) continue;
+
+    amarelosAcumulados += Number(atuacao.cartoesAmarelos) || 0;
+    vermelhosAcumulados += Number(atuacao.cartoesVermelhos) || 0;
+
+    let statusCartoes = avaliarSuspensaoPorCartoes({
+      amarelos: amarelosAcumulados,
+      vermelhos: vermelhosAcumulados,
+      limiteAmarelos,
+      limiteVermelhos
+    });
+
+    while (statusCartoes.suspenso) {
+      suspensoesPendentes += duracao;
+      ultimoMotivoSuspensao = statusCartoes.motivoSuspensao;
+
+      if (statusCartoes.motivo === 'AMARELOS') {
+        amarelosAcumulados = Math.max(0, amarelosAcumulados - (Number(limiteAmarelos) || 0));
+      } else if (statusCartoes.motivo === 'VERMELHOS') {
+        vermelhosAcumulados = Math.max(0, vermelhosAcumulados - (Number(limiteVermelhos) || 0));
+      } else {
+        break;
+      }
+
+      statusCartoes = avaliarSuspensaoPorCartoes({
+        amarelos: amarelosAcumulados,
+        vermelhos: vermelhosAcumulados,
+        limiteAmarelos,
+        limiteVermelhos
+      });
+    }
+  }
+
+  if (suspensoesPendentes > 0) {
+    return {
+      suspenso: true,
+      motivo: 'SUSPENSAO_EM_ANDAMENTO',
+      motivoSuspensao: formatarMensagemSuspensaoPendente(ultimoMotivoSuspensao, suspensoesPendentes),
+      partidasRestantesSuspensao: suspensoesPendentes
+    };
+  }
+
+  return {
+    suspenso: false,
+    motivo: null,
+    motivoSuspensao: null,
+    partidasRestantesSuspensao: 0
+  };
+}
+
 async function mapearSuspensaoJogadores({ campeonatoId, faseId, jogadorIds }) {
   const ids = Array.from(
     new Set((Array.isArray(jogadorIds) ? jogadorIds : [])
@@ -787,15 +1128,177 @@ async function mapearSuspensaoJogadores({ campeonatoId, faseId, jogadorIds }) {
   if (!contexto?.ativo) return resultado;
 
   const cartoesPorJogador = await mapearCartoesAcumuladosJogadores(ids, contexto.filtrosPartida);
+  const usaLimitesPorCartoes = possuiLimitesSuspensaoPorCartoes(contexto);
+  const statusAutomaticoPorJogador = new Map();
+
+  if (usaLimitesPorCartoes) {
+    const timePorJogador = await mapearTimePorJogadorNoCampeonato(campeonatoId, ids);
+    const timeIds = Array.from(new Set(Array.from(timePorJogador.values())));
+    const partidasFinalizadas = await listarPartidasFinalizadasPorTimes(contexto.filtrosPartida, timeIds);
+    const partidasPorTime = indexarPartidasPorTime(partidasFinalizadas);
+    const atuacoesPorPartida = await mapearAtuacoesJogadoresPorPartida(
+      ids,
+      partidasFinalizadas.map(partida => Number(partida.id))
+    );
+
+    for (const jogadorId of ids) {
+      const timeId = timePorJogador.get(jogadorId);
+      if (!timeId) continue;
+
+      const partidasDoTime = partidasPorTime.get(timeId) || [];
+      const statusAutomatico = calcularStatusSuspensaoAutomaticaComHistorico({
+        jogadorId,
+        partidasDoTime,
+        atuacoesPorPartida,
+        limiteAmarelos: contexto.limiteAmarelos,
+        limiteVermelhos: contexto.limiteVermelhos,
+        duracaoSuspensaoPartidas: contexto.duracaoSuspensaoPartidas
+      });
+
+      statusAutomaticoPorJogador.set(jogadorId, statusAutomatico);
+    }
+  }
+
+  const jogadoresComSuspensaoManualPorPartidas = ids.filter((jogadorId) => {
+    const suspensaoManual = contexto.suspensoesManuais?.get(jogadorId);
+    return Boolean(
+      suspensaoManual?.suspenso
+      && suspensaoManual?.tipoDuracao === 'PARTIDAS'
+      && Number.isInteger(Number(suspensaoManual?.quantidadePartidas))
+      && Number(suspensaoManual?.quantidadePartidas) > 0
+    );
+  });
+
+  const timePorJogadorSuspensaoManual = new Map();
+  const partidasPorTimeSuspensaoManual = new Map();
+
+  if (jogadoresComSuspensaoManualPorPartidas.length) {
+    const jogadoresSemTimeDefinido = [];
+
+    for (const jogadorId of jogadoresComSuspensaoManualPorPartidas) {
+      const suspensaoManual = contexto.suspensoesManuais?.get(jogadorId);
+      const timeManual = Number(suspensaoManual?.timeId);
+      if (Number.isInteger(timeManual) && timeManual > 0) {
+        timePorJogadorSuspensaoManual.set(jogadorId, timeManual);
+      } else {
+        jogadoresSemTimeDefinido.push(jogadorId);
+      }
+    }
+
+    if (jogadoresSemTimeDefinido.length) {
+      const timePorJogador = await mapearTimePorJogadorNoCampeonato(campeonatoId, jogadoresSemTimeDefinido);
+      for (const [jogadorId, timeId] of timePorJogador.entries()) {
+        timePorJogadorSuspensaoManual.set(jogadorId, timeId);
+      }
+    }
+
+    const timeIds = Array.from(new Set(
+      Array.from(timePorJogadorSuspensaoManual.values())
+        .map(id => Number(id))
+        .filter(id => Number.isInteger(id) && id > 0)
+    ));
+
+    if (timeIds.length) {
+      const partidasFinalizadas = await listarPartidasFinalizadasPorTimes(
+        {
+          campeonatoId: Number(campeonatoId),
+          status: 'FINALIZADA'
+        },
+        timeIds
+      );
+      const indexadoPorTime = indexarPartidasPorTime(partidasFinalizadas);
+      for (const [timeId, partidas] of indexadoPorTime.entries()) {
+        partidasPorTimeSuspensaoManual.set(timeId, partidas);
+      }
+    }
+  }
 
   for (const jogadorId of ids) {
     const cartoes = cartoesPorJogador.get(jogadorId) || { amarelos: 0, vermelhos: 0 };
-    resultado.set(jogadorId, avaliarSuspensaoPorCartoes({
+    const suspensaoManual = contexto.suspensoesManuais?.get(jogadorId);
+    if (suspensaoManual) {
+      if (suspensaoManual.suspenso) {
+        if (suspensaoManual.tipoDuracao === 'PARTIDAS') {
+          const timeId = Number(suspensaoManual.timeId || timePorJogadorSuspensaoManual.get(jogadorId) || 0);
+          const partidasDoTime = partidasPorTimeSuspensaoManual.get(timeId) || [];
+          const partidasRestantes = calcularPartidasRestantesSuspensaoManual({
+            suspensaoManual,
+            partidasDoTime
+          });
+
+          if (partidasRestantes > 0) {
+            resultado.set(jogadorId, {
+              suspenso: true,
+              motivo: 'MANUAL',
+              motivoSuspensao: formatarMensagemSuspensaoPendente(
+                suspensaoManual.motivoSuspensao,
+                partidasRestantes
+              ),
+              amarelos: cartoes.amarelos,
+              vermelhos: cartoes.vermelhos,
+              vermelhosConsiderados: cartoes.vermelhos,
+              origemSuspensao: 'MANUAL',
+              suspensaoManual: true,
+              partidasRestantesSuspensao: partidasRestantes
+            });
+          } else {
+            resultado.set(jogadorId, {
+              suspenso: false,
+              motivo: null,
+              motivoSuspensao: null,
+              amarelos: cartoes.amarelos,
+              vermelhos: cartoes.vermelhos,
+              vermelhosConsiderados: cartoes.vermelhos,
+              origemSuspensao: 'MANUAL_EXPIRADA',
+              suspensaoManual: false,
+              partidasRestantesSuspensao: 0
+            });
+          }
+          continue;
+        }
+
+        resultado.set(jogadorId, {
+          suspenso: true,
+          motivo: 'MANUAL',
+          motivoSuspensao: suspensaoManual.motivoSuspensao,
+          amarelos: cartoes.amarelos,
+          vermelhos: cartoes.vermelhos,
+          vermelhosConsiderados: cartoes.vermelhos,
+          origemSuspensao: 'MANUAL',
+          suspensaoManual: true,
+          partidasRestantesSuspensao: 0
+        });
+      } else {
+        resultado.set(jogadorId, {
+          suspenso: false,
+          motivo: null,
+          motivoSuspensao: null,
+          amarelos: cartoes.amarelos,
+          vermelhos: cartoes.vermelhos,
+          vermelhosConsiderados: cartoes.vermelhos,
+          origemSuspensao: 'MANUAL_LIBERADA',
+          suspensaoManual: false,
+          partidasRestantesSuspensao: 0
+        });
+      }
+      continue;
+    }
+
+    const statusPorCartoes = statusAutomaticoPorJogador.get(jogadorId) || avaliarSuspensaoPorCartoes({
       amarelos: cartoes.amarelos,
       vermelhos: cartoes.vermelhos,
       limiteAmarelos: contexto.limiteAmarelos,
       limiteVermelhos: contexto.limiteVermelhos
-    }));
+    });
+
+    resultado.set(jogadorId, {
+      ...statusPorCartoes,
+      amarelos: cartoes.amarelos,
+      vermelhos: cartoes.vermelhos,
+      vermelhosConsiderados: cartoes.vermelhos,
+      origemSuspensao: statusPorCartoes.suspenso ? 'AUTOMATICA' : null,
+      suspensaoManual: null
+    });
   }
 
   return resultado;
@@ -805,23 +1308,35 @@ async function listarJogadoresParaEscalacao({ campeonatoId, faseId, timeId }) {
   const timeIdNum = Number(timeId);
   if (!timeIdNum) throw new Error('timeId invalido');
 
-  const time = await prisma.time.findUnique({
-    where: { id: timeIdNum },
-    include: {
-      jogadores: {
-        include: {
-          jogador: {
-            include: {
-              funcao: true,
-              atuacoes: true
+  const campeonatoIdNum = Number(campeonatoId);
+
+  const [time, campeonato] = await Promise.all([
+    prisma.time.findUnique({
+      where: { id: timeIdNum },
+      include: {
+        jogadores: {
+          include: {
+            jogador: {
+              include: {
+                funcao: true,
+                atuacoes: true
+              }
             }
           }
         }
       }
-    }
-  });
+    }),
+    Number.isInteger(campeonatoIdNum) && campeonatoIdNum > 0
+      ? prisma.campeonato.findUnique({
+        where: { id: campeonatoIdNum },
+        select: { modalidadeId: true }
+      })
+      : Promise.resolve(null)
+  ]);
 
   if (!time) throw new Error('Time nao encontrado');
+
+  const modalidadeReferenciaId = Number(campeonato?.modalidadeId || time.modalidadeId || 0);
 
   const jogadoresBase = time.jogadores
     .map(jt => jt?.jogador)
@@ -831,7 +1346,10 @@ async function listarJogadoresParaEscalacao({ campeonatoId, faseId, timeId }) {
       nome: j.nome,
       numero: j.numero,
       foto: j.foto,
-      funcao: j.funcao,
+      funcao: (
+        modalidadeReferenciaId > 0 &&
+        Number(j?.funcao?.modalidadeId) === modalidadeReferenciaId
+      ) ? j.funcao : null,
       atuacoes: j.atuacoes
     }));
 
@@ -1024,16 +1542,20 @@ async function iniciarPartida(partidaId, jogadores) {
         jogadoresPorId.set(j.jogadorId, j)
       }
       const jogadoresUnicos = Array.from(jogadoresPorId.values())
+      const idsJogadores = jogadoresUnicos.map(j => j.jogadorId)
+
+      const suspensoes = await mapearSuspensaoJogadores({
+        campeonatoId: partida.campeonatoId,
+        faseId: partida.faseId,
+        jogadorIds: idsJogadores
+      });
 
       for (const j of jogadoresUnicos) {
-        await validarSuspensaoJogador({
-          campeonatoId: partida.campeonatoId,
-          faseId: partida.faseId,
-          jogadorId: j.jogadorId
-        });
+        const status = suspensoes.get(j.jogadorId);
+        if (!status?.suspenso) continue;
+        throw new Error(status.motivoSuspensao || 'Jogador suspenso.');
       }
 
-      const idsJogadores = jogadoresUnicos.map(j => j.jogadorId)
       const vinculosExistentes = await tx.jogadorPartida.findMany({
         where: {
           partidaId: Number(partidaId),
@@ -1978,15 +2500,25 @@ async function listarPartidasDaRodadaDaFase(
   campeonatoId,
   faseId,
   rodadaId,
-  { detalhes = false } = {}
+  { detalhes = false, usuario = null } = {}
 ) {
   try {
+    const usuarioId = Number(usuario?.id);
+    const permissaoId = Number(usuario?.permissaoId);
     const filtros = {
       campeonatoId: Number(campeonatoId),
       faseId: Number(faseId),
       rodadaId: Number(rodadaId),
       status: { not: 'DELETADA' }
     };
+
+    if (permissaoId === 4) {
+      if (!Number.isFinite(usuarioId) || usuarioId <= 0) {
+        return [];
+      }
+
+      filtros.usuarioCriadorId = usuarioId;
+    }
 
     let partidas = [];
 
@@ -2230,6 +2762,7 @@ module.exports = {
   atualizarAtuacaoJogadorPartida,
   substituirJogadorPartida,
   getJogadoresForaDaPartida,
+  mapearSuspensaoJogadores,
   listarJogadoresParaEscalacao,
   removerJogadorDeCampo,
   detalharPartida,

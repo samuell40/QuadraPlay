@@ -1,6 +1,14 @@
 <template>
   <div class="navbar-user-root">
-    <div class="navbar-user-shell">
+    <div
+      class="navbar-user-shell"
+      role="button"
+      tabindex="0"
+      aria-label="Editar perfil"
+      @click="abrirModalPerfil"
+      @keydown.enter.prevent="abrirModalPerfil"
+      @keydown.space.prevent="abrirModalPerfil"
+    >
       <div class="foto">
         <img
           v-if="usuario?.foto"
@@ -21,15 +29,29 @@
         </div>
       </div>
     </div>
+
+    <PerfilUsuarioModal
+      v-model="isPerfilModalOpen"
+      :usuario="usuario || {}"
+      role-fallback="Sem permissao"
+      @perfil-atualizado="atualizarUsuarioLocal"
+      @conta-excluida="aoExcluirConta"
+    />
   </div>
 </template>
 
 <script>
+import PerfilUsuarioModal from '@/components/shared/PerfilUsuarioModal.vue'
+
 export default {
   name: 'NavBarUse',
+  components: {
+    PerfilUsuarioModal
+  },
   data() {
     return {
-      usuario: null
+      usuario: null,
+      isPerfilModalOpen: false
     }
   },
   computed: {
@@ -47,6 +69,18 @@ export default {
     try {
       this.usuario = JSON.parse(localStorage.getItem('usuario') || 'null')
     } catch {
+      this.usuario = null
+    }
+  },
+  methods: {
+    abrirModalPerfil() {
+      this.isPerfilModalOpen = true
+    },
+    atualizarUsuarioLocal(usuarioAtualizado) {
+      this.usuario = usuarioAtualizado || this.usuario
+    },
+    aoExcluirConta() {
+      this.isPerfilModalOpen = false
       this.usuario = null
     }
   }
@@ -78,6 +112,19 @@ export default {
   box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
   backdrop-filter: blur(14px);
   box-sizing: border-box;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.navbar-user-shell:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.12);
+}
+
+.navbar-user-shell:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+  border-color: rgba(37, 99, 235, 0.7);
 }
 
 .foto {

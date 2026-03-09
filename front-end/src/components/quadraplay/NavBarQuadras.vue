@@ -10,9 +10,11 @@
           aria-label="Abrir menu lateral"
           @click="toggleSidebar"
         >
-          <span :class="{ open: isMenuOpen }"></span>
-          <span :class="{ open: isMenuOpen }"></span>
-          <span :class="{ open: isMenuOpen }"></span>
+          <span class="hamburger-bars" aria-hidden="true">
+            <span class="hamburger-bar" :class="{ open: isMenuOpen }"></span>
+            <span class="hamburger-bar" :class="{ open: isMenuOpen }"></span>
+            <span class="hamburger-bar" :class="{ open: isMenuOpen }"></span>
+          </span>
         </button>
 
         <div class="logo-container">
@@ -20,7 +22,7 @@
             <img src="@/assets/logo.png" alt="QuadraPlay" class="logo-img" />
           </div>
           <div class="logo-copy">
-            <span class="logo-text">QuadraPlay</span>
+            <span class="logo-text">Campeonatos</span>
           </div>
         </div>
       </div>
@@ -35,8 +37,12 @@
 </template>
 
 <script>
+import { useCampeonatoStore } from '@/storecampeonato'
+
 const SIDEBAR_TOGGLE_EVENT = 'quadraplay:toggle-sidebar'
 const SIDEBAR_STATE_EVENT = 'quadraplay:sidebar-state'
+const ROTAS_CAMPEONATO = ['Detalhar_Campeonatos', 'gerenciar_partida', 'Partida', 'Classificacao', 'gerenciar_equipes']
+const STATUS_ENCERRADOS = ['FINALIZADA', 'FINALIZADO', 'CANCELADA', 'CANCELADO', 'DELETADA', 'DELETADO']
 
 export default {
   name: 'NavbarQuadra',
@@ -64,9 +70,26 @@ export default {
   },
 
   computed: {
+    campeonatoAtivoValido() {
+      if (!ROTAS_CAMPEONATO.includes(this.$route?.name)) return null
+
+      const routeId = Number(this.$route?.query?.id || 0)
+      if (!routeId) return null
+
+      const store = useCampeonatoStore()
+      const campeonatoStore = store.campeonatoAtivo
+      const storeId = Number(campeonatoStore?.id || 0)
+
+      if (!storeId || storeId !== routeId) return null
+      return campeonatoStore
+    },
     statusThemeClass() {
-      if (this.partidaStatus === 'EM_ANDAMENTO') return 'status-andamento'
-      if (this.partidaStatus === 'FINALIZADA') return 'status-finalizada'
+      const statusPartida = String(this.partidaStatus || '').toUpperCase()
+      if (statusPartida === 'EM_ANDAMENTO') return 'status-andamento'
+      if (statusPartida === 'FINALIZADA' || statusPartida === 'FINALIZADO') return 'status-finalizada'
+
+      const statusCampeonato = String(this.campeonatoAtivoValido?.status || '').toUpperCase()
+      if (STATUS_ENCERRADOS.includes(statusCampeonato)) return 'status-finalizada'
       return ''
     }
   },
@@ -225,10 +248,10 @@ export default {
   display: none;
   width: 40px;
   height: 40px;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 8px;
   padding: 0;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 14px;
@@ -242,7 +265,15 @@ export default {
   background: rgba(255, 255, 255, 0.12);
 }
 
-.hamburger span {
+.hamburger-bars {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.hamburger .hamburger-bar {
   width: 18px;
   height: 2px;
   background-color: #fff;
@@ -264,15 +295,15 @@ export default {
   background: rgba(255, 255, 255, 0.14);
 }
 
-.hamburger span.open:nth-child(1) {
+.hamburger-bars .hamburger-bar.open:nth-child(1) {
   transform: translateY(6px) rotate(45deg);
 }
 
-.hamburger span.open:nth-child(2) {
+.hamburger-bars .hamburger-bar.open:nth-child(2) {
   opacity: 0;
 }
 
-.hamburger span.open:nth-child(3) {
+.hamburger-bars .hamburger-bar.open:nth-child(3) {
   transform: translateY(-6px) rotate(-45deg);
 }
 
@@ -356,6 +387,10 @@ export default {
 
   .hamburger {
     display: inline-flex;
+    width: 40px;
+    min-height: 38px;
+    height: 38px;
+    padding: 0;
     flex: 0 0 auto;
   }
 

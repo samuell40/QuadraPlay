@@ -114,7 +114,7 @@
                                 <div v-for="j in lista" :key="j.id" class="card-jogador">
                                     <img :src="j.foto" />
                                     <div class="nome-jogador">
-                                        <span v-if="temNumeroJogador(j.numero)" class="numero-jogador">#{{ j.numero }}</span>
+                                        <span v-if="temNumeroJogador(j.numero)" class="numero-jogador">{{ j.numero }}</span>
                                         <span>{{ formatarTextoCapitalizado(j.nome) }}</span>
                                     </div>
                                 </div>
@@ -132,18 +132,20 @@
                 </div>
             </div>
         </div>
+        <Footer />
     </div>
 </template>
 
 <script>
 import NavBarHome from '@/components/NavBarHome.vue'
+import Footer from '@/components/Footer.vue'
 import LoadingState from '@/components/loading/LoadingState.vue'
 import api from '@/axios'
 import { obterFotoTime } from '@/utils/timeImagem'
 
 export default {
     name: 'TimesHomeView',
-    components: { NavBarHome, LoadingState },
+    components: { NavBarHome, Footer, LoadingState },
 
     data() {
         return {
@@ -280,7 +282,6 @@ a {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    padding-bottom: 40px;
 }
 
 .conteudo {
@@ -720,13 +721,13 @@ a {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 34px;
-    padding: 2px 8px;
+    min-width: 38px;
+    padding: 3px 10px;
     border-radius: 999px;
     border: 1px solid #bfdbfe;
     background: #dbeafe;
     color: #1d4ed8;
-    font-size: 12px;
+    font-size: 15px;
     font-weight: 700;
     line-height: 1;
 }

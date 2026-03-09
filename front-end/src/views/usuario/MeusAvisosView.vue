@@ -93,7 +93,8 @@
 
                   <div class="card-footer">
                     <span class="footer-label">{{ aviso.fixado ? 'Fixado para destaque' : 'Aviso geral da plataforma' }}</span>
-                    <button v-if="abaAtiva !== 'lidos'" class="btn-ler" @click="marcarComoLido(aviso)">
+                    <button v-if="abaAtiva !== 'lidos' && podeMarcarComoLido(aviso)" class="btn-ler"
+                      @click="marcarComoLido(aviso)">
                       <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M20 6 9 17l-5-5" />
                       </svg>
@@ -205,6 +206,23 @@ export default {
     verificarSeLi(aviso) {
       if (!this.usuarioId || !aviso.leituras) return false;
       return aviso.leituras.some((leitura) => String(leitura.usuarioId) === String(this.usuarioId));
+    },
+    ehCriadorDoAviso(aviso) {
+      const usuarioLogadoId = Number(this.usuarioId);
+      if (!usuarioLogadoId) return false;
+
+      const autorAvisoId = Number(
+        aviso?.autorId ??
+        aviso?.autor?.id ??
+        aviso?.usuarioId ??
+        aviso?.usuario?.id
+      );
+
+      if (!Number.isFinite(autorAvisoId) || autorAvisoId <= 0) return false;
+      return autorAvisoId === usuarioLogadoId;
+    },
+    podeMarcarComoLido(aviso) {
+      return !this.ehCriadorDoAviso(aviso);
     },
     getTodosPorTipo(tipo) {
       if (tipo === "importantes") return this.listaImportantes;

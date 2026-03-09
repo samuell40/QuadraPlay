@@ -1136,8 +1136,8 @@ a {
 @media (max-width: 768px) {
   .conteudo {
     margin-left: 0;
-    padding: 16px;
-    padding-top: calc(82px + env(safe-area-inset-top));
+    margin-top: 34px;
+    padding: 14px;
   }
 
   .conteudo.collapsed {
@@ -1150,7 +1150,7 @@ a {
     align-items: start;
     justify-content: initial;
     gap: 10px;
-    margin-top: 8px;
+    margin-top: 0;
     margin-bottom: 12px;
   }
 

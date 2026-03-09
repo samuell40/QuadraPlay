@@ -16,6 +16,19 @@
               class="btn-top-action"
               @click="abrirModalCadastro"
             >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                fill="currentColor"
+                class="btn-top-action-icon bi bi-plus-circle-fill"
+                viewBox="0 0 16 16"
+                aria-hidden="true"
+              >
+                <path
+                  d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0M8.5 4.5a.5.5 0 0 0-1 0v3h-3a.5.5 0 0 0 0 1h3v3a.5.5 0 0 0 1 0v-3h3a.5.5 0 0 0 0-1h-3z"
+                />
+              </svg>
               <span class="btn-label-desktop">Adicionar quadra</span>
               <span class="btn-label-mobile">Adicionar</span>
             </button>
@@ -697,6 +710,10 @@ export default {
 
 .btn-top-action,
 .btn-confirmar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   min-height: 44px;
   padding: 0 16px;
   border-radius: 999px;
@@ -710,6 +727,10 @@ export default {
 
 .btn-label-mobile {
   display: none;
+}
+
+.btn-top-action-icon {
+  flex: 0 0 auto;
 }
 
 .overview-grid {

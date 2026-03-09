@@ -5,6 +5,18 @@ import { bumpDataVersion } from './services/dataVersion';
 
 const isDev = import.meta.env.DEV;
 const METODOS_MUTACAO = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+const API_BASE_URL_PROD = 'https://quadra-livre-backend.onrender.com';
+
+function resolverBaseUrlApi() {
+  const baseUrlEnv = String(
+    process.env.VUE_APP_API_BASE_URL
+    || process.env.VUE_APP_API_URL
+    || ''
+  ).trim();
+  if (baseUrlEnv) return baseUrlEnv.replace(/\/+$/, '');
+
+  return API_BASE_URL_PROD;
+}
 
 function deveInvalidarDados(config = {}) {
   if (!config || config.skipDataVersionBump) return false;
@@ -14,7 +26,7 @@ function deveInvalidarDados(config = {}) {
 }
 
 const api = axios.create({
-  baseURL: 'https://quadra-livre-backend.onrender.com',
+  baseURL: resolverBaseUrlApi()
 });
 
 api.interceptors.request.use(
@@ -66,7 +78,7 @@ api.interceptors.response.use(
 
       if (silent) {
         if (isDev) {
-          console.warn('Requisicao silenciosa falhou:', status, msg);
+          console.warn('Requisicao falhou:', status, msg);
         }
         return Promise.reject(error);
       }
@@ -100,7 +112,7 @@ api.interceptors.response.use(
     } else {
       if (silent) {
         if (isDev) {
-          console.warn('Requisicao silenciosa sem resposta:', error.message);
+          console.warn('Requisicao sem resposta:', error.message);
         }
         return Promise.reject(error);
       }

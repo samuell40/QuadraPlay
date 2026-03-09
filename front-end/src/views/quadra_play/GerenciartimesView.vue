@@ -12,6 +12,11 @@
               <h1 class="title">Gerenciar Times</h1>
 
               <button class="btn-add" @click="abrirModalAdicionarTime">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                  class="bi bi-plus-circle-fill btn-add-icon" viewBox="0 0 16 16" aria-hidden="true">
+                  <path
+                    d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0M8.5 4.5a.5.5 0 0 0-1 0v3h-3a.5.5 0 0 0 0 1h3v3a.5.5 0 0 0 1 0v-3h3a.5.5 0 0 0 0-1h-3z" />
+                </svg>
                 Adicionar time
               </button>
             </div>
@@ -104,7 +109,15 @@
             </div>
 
             <div v-else class="estado-vazio">
-              Nenhum time encontrado para esta modalidade.
+              <span>Nenhum time encontrado para esta modalidade.</span>
+              <button class="btn-add btn-add-vazio" @click="abrirModalAdicionarTime">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                  class="bi bi-plus-circle-fill btn-add-icon" viewBox="0 0 16 16" aria-hidden="true">
+                  <path
+                    d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0M8.5 4.5a.5.5 0 0 0-1 0v3h-3a.5.5 0 0 0 0 1h3v3a.5.5 0 0 0 1 0v-3h3a.5.5 0 0 0 0-1h-3z" />
+                </svg>
+                Adicionar time
+              </button>
             </div>
           </div>
         </div>
@@ -434,12 +447,20 @@ a {
   white-space: nowrap;
   box-shadow: 0 14px 26px rgba(59, 130, 246, 0.22);
   transition: transform 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .btn-add:hover {
   background-color: #2563eb;
   transform: translateY(-1px);
   box-shadow: 0 16px 28px rgba(59, 130, 246, 0.28);
+}
+
+.btn-add-icon {
+  flex: 0 0 auto;
 }
 
 .painel-card {
@@ -681,6 +702,14 @@ a {
   color: #64748b;
   text-align: center;
   font-size: 15px;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.btn-add-vazio {
+  min-height: 38px;
+  padding: 0 14px;
+  box-shadow: none;
 }
 
 .loader-container-centralizado {

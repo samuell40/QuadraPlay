@@ -81,7 +81,20 @@
               </button>
 
               <button v-if="podePostar" type="button" @click="abrirModal" class="btn-padrao btn-primario">
-                + Novo aviso
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  fill="currentColor"
+                  class="icon-mini bi bi-plus-circle-fill"
+                  viewBox="0 0 16 16"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0M8.5 4.5a.5.5 0 0 0-1 0v3h-3a.5.5 0 0 0 0 1h3v3a.5.5 0 0 0 1 0v-3h3a.5.5 0 0 0 0-1h-3z"
+                  />
+                </svg>
+                Novo aviso
               </button>
             </div>
           </div>
@@ -113,7 +126,7 @@
                 <span class="aviso_autor">Autor: {{ aviso.autor?.nome }}</span>
 
                 <div class="aviso_actions_wrapper">
-                  <button class="btn-ler" @click="marcarComoLido(aviso)">
+                  <button v-if="podeMarcarComoLido(aviso)" class="btn-ler" @click="marcarComoLido(aviso)">
                     <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
                       stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"
                       aria-hidden="true">
@@ -309,7 +322,15 @@
             </div>
 
             <div class="lista_avisos lista_avisos_historico">
-              <div v-if="listaLidosFiltrada.length === 0" class="sem-avisos sem-avisos-historico">
+              <div v-if="loadingHistoricoAvisos" class="historico-loading-wrap">
+                <LoadingState
+                  size="compact"
+                  title="Carregando avisos lidos"
+                  description="Buscando o histórico para aplicar os filtros."
+                />
+              </div>
+
+              <div v-else-if="listaLidosFiltrada.length === 0" class="sem-avisos sem-avisos-historico">
                 <p class="sem-avisos-title">Nenhum aviso encontrado.</p>
                 <p class="sem-avisos-copy">Não há avisos lidos para o filtro {{ filtroAno }}.</p>
               </div>
@@ -424,6 +445,7 @@ export default {
       listaQuadras: [],
       exibirModalAviso: false,
       exibirModalHistorico: false,
+      loadingHistoricoAvisos: false,
       filtroAno: new Date().getFullYear(),
       filtroOrigem: 'todos',
       enviando: false,
@@ -833,6 +855,25 @@ export default {
       return aviso.leituras.some(leitura => String(leitura.usuarioId) === String(this.usuarioLogado.id));
     },
 
+    ehCriadorDoAviso(aviso) {
+      const usuarioLogadoId = Number(this.usuarioLogado?.id);
+      if (!usuarioLogadoId) return false;
+
+      const autorAvisoId = Number(
+        aviso?.autorId ??
+        aviso?.autor?.id ??
+        aviso?.usuarioId ??
+        aviso?.usuario?.id
+      );
+
+      if (!Number.isFinite(autorAvisoId) || autorAvisoId <= 0) return false;
+      return autorAvisoId === usuarioLogadoId;
+    },
+
+    podeMarcarComoLido(aviso) {
+      return !this.ehCriadorDoAviso(aviso);
+    },
+
     abrirModal() {
       if (this.usuarioLogado.permissaoId === 2 && this.usuarioLogado.quadraId) {
         this.novoAviso.quadraId = this.usuarioLogado.quadraId;
@@ -842,8 +883,14 @@ export default {
       this.exibirModalAviso = true;
     },
 
-    abrirHistorico() {
+    async abrirHistorico() {
       this.exibirModalHistorico = true;
+      this.loadingHistoricoAvisos = true;
+      try {
+        await this.carregarAvisos();
+      } finally {
+        this.loadingHistoricoAvisos = false;
+      }
     },
 
     async carregarQuadrasParaSelect() {
@@ -1928,6 +1975,10 @@ export default {
 .sem-avisos-historico {
   margin-top: 0;
   min-height: 140px;
+}
+
+.historico-loading-wrap {
+  min-height: 180px;
 }
 
 @keyframes spin {

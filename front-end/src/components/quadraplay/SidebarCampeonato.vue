@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="quadraplay-sidebar-shell">
     <transition name="sidebar-fade">
       <div
@@ -65,47 +65,85 @@
           <span v-if="!isDesktopCollapsed" class="nav-text">Todos campeonatos</span>
         </router-link>
 
-        <router-link
-          :to="campeonatoRoute('Detalhar_Campeonatos')"
-          class="menu-link"
-          :class="{ active: isRouteName('Detalhar_Campeonatos') }"
-          @click="handleNavClick"
-        >
-          <span class="nav-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24">
-              <path d="M5 5h6v6H5zM13 5h6v4h-6zM13 11h6v8h-6zM5 13h6v6H5z" />
-            </svg>
-          </span>
-          <span v-if="!isDesktopCollapsed" class="nav-text">Visao geral</span>
-        </router-link>
+        <template v-if="campeonatoPossuiPartidas">
+          <div class="menu-group" :class="{ active: isPartidasGroupActive, compact: isDesktopCollapsed }">
+            <router-link
+              :to="campeonatoRoute('gerenciar_partida')"
+              class="menu-link"
+              :class="{ active: isPartidasGroupActive }"
+              @click="handleNavClick"
+            >
+              <span class="nav-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M8 3v3M16 3v3M4 9h16M6 5h12a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" />
+                  <path d="M9 13h6M9 17h4" />
+                </svg>
+              </span>
+              <span v-if="!isDesktopCollapsed" class="nav-text">Partidas</span>
+            </router-link>
 
-        <div class="menu-group" :class="{ active: isPartidasGroupActive, compact: isDesktopCollapsed }">
+            <router-link
+              v-if="showPartidaSubmenu"
+              :to="campeonatoRoute('Partida')"
+              class="submenu-link"
+              :class="{ active: isRouteName('Partida') }"
+              @click="handleNavClick"
+            >
+              <span class="submenu-dot" aria-hidden="true"></span>
+              <span class="submenu-text">Controle da partida</span>
+            </router-link>
+          </div>
+        </template>
+
+        <template v-else>
           <router-link
-            :to="campeonatoRoute('gerenciar_partida')"
+            :to="campeonatoRoute('Detalhar_Campeonatos')"
             class="menu-link"
-            :class="{ active: isPartidasGroupActive }"
+            :class="{ active: isRouteName('Detalhar_Campeonatos') }"
             @click="handleNavClick"
           >
             <span class="nav-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <path d="M8 3v3M16 3v3M4 9h16M6 5h12a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" />
-                <path d="M9 13h6M9 17h4" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 16 16"
+                class="filled-icon bi bi-gear-fill"
+              >
+                <path
+                  d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"
+                />
               </svg>
             </span>
-            <span v-if="!isDesktopCollapsed" class="nav-text">Partidas</span>
+            <span v-if="!isDesktopCollapsed" class="nav-text">Configuracoes</span>
           </router-link>
 
-          <router-link
-            v-if="showPartidaSubmenu"
-            :to="campeonatoRoute('Partida')"
-            class="submenu-link"
-            :class="{ active: isRouteName('Partida') }"
-            @click="handleNavClick"
-          >
-            <span class="submenu-dot" aria-hidden="true"></span>
-            <span class="submenu-text">Controle da partida</span>
-          </router-link>
-        </div>
+          <div class="menu-group" :class="{ active: isPartidasGroupActive, compact: isDesktopCollapsed }">
+            <router-link
+              :to="campeonatoRoute('gerenciar_partida')"
+              class="menu-link"
+              :class="{ active: isPartidasGroupActive }"
+              @click="handleNavClick"
+            >
+              <span class="nav-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M8 3v3M16 3v3M4 9h16M6 5h12a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" />
+                  <path d="M9 13h6M9 17h4" />
+                </svg>
+              </span>
+              <span v-if="!isDesktopCollapsed" class="nav-text">Partidas</span>
+            </router-link>
+
+            <router-link
+              v-if="showPartidaSubmenu"
+              :to="campeonatoRoute('Partida')"
+              class="submenu-link"
+              :class="{ active: isRouteName('Partida') }"
+              @click="handleNavClick"
+            >
+              <span class="submenu-dot" aria-hidden="true"></span>
+              <span class="submenu-text">Controle da partida</span>
+            </router-link>
+          </div>
+        </template>
 
         <router-link
           v-if="!isPermissao4"
@@ -124,9 +162,9 @@
 
         <router-link
           v-if="!isPermissao4"
-          :to="{ name: 'gerenciar_times' }"
+          :to="campeonatoRoute('gerenciar_equipes')"
           class="menu-link"
-          :class="{ active: isRouteName('gerenciar_times') }"
+          :class="{ active: isRouteName('gerenciar_equipes') }"
           @click="handleNavClick"
         >
           <span class="nav-icon" aria-hidden="true">
@@ -136,10 +174,37 @@
           </span>
           <span v-if="!isDesktopCollapsed" class="nav-text">Gerenciar equipes</span>
         </router-link>
+
+        <router-link
+          v-if="campeonatoPossuiPartidas"
+          :to="campeonatoRoute('Detalhar_Campeonatos')"
+          class="menu-link"
+          :class="{ active: isRouteName('Detalhar_Campeonatos') }"
+          @click="handleNavClick"
+        >
+          <span class="nav-icon" aria-hidden="true">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 16 16"
+              class="filled-icon bi bi-gear-fill"
+            >
+              <path
+                d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"
+              />
+            </svg>
+          </span>
+          <span v-if="!isDesktopCollapsed" class="nav-text">Configuracoes</span>
+        </router-link>
       </nav>
 
       <div class="sidebar-footer">
-        <div class="sidebar-user" :class="{ compact: isDesktopCollapsed }">
+        <button
+          type="button"
+          class="sidebar-user sidebar-user-button"
+          :class="{ compact: isDesktopCollapsed }"
+          aria-label="Editar perfil"
+          @click="abrirModalPerfil"
+        >
           <div class="user-avatar">
             <img v-if="usuario?.foto" :src="usuario.foto" :alt="`Foto de ${usuario?.nome || 'usuario'}`" />
             <span v-else>{{ userInitial }}</span>
@@ -149,7 +214,7 @@
             <div class="user-name">{{ usuario?.nome || 'Usuario QuadraPlay' }}</div>
             <div class="user-role">{{ usuario?.permissao?.descricao || 'Equipe do campeonato' }}</div>
           </div>
-        </div>
+        </button>
 
         <button type="button" class="logout-button" @click="logout">
           <span class="nav-icon" aria-hidden="true">
@@ -163,19 +228,32 @@
         </button>
       </div>
     </aside>
+
+    <PerfilUsuarioModal
+      v-model="isPerfilModalOpen"
+      :usuario="usuario || {}"
+      role-fallback="Equipe do campeonato"
+      @perfil-atualizado="atualizarUsuarioLocal"
+      @conta-excluida="aoExcluirConta"
+    />
   </div>
 </template>
 
 <script>
 import router from "@/router";
 import { useCampeonatoStore } from "@/storecampeonato";
+import PerfilUsuarioModal from "@/components/shared/PerfilUsuarioModal.vue";
 
 const SIDEBAR_COLLAPSED_KEY = "sidebar_collapsed";
 const SIDEBAR_TOGGLE_EVENT = "quadraplay:toggle-sidebar";
 const SIDEBAR_STATE_EVENT = "quadraplay:sidebar-state";
+const STATUS_ENCERRADOS = ["FINALIZADA", "FINALIZADO", "CANCELADA", "CANCELADO", "DELETADA", "DELETADO"];
 
 export default {
   name: "SidebarCampeonato",
+  components: {
+    PerfilUsuarioModal,
+  },
   emits: ["sidebar-toggle"],
   props: {
     partidaStatus: {
@@ -191,26 +269,46 @@ export default {
       isMobile,
       collapsed: false,
       sidebarVisible: !isMobile,
+      isPerfilModalOpen: false,
     };
   },
   computed: {
     statusThemeClass() {
-      if (this.partidaStatus === "EM_ANDAMENTO") return "status-andamento";
-      if (this.partidaStatus === "FINALIZADA") return "status-finalizada";
+      const statusPartida = String(this.partidaStatus || "").toUpperCase();
+      if (statusPartida === "EM_ANDAMENTO") return "status-andamento";
+      if (statusPartida === "FINALIZADA" || statusPartida === "FINALIZADO") return "status-finalizada";
+
+      const statusCampeonato = String(this.campeonatoAtivoValido?.status || "").toUpperCase();
+      if (STATUS_ENCERRADOS.includes(statusCampeonato)) return "status-finalizada";
+
       return "";
+    },
+    campeonatoAtivoValido() {
+      const store = useCampeonatoStore();
+      const campeonatoStore = store.campeonatoAtivo;
+      if (!campeonatoStore) return null;
+
+      const routeId = Number(this.$route.query.id || 0);
+      const storeId = Number(campeonatoStore.id || 0);
+      if (routeId && storeId && routeId !== storeId) return null;
+
+      return campeonatoStore;
     },
     isPermissao4() {
       return this.usuario?.permissaoId === 4;
     },
     campeonatoId() {
-      const store = useCampeonatoStore();
-      return store.campeonatoAtivo?.id || this.$route.query.id || null;
+      return this.campeonatoAtivoValido?.id || this.$route.query.id || null;
     },
     isDesktopCollapsed() {
       return !this.isMobile && this.collapsed;
     },
     isPartidasGroupActive() {
       return ["gerenciar_partida", "Partida"].includes(this.$route.name);
+    },
+    campeonatoPossuiPartidas() {
+      const partidas = this.campeonatoAtivoValido?.partidas;
+      return Array.isArray(partidas) && partidas.length > 0;
     },
     showPartidaSubmenu() {
       return !this.isDesktopCollapsed && this.$route.name === "Partida";
@@ -305,7 +403,18 @@ export default {
     handleNavClick() {
       if (this.isMobile) this.closeSidebar();
     },
+    abrirModalPerfil() {
+      this.isPerfilModalOpen = true;
+    },
+    atualizarUsuarioLocal(usuarioAtualizado) {
+      this.usuario = usuarioAtualizado || this.usuario;
+    },
+    aoExcluirConta() {
+      this.isPerfilModalOpen = false;
+      if (this.isMobile) this.closeSidebar();
+    },
     logout() {
+      this.isPerfilModalOpen = false;
       localStorage.removeItem("token");
       localStorage.removeItem("usuario");
       localStorage.removeItem("quadraPlayLoginAtivo");
@@ -554,8 +663,10 @@ export default {
   display: flex;
   align-items: center;
   gap: 10px;
+  width: calc(100% - 14px);
+  margin-left: 14px;
   min-height: 42px;
-  padding: 10px 12px 10px 14px;
+  padding: 10px 12px 10px 16px;
   border: 1px solid transparent;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.04);
@@ -592,11 +703,26 @@ export default {
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
 .sidebar-user.compact {
   justify-content: center;
   padding-inline: 0;
+}
+
+.sidebar-user-button {
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.sidebar-user-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.16);
+  transform: translateY(-1px);
 }
 
 .user-avatar {
@@ -646,7 +772,8 @@ export default {
 .logout-button:focus-visible,
 .menu-link:focus-visible,
 .submenu-link:focus-visible,
-.icon-button:focus-visible {
+.icon-button:focus-visible,
+.sidebar-user-button:focus-visible {
   outline: 2px solid rgba(255, 255, 255, 0.7);
   outline-offset: 2px;
 }
@@ -699,5 +826,11 @@ export default {
     padding-left: 0;
     border-left: 0;
   }
+
+  .submenu-link {
+    width: calc(100% - 18px);
+    margin-left: 18px;
+  }
 }
 </style>
+

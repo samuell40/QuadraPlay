@@ -3,13 +3,22 @@
     <NavBarQuadras />
     <SidebarCampeonato @sidebar-toggle="sidebarCollapsed = $event" />
 
-    <div class="conteudo" :class="{ collapsed: sidebarCollapsed }">
+    <div class="conteudo" :class="{ collapsed: sidebarCollapsed, 'campeonato-finalizado': isCampeonatoEncerrado }">
       <div class="header">
         <div class="header-copy">
           <div class="header-top">
             <h1 class="title">Gerenciar Partidas</h1>
 
-            <button class="btn-add-partida-topo btn-add-aartida-header" @click="abrirModalTipo">
+            <button
+              v-if="!isCampeonatoEncerrado"
+              class="btn-add-partida-topo btn-add-aartida-header"
+              @click="abrirModalTipo"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                class="bi bi-plus-circle-fill btn-add-partida-icon" viewBox="0 0 16 16" aria-hidden="true">
+                <path
+                  d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0M8.5 4.5a.5.5 0 0 0-1 0v3h-3a.5.5 0 0 0 0 1h3v3a.5.5 0 0 0 1 0v-3h3a.5.5 0 0 0 0-1h-3z" />
+              </svg>
               <span class="btn-add-partida-desktop">Adicionar</span>
               <span class="btn-add-partida-mobile">Adicionar</span>
             </button>
@@ -21,59 +30,67 @@
         </div>
       </div>
 
-      <div class="painel-card filtros-wrapper">
-        <div class="section-head filtros-head">
-          <div>
-            <span class="section-kicker">Navegacao</span>
-            <h2>Fase e rodada</h2>
-            <a>Atualize os filtros para visualizar, criar e gerenciar as partidas da rodada ativa.</a>
-          </div>
-        </div>
-
-        <div class="filtros-topo">
-          <div class="filtro-item">
-            <label for="fase-select" class="filtro-titulo">Fase</label>
-            <select id="fase-select" v-model="faseSelecionada" @change="onFaseChange">
-              <option disabled value="">Selecione a Fase</option>
-              <option v-for="fase in fases" :key="fase.id" :value="fase.id">
-                {{ fase.nome }}
-              </option>
-            </select>
-          </div>
-
-          <div class="filtro-item">
-            <label for="rodada-select" class="filtro-titulo">Rodada</label>
-            <select id="rodada-select" v-model="rodadaSelecionada" @change="onRodadaChange">
-              <option disabled value="">Selecione a Rodada</option>
-              <option v-for="rodada in rodadas" :key="rodada.id" :value="rodada.id">
-                {{ rodada.nome }}
-              </option>
-            </select>
-          </div>
-        </div>
+      <div v-if="isLoading" class="loader-container-centralizado">
+        <LoadingState
+          :theme="isCampeonatoEncerrado ? 'danger' : 'default'"
+          title="Carregando campeonato"
+          description="Buscando fases, rodadas e partidas para gerenciamento."
+        />
+        <span class="loader-copy">Carregando informações do campeonato.</span>
       </div>
 
-      <ModalEscolhaTipo v-model="mostrarModalTipo" :campeonato-id="campeonatoSelecionado" @faseCriada="adicionarFase"
-        @rodadaCriada="adicionarRodada" @partidaCriada="onPartidaCriada" />
+      <template v-else>
+        <div class="painel-card filtros-wrapper">
+          <div class="section-head filtros-head">
+            <div>
+              <span class="section-kicker">Navegacao</span>
+              <h2>Fase e rodada</h2>
+              <a>Atualize os filtros para visualizar, criar e gerenciar as partidas da rodada ativa.</a>
+            </div>
+          </div>
 
-      <div class="painel-card partidas-wrapper">
-        <div class="section-head">
-          <div>
-            <span class="section-kicker">Partidas</span>
-            <h2>Partidas cadastradas</h2>
-            <a>Edite status, acompanhe o placar e acesse cada partida conforme a rodada selecionada.</a>
+          <div class="filtros-topo">
+            <div class="filtro-item">
+              <label for="fase-select" class="filtro-titulo">Fase</label>
+              <select id="fase-select" v-model="faseSelecionada" @change="onFaseChange">
+                <option disabled value="">Selecione a Fase</option>
+                <option v-for="fase in fases" :key="fase.id" :value="fase.id">
+                  {{ fase.nome }}
+                </option>
+              </select>
+            </div>
+
+            <div class="filtro-item">
+              <label for="rodada-select" class="filtro-titulo">Rodada</label>
+              <select id="rodada-select" v-model="rodadaSelecionada" @change="onRodadaChange">
+                <option disabled value="">Selecione a Rodada</option>
+                <option v-for="rodada in rodadas" :key="rodada.id" :value="rodada.id">
+                  {{ rodada.nome }}
+                </option>
+              </select>
+            </div>
           </div>
         </div>
 
-          <div v-if="isLoading || isLoadingPartidas" class="partidas-loading">
-            <LoadingState
-              size="compact"
-              title="Carregando partidas"
-              description="Buscando confrontos, status e placares da rodada selecionada."
-            />
+        <div class="painel-card partidas-wrapper">
+          <div class="section-head">
+            <div>
+              <span class="section-kicker">Partidas</span>
+              <h2>Partidas cadastradas</h2>
+              <a>Edite status, acompanhe o placar e acesse cada partida conforme a rodada selecionada.</a>
+            </div>
           </div>
 
-          <ul v-else-if="partidasValidas.length" class="lista-partidas">
+            <div v-if="isLoading || isLoadingPartidas" class="partidas-loading">
+              <LoadingState
+                size="compact"
+                :theme="isCampeonatoEncerrado ? 'danger' : 'default'"
+                title="Carregando partidas"
+                description="Buscando confrontos, status e placares da rodada selecionada."
+              />
+            </div>
+
+            <ul v-else-if="partidasValidas.length" class="lista-partidas">
             <li v-for="partida in partidasValidas" :key="partida.id" class="card-partida"
               :class="classeStatusPartida(partida)">
               <div
@@ -170,12 +187,17 @@
             </li>
           </ul>
 
-          <div v-else class="vazio">
-            <button class="btn-add-partida-vazio" @click="abrirModalTipo">
-              Adicionar partida
-            </button>
-          </div>
-      </div>
+            <div v-else class="vazio">
+              <button v-if="!isCampeonatoEncerrado" class="btn-add-partida-vazio" @click="abrirModalTipo">
+                Adicionar partida
+              </button>
+              <span v-else class="vazio-finalizado-copy">Nenhuma partida cadastrada neste campeonato.</span>
+            </div>
+        </div>
+      </template>
+
+      <ModalEscolhaTipo v-model="mostrarModalTipo" :campeonato-id="campeonatoSelecionado" @faseCriada="adicionarFase"
+        @rodadaCriada="adicionarRodada" @partidaCriada="onPartidaCriada" />
 
       <SelecionarJogadores :aberto="mostrarModalJogadores" :jogadoresTime1="jogadoresTime1"
         :jogadoresTime2="jogadoresTime2" :time1Nome="partidaParaEscalacao?.timeA?.nome || 'Time 1'"
@@ -183,16 +205,16 @@
         :salvando="salvandoEscalacaoInicial"
         @fechar="fecharModalJogadores" @confirmar="confirmarJogadoresAntesDeAcessar" />
 
-      <div v-if="mostrarModalStatus" class="modal-overlay" @click.self="fecharModalStatus">
+      <div v-if="mostrarModalStatus" class="modal-overlay" @click.self="!salvandoStatusPartida && fecharModalStatus()">
         <div class="modal-content modal-status" :class="classeVisualStatusModal">
           <div class="modal-header">
             <h2 class="titulo-modal-status">Alterar status da partida</h2>
-            <button type="button" class="btn-close-x" @click="fecharModalStatus">x</button>
+            <button type="button" class="btn-close-x" :disabled="salvandoStatusPartida" @click="fecharModalStatus">x</button>
           </div>
 
           <label class="label-status">Selecione o status</label>
 
-          <select v-model="novoStatus" class="select-status-modal" :class="classeVisualStatusModal">
+          <select v-model="novoStatus" class="select-status-modal" :class="classeVisualStatusModal" :disabled="salvandoStatusPartida">
             <option v-if="statusAtualModal" :value="statusAtualModal" hidden>
               {{ statusLabel(partidaSelecionada || statusAtualModal) || statusAtualModal.replace('_', ' ') }}
             </option>
@@ -209,6 +231,7 @@
                 v-model="dataAdiamento"
                 type="date"
                 :min="dataMinimaAdiamento"
+                :disabled="salvandoStatusPartida"
                 class="input-status-modal"
                 :class="classeVisualStatusModal"
               />
@@ -220,6 +243,7 @@
                 id="hora-adiamento"
                 v-model="horaAdiamento"
                 type="time"
+                :disabled="salvandoStatusPartida"
                 class="input-status-modal"
                 :class="classeVisualStatusModal"
               />
@@ -227,7 +251,12 @@
           </div>
 
           <div class="botoes">
-            <button class="btn-save" @click="confirmarAlteracaoStatus">Salvar</button>
+            <button class="btn-save" :disabled="salvandoStatusPartida" @click="confirmarAlteracaoStatus">
+              <span class="btn-save-content">
+                <span v-if="salvandoStatusPartida" class="btn-save-spinner" aria-hidden="true"></span>
+                <span>{{ salvandoStatusPartida ? 'Salvando...' : 'Salvar' }}</span>
+              </span>
+            </button>
           </div>
         </div>
       </div>
@@ -248,6 +277,7 @@ import {
   obterRotuloStatusPartida,
   obterStatusExibicaoPartida
 } from '@/utils/partidaStatus'
+import { ordenarPartidasPorStatusEDataDesc } from '@/utils/partidaOrdenacao'
 import api from '@/axios'
 import Swal from 'sweetalert2'
 import {
@@ -302,6 +332,7 @@ export default {
       dataAdiamento: '',
       horaAdiamento: '',
       partidaEditandoStatus: null,
+      salvandoStatusPartida: false,
       salvandoEscalacaoInicial: false,
       socket: null,
       socketCampeonatoId: null,
@@ -335,13 +366,14 @@ export default {
       return Number(this.usuarioLogado?.permissaoId) === 4
     },
 
+    isCampeonatoEncerrado() {
+      const status = String(this.campeonato?.status || '').toUpperCase()
+      return ['FINALIZADO', 'FINALIZADA', 'CANCELADO', 'CANCELADA', 'DELETADO', 'DELETADA'].includes(status)
+    },
+
     partidasValidas() {
       const lista = Array.isArray(this.partidas) ? this.partidas.filter(a => a && a.id) : []
-      return lista.sort((a, b) => {
-        const da = new Date(a?.data || a?.createdAt || 0).getTime()
-        const db = new Date(b?.data || b?.createdAt || 0).getTime()
-        return db - da
-      })
+      return ordenarPartidasPorStatusEDataDesc(lista)
     },
 
     regraJogadoresEscalacao() {
@@ -440,6 +472,7 @@ export default {
     },
 
     abrirModalTipo() {
+      if (this.isCampeonatoEncerrado) return
       this.mostrarModalTipo = true
     },
 
@@ -502,7 +535,7 @@ export default {
         nome.includes('futevolei') ||
         (nome.includes('beach') && (nome.includes('tenis') || nome.includes('tennis')))
       ) {
-        return { livre: true, minPorTime: 1 }
+        return { livre: true, minPorTime: 0, opcional: true }
       }
 
       return { porTime: 11, total: 22 }
@@ -763,15 +796,22 @@ export default {
     },
 
     fecharModalStatus() {
+      if (this.salvandoStatusPartida) return
       this.mostrarModalStatus = false
       this.partidaSelecionada = null
       this.novoStatus = ''
       this.statusAtualModal = ''
       this.dataAdiamento = ''
       this.horaAdiamento = ''
+      this.salvandoStatusPartida = false
     },
 
     async confirmarAlteracaoStatus() {
+      if (this.salvandoStatusPartida) return
+
+      let atualizou = false
+      let iniciouSemEscalacao = false
+
       try {
         const partidaSelecionada = this.partidaSelecionada
         const statusAnterior = String(this.statusAtualModal || partidaSelecionada?.status || '').toUpperCase()
@@ -817,6 +857,8 @@ export default {
           payload.data = dataAdiamento
         }
 
+        this.salvandoStatusPartida = true
+
         const { data } = await api.put(`/partidas/${partidaSelecionada.id}/status`, payload)
         const partidaResposta = data?.partida && typeof data.partida === 'object' ? data.partida : data
 
@@ -824,30 +866,36 @@ export default {
           Object.assign(partidaSelecionada, partidaResposta)
         }
 
-        const iniciouSemEscalacao =
+        iniciouSemEscalacao =
           this.novoStatus === 'EM_ANDAMENTO' &&
           this.isStatusPartidaPendente(statusAnterior)
 
-        this.fecharModalStatus()
-
-        if (iniciouSemEscalacao) {
-          Swal.fire({
-            icon: 'success',
-            title: 'Status atualizado',
-            text: 'A partida foi iniciada. A selecao de jogadores e opcional.',
-            timer: 1800,
-            showConfirmButton: false
-          })
-          return
-        }
-
-        Swal.fire({ icon: 'success', title: 'Status atualizado', timer: 1200, showConfirmButton: false })
+        atualizou = true
       } catch (error) {
         this.partidaAcessandoId = null
         console.error(error)
         const mensagem = error?.response?.data?.error || 'Não foi possível alterar o status.'
         return Swal.fire('Erro', mensagem, 'error')
+      } finally {
+        this.salvandoStatusPartida = false
       }
+
+      if (!atualizou) return
+
+      this.fecharModalStatus()
+
+      if (iniciouSemEscalacao) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Status atualizado',
+          text: 'A partida foi iniciada. A selecao de jogadores e opcional.',
+          timer: 1800,
+          showConfirmButton: false
+        })
+        return
+      }
+
+      Swal.fire({ icon: 'success', title: 'Status atualizado', timer: 1200, showConfirmButton: false })
     },
 
     fecharModalJogadores() {
@@ -1141,6 +1189,47 @@ a {
   line-height: 1.6;
 }
 
+.conteudo.campeonato-finalizado .title {
+  color: #b91c1c;
+}
+
+.conteudo.campeonato-finalizado .section-kicker {
+  color: #b91c1c;
+}
+
+.conteudo.campeonato-finalizado .filtro-titulo {
+  color: #b91c1c;
+}
+
+.conteudo.campeonato-finalizado .filtros-wrapper .section-head h2 {
+  color: #991b1b;
+}
+
+.conteudo.campeonato-finalizado .filtros-topo select:hover {
+  border-color: rgba(239, 68, 68, 0.38);
+}
+
+.conteudo.campeonato-finalizado .filtros-topo select:focus {
+  border-color: rgba(185, 28, 28, 0.58);
+  box-shadow: 0 0 0 4px rgba(248, 113, 113, 0.2);
+}
+
+.conteudo.campeonato-finalizado .btn-add-partida-topo,
+.conteudo.campeonato-finalizado .btn-add-partida-vazio,
+.conteudo.campeonato-finalizado .btn-acessar,
+.conteudo.campeonato-finalizado .btn-save {
+  background: linear-gradient(135deg, #b91c1c, #ef4444);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fff;
+  box-shadow: 0 14px 26px rgba(185, 28, 28, 0.22);
+}
+
+.vazio-finalizado-copy {
+  color: #64748b;
+  font-size: 15px;
+  font-weight: 600;
+}
+
 .painel-card {
   border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 28px;
@@ -1194,11 +1283,19 @@ a {
   cursor: pointer;
   box-shadow: 0 14px 26px rgba(59, 130, 246, 0.22);
   transition: transform 0.15s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .btn-add-partida-topo:hover {
   transform: translateY(-1px);
   box-shadow: 0 16px 28px rgba(59, 130, 246, 0.28);
+}
+
+.btn-add-partida-icon {
+  flex: 0 0 auto;
 }
 
 .btn-add-partida-mobile {
@@ -1280,6 +1377,19 @@ a {
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+.loader-container-centralizado {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 0;
+}
+
+.loader-copy {
+  display: none;
 }
 
 .partidas-wrapper {
@@ -1386,25 +1496,25 @@ a {
   box-shadow: 0 14px 30px rgba(15, 23, 42, 0.14);
 }
 
-.status-agendada {
+.status-pill.status-agendada {
   background: rgba(251, 191, 36, 0.18);
   color: #b45309;
   border: 1px solid rgba(251, 191, 36, 0.35);
 }
 
-.status-andamento {
+.status-pill.status-andamento {
   background: rgba(34, 197, 94, 0.14);
   color: #15803d;
   border: 1px solid rgba(34, 197, 94, 0.35);
 }
 
-.status-cancelada {
+.status-pill.status-cancelada {
   background: rgba(239, 68, 68, 0.14);
   color: #b91c1c;
   border: 1px solid rgba(239, 68, 68, 0.30);
 }
 
-.status-finalizada {
+.status-pill.status-finalizada {
   background: rgba(220, 38, 38, 0.12);
   color: #b91c1c;
   border: 1px solid rgba(220, 38, 38, 0.28);
@@ -1443,6 +1553,12 @@ a {
     transform: scale(0.9);
     opacity: 1;
     box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
+}
+
+@keyframes btnSaveSpin {
+  to {
+    transform: rotate(360deg);
   }
 }
 
@@ -1654,6 +1770,30 @@ a {
 
 .btn-save {
   background-color: #3b82f6;
+}
+
+.btn-save:disabled,
+.btn-close-x:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+  transform: none;
+}
+
+.btn-save-content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-save-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.38);
+  border-top-color: #ffffff;
+  animation: btnSaveSpin 0.75s linear infinite;
+  flex: 0 0 14px;
 }
 
 .btn-cancel {

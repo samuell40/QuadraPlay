@@ -3,14 +3,14 @@ import api from '@/axios'
 
 export const EVENTO_CAMPEONATO_ATUALIZADO = 'campeonato:atualizado'
 export const EVENTO_NOTIFICACAO_PARTIDA_AO_VIVO = 'notificacao:partida-ao-vivo'
+const SOCKET_BASE_URL_PROD = 'https://quadra-livre-backend.onrender.com'
 
 let socket = null
 
 function resolverUrlSocket() {
   const baseUrl = String(api?.defaults?.baseURL || '').trim()
   if (baseUrl) return baseUrl.replace(/\/+$/, '')
-  if (typeof window !== 'undefined') return window.location.origin
-  return 'https://quadra-livre-backend.onrender.com'
+  return SOCKET_BASE_URL_PROD
 }
 
 export function obterSocket() {

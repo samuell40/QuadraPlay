@@ -113,7 +113,9 @@ function callbackLoginGoogle(req, res, next) {
         permissaoId: user.permissaoId,
         permissao: user.permissao,
         quadraId: user.quadraId,
-        quadra: user.quadra
+        quadra: user.quadra,
+        jogadorId: user.jogadorId ?? null,
+        jogador: user.jogador || null,
       };
 
       const token = jwt.sign(tokenPayload, config.jwtSecret, { expiresIn: config.JWT_EXPIRATION });

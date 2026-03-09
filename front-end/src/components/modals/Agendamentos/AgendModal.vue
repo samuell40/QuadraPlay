@@ -22,12 +22,23 @@
 
       <div class="modal-body">
 
-        <div class="linha-selects">
-          <div class="campo">
+        <div v-if="modoAgendamento === 'avulso'">
+          <div class="campo mb-3">
+            <label><strong>Tipo de agendamento:</strong></label>
+            <select v-model="tipo" class="form-select">
+              <option disabled value="">Selecione</option>
+              <option value="TREINO">Treino - 24h de antecedência</option>
+              <option value="AMISTOSO">Amistoso - 7 dias de antecedência</option>
+              <option value="EVENTO">Evento - 180 dias de antecedência</option>
+              <option value="OUTRO">Outro - 24h de antecedência</option>
+            </select>
+          </div>
+
+          <div v-if="exigeTimeTreinador" class="campo mb-3">
             <label><strong>Time:</strong></label>
             <div class="select-wrapper">
               <select v-model="timeSelecionado" class="form-select">
-                <option :value="null">(Nenhum, casual)</option>
+                <option disabled :value="null">Selecione um time</option>
                 <option v-for="t in times" :key="t.id" :value="Number(t.id)">
                   {{ t.nome }}
                 </option>
@@ -35,7 +46,7 @@
             </div>
           </div>
 
-          <div class="campo">
+          <div v-if="exigeModalidade" class="campo mb-3">
             <label><strong>Modalidade:</strong></label>
             <div class="select-wrapper">
               <div v-if="isLoadingModalidades" class="loader"></div>
@@ -47,9 +58,7 @@
               </select>
             </div>
           </div>
-        </div>
 
-        <div v-if="modoAgendamento === 'avulso'">
           <div class="linha-selects">
             <div class="campo">
               <label><strong>Data:</strong></label>
@@ -71,15 +80,9 @@
             </div>
           </div>
 
-          <div class="campo mb-3">
-            <label><strong>Tipo de agendamento:</strong></label>
-            <select v-model="tipo" class="form-select">
-              <option disabled value="">Selecione</option>
-              <option value="TREINO">Treino</option>
-              <option value="AMISTOSO">Amistoso</option>
-              <option value="EVENTO">Evento</option>
-              <option value="OUTRO">Outro</option>
-            </select>
+          <div v-if="mostrarAvisoEncaixeHoje" class="alerta-encaixe-hoje">
+            <strong>Atenção:</strong> para hoje, agendamentos por encaixe devem ser solicitados com pelo menos
+            1 hora de antecedência do horário escolhido.
           </div>
 
           <div v-if="diaFechado" class="alerta-fechado">
@@ -93,20 +96,48 @@
           </div>
 
           <div v-else>
+            <label v-if="data && horariosDisponiveis.length === 0"><strong>Horarios Disponiveis:</strong></label>
             <label v-if="horariosDisponiveis.length > 0"><strong>Horários Disponíveis:</strong></label>
-            <div class="horarios-grid">
+            <div v-if="isLoadingHorarios" class="horarios-loading">
+              <span class="loader-horarios" aria-hidden="true"></span>
+              <span>Carregando horarios...</span>
+            </div>
+            <div v-else class="horarios-grid">
               <button v-for="h in horariosDisponiveis" :key="h" :class="{ selecionado: h === hora }"
                 :disabled="horariosIndisponiveis.includes(h)" @click="hora = h" class="btn-horario">
                 {{ h }}
               </button>
             </div>
-            <p v-if="data && horariosDisponiveis.length === 0 && !diaFechado" class="msg-sem-horario">
+            <p v-if="data && horariosDisponiveis.length === 0 && !diaFechado && !isLoadingHorarios" class="msg-sem-horario">
               Não há horários livres para este dia.
             </p>
           </div>
         </div>
 
         <div v-else class="modo-fixo-container">
+          <div v-if="exigeTimeTreinador" class="campo mb-3">
+            <label><strong>Time:</strong></label>
+            <div class="select-wrapper">
+              <select v-model="timeSelecionado" class="form-select">
+                <option disabled :value="null">Selecione um time</option>
+                <option v-for="t in times" :key="t.id" :value="Number(t.id)">
+                  {{ t.nome }}
+                </option>
+              </select>
+            </div>
+          </div>
+          <div v-if="exigeModalidade" class="campo mb-3">
+            <label><strong>Modalidade:</strong></label>
+            <div class="select-wrapper">
+              <div v-if="isLoadingModalidades" class="loader"></div>
+              <select v-else v-model="modalidadeSelecionada" class="form-select">
+                <option disabled :value="null">Selecione</option>
+                <option v-for="m in modalidades" :key="m.id" :value="Number(m.id)">
+                  {{ m.nome }}
+                </option>
+              </select>
+            </div>
+          </div>
           <div class="info-box">
             <p><strong>Treino Fixo:</strong> Selecione até <strong>2 dias</strong> da semana. O sistema agendará
               automaticamente para as próximas 5 semanas.</p>
@@ -215,6 +246,7 @@ export default {
 
       horariosDisponiveis: [],
       horariosIndisponiveis: [],
+      isLoadingHorarios: false,
 
       diasSemanaCompleto: ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'],
       diasFixosSelecionados: [],
@@ -223,20 +255,57 @@ export default {
   },
 
   computed: {
+    podeSelecionarTime() {
+      return [1, 2, 5].includes(Number(this.authStore.usuario?.permissaoId));
+    },
     podeAgendarFixo() {
       const p = this.authStore.usuario?.permissaoId;
       return p === 1 || p === 2 || p === 5;
     },
+    tipoUpper() {
+      return String(this.tipo || '').toUpperCase().trim();
+    },
+    timeSelecionadoObj() {
+      const idTime = Number(this.timeSelecionado);
+      if (!Number.isInteger(idTime) || idTime <= 0) return null;
+      return (Array.isArray(this.times) ? this.times : [])
+        .find((time) => Number(time?.id) === idTime) || null;
+    },
+    exigeTimeTreinador() {
+      if (!this.podeSelecionarTime) return false;
+      if (this.modoAgendamento === 'fixo') return true;
+      return this.tipoUpper === 'TREINO' || this.tipoUpper === 'AMISTOSO';
+    },
+    exigeModalidade() {
+      if (this.podeSelecionarTime) return false;
+      if (this.modoAgendamento === 'fixo') return true;
+      return this.tipoUpper === 'TREINO' || this.tipoUpper === 'AMISTOSO';
+    },
     modalidadePadronizada() {
-      if (!this.modalidadeSelecionada) return ""
-      const m = this.modalidades.find(m => m.id === this.modalidadeSelecionada)
-      return m?.nome
-        ? m.nome.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').trim()
-        : ""
+      let nomeModalidade = "";
+
+      if (this.podeSelecionarTime) {
+        nomeModalidade = this.timeSelecionadoObj?.modalidade?.nome || "";
+      } else if (this.exigeModalidade) {
+        const modalidadeSelecionada = this.modalidades.find(m => Number(m.id) === Number(this.modalidadeSelecionada));
+        nomeModalidade = modalidadeSelecionada?.nome || "";
+      }
+
+      return String(nomeModalidade || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/\p{Diacritic}/gu, '')
+        .trim();
     },
     exibirDuracao() {
+      if (!this.exigeModalidade) return false;
       const modalidadesDuracao = ['volei', 'volei de areia', 'futevolei']
       return modalidadesDuracao.includes(this.modalidadePadronizada)
+    },
+    mostrarAvisoEncaixeHoje() {
+      if (this.modoAgendamento !== 'avulso') return false;
+      if (!this.data) return false;
+      return this.ehDataHoje(this.data);
     },
     diasComFuncionamento() {
       if (!this.gradeConfig || this.gradeConfig.length === 0) {
@@ -249,6 +318,29 @@ export default {
       });
       return Array.from(diasSet);
     }
+  },
+
+  watch: {
+    tipo() {
+      if (this.podeSelecionarTime && !this.exigeTimeTreinador) {
+        this.timeSelecionado = null;
+      }
+      if (!this.exigeModalidade) {
+        this.modalidadeSelecionada = null;
+      }
+    },
+    modoAgendamento() {
+      if (this.podeSelecionarTime && !this.exigeTimeTreinador) {
+        this.timeSelecionado = null;
+      }
+      if (!this.exigeModalidade) {
+        this.modalidadeSelecionada = null;
+      }
+    },
+    timeSelecionado() {
+      if (!this.podeSelecionarTime) return;
+      this.modalidadeSelecionada = this.obterModalidadeIdParaAgendamento();
+    },
   },
 
   async mounted() {
@@ -293,6 +385,22 @@ export default {
   },
 
   methods: {
+    obterTimeIdParaAgendamento() {
+      if (!this.exigeTimeTreinador) return null;
+      const idTime = Number(this.timeSelecionado);
+      return Number.isInteger(idTime) && idTime > 0 ? idTime : null;
+    },
+    obterModalidadeIdParaAgendamento() {
+      if (this.podeSelecionarTime) {
+        const idModalidade = Number(
+          this.timeSelecionadoObj?.modalidadeId || this.timeSelecionadoObj?.modalidade?.id
+        );
+        return Number.isInteger(idModalidade) && idModalidade > 0 ? idModalidade : null;
+      }
+      if (!this.exigeModalidade) return null;
+      const idModalidade = Number(this.modalidadeSelecionada);
+      return Number.isInteger(idModalidade) && idModalidade > 0 ? idModalidade : null;
+    },
     verificarDataPermitida(date) {
       const dia = date.getDay();
       return this.diasComFuncionamento.includes(dia);
@@ -310,6 +418,16 @@ export default {
       if (!dateObj) return null;
       const safeDate = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), 12, 0, 0);
       return safeDate.getDay();
+    },
+    ehDataHoje(dateObj) {
+      if (!dateObj) return false;
+      const dataSelecionada = new Date(dateObj);
+      if (Number.isNaN(dataSelecionada.getTime())) return false;
+
+      const hoje = new Date();
+      return dataSelecionada.getFullYear() === hoje.getFullYear()
+        && dataSelecionada.getMonth() === hoje.getMonth()
+        && dataSelecionada.getDate() === hoje.getDate();
     },
 
     formatDateAPI(date) {
@@ -355,12 +473,16 @@ export default {
     },
 
     async gerarHorariosDisponiveis() {
-      if (!this.data) return
+      if (!this.data) {
+        this.isLoadingHorarios = false;
+        return;
+      }
 
       this.hora = ""
       this.horariosDisponiveis = []
       this.horariosIndisponiveis = []
       this.diaFechado = false;
+      this.isLoadingHorarios = true;
 
       const diaSemana = this.getDiaSemanaSeguro(this.data);
       this.nomeDiaSemanaSelecionado = this.diasSemanaCompleto[diaSemana];
@@ -379,18 +501,19 @@ export default {
           horariosDaQuadra = this.normalizarListaHorarios(slotsDoDia);
         } else {
           this.diaFechado = true;
+          this.isLoadingHorarios = false;
           return;
         }
       }
 
-      this.horariosDisponiveis = this.normalizarListaHorarios(horariosDaQuadra);
+      const horariosBase = this.normalizarListaHorarios(horariosDaQuadra);
 
       try {
         const dataStr = this.formatDateAPI(this.data)
         const [ano, mes, dia] = dataStr.split('-').map(Number);
 
         const { data: agendamentos } = await api.get(
-          `/agendamentos/quadra/${this.quadra.id}/confirmados`,
+          `/agendamentos/quadra/${this.quadra.id}/ocupados`,
           { params: { ano, mes, dia } }
         )
 
@@ -408,11 +531,14 @@ export default {
 
         this.horariosIndisponiveis = Array.from(indisponiveisSet).sort();
 
-        this.horariosDisponiveis = this.horariosDisponiveis.filter(h => !this.horariosIndisponiveis.includes(h));
+        this.horariosDisponiveis = horariosBase.filter(h => !this.horariosIndisponiveis.includes(h));
         this.horariosDisponiveis.sort();
 
       } catch (err) {
         console.error("Erro ao buscar agendamentos:", err)
+        this.horariosDisponiveis = horariosBase;
+      } finally {
+        this.isLoadingHorarios = false;
       }
     },
 
@@ -430,7 +556,8 @@ export default {
     },
 
     validarFormulario() {
-      if (!this.modalidadeSelecionada) return false;
+      if (this.exigeTimeTreinador && !this.obterTimeIdParaAgendamento()) return false;
+      if (this.exigeModalidade && !this.obterModalidadeIdParaAgendamento()) return false;
       if (this.modoAgendamento === 'avulso') {
         if (!this.data || this.diaFechado || !this.hora || !this.tipo) return false;
         if (this.exibirDuracao && !this.duracao) return false;
@@ -476,8 +603,8 @@ export default {
       this.$emit('confirmar', {
         usuarioId: this.authStore.usuario.id,
         quadraId: this.quadra.id,
-        modalidadeId: Number(this.modalidadeSelecionada),
-        timeId: this.timeSelecionado ? Number(this.timeSelecionado) : null,
+        modalidadeId: this.obterModalidadeIdParaAgendamento(),
+        timeId: this.obterTimeIdParaAgendamento(),
         dia, mes, ano,
         hora: horaSelecionada,
         datahora: datahora.toISOString(),
@@ -541,8 +668,8 @@ export default {
           agendamentosParaCriar.push({
             usuarioId: this.authStore.usuario.id,
             quadraId: this.quadra.id,
-            modalidadeId: Number(this.modalidadeSelecionada),
-            timeId: this.timeSelecionado ? Number(this.timeSelecionado) : null,
+            modalidadeId: this.obterModalidadeIdParaAgendamento(),
+            timeId: this.obterTimeIdParaAgendamento(),
             dia: dataFutura.getDate(),
             mes: dataFutura.getMonth() + 1,
             ano: dataFutura.getFullYear(),
@@ -590,6 +717,31 @@ export default {
   flex-direction: column;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
   overflow: hidden;
+}
+
+@media (min-width: 769px) {
+  .modal-overlay {
+    align-items: flex-start;
+    padding: 84px 16px 16px;
+    overflow-y: auto;
+  }
+
+  .modal-content {
+    max-height: calc(100dvh - 100px);
+  }
+}
+
+@media (max-width: 768px) {
+  .modal-overlay {
+    align-items: flex-start;
+    padding: 84px 10px 10px;
+    overflow-y: auto;
+  }
+
+  .modal-content {
+    width: min(100%, 100vw - 20px);
+    max-height: calc(100dvh - 94px);
+  }
 }
 
 .modal-header {
@@ -811,6 +963,29 @@ label {
   margin-top: 10px;
 }
 
+.horarios-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 13px;
+}
+
+.loader-horarios {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #cbd5e1;
+  border-top-color: #1E3A8A;
+  border-radius: 999px;
+  animation: spin-horarios 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
 .btn-horario {
   height: 36px;
   font-size: 13px;
@@ -864,6 +1039,18 @@ label {
   margin-top: 10px;
   text-align: center;
   gap: 10px;
+}
+
+.alerta-encaixe-hoje {
+  margin-top: -6px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .alerta-fechado svg {
@@ -939,6 +1126,12 @@ label {
 
   100% {
     transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+@keyframes spin-horarios {
+  to {
+    transform: rotate(360deg);
   }
 }
 

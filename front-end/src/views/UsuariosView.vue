@@ -109,7 +109,9 @@
 
               <div class="botoes">
                 <button class="btn-editar" @click="editarUsuario(usuario)">
-                  {{ permissaoLogadoId === 2 ? 'Gerenciar usuário' : 'Alterar permissões' }}
+                  {{
+                    permissaoLogadoId === 2 ? 'Gerenciar usuário' : 'Alterar permissões'
+                  }}
                 </button>
 
                 <button class="btn-detalhar" @click="detalhesUsuario(usuario)">Detalhar</button>
@@ -138,113 +140,115 @@
           </button>
         </div>
 
-        <div class="user-top-grid">
-          <div class="user-profile">
-            <div class="avatar-wrap">
-              <img class="avatar-lg" :src="usuarioSelecionado.foto" />
+        <div class="modal-detalhes-body">
+          <div class="user-top-grid">
+            <div class="user-profile">
+              <div class="avatar-wrap">
+                <img class="avatar-lg" :src="usuarioSelecionado.foto" />
+              </div>
+
+              <div class="user-identity">
+                <div class="user-name">{{ usuarioSelecionado.nome }}</div>
+                <div class="badge-permissao">
+                  <span>{{ permissaoSelecionadaLabel }}</span>
+                </div>
+              </div>
             </div>
 
-            <div class="user-identity">
-              <div class="user-name">{{ usuarioSelecionado.nome }}</div>
-              <div class="badge-permissao">
-                <span>{{ permissaoSelecionadaLabel }}</span>
+            <div class="info-card contato-card">
+              <div class="card-title">Contato</div>
+
+              <div class="info-row">
+                <div class="info-label">E-mail</div>
+                <div class="info-value info-actions">
+                  <span class="text-clip">{{ usuarioSelecionado.email || 'Nao informado' }}</span>
+
+                  <button v-if="usuarioSelecionado.email" class="icon-btn" @click="contatoGmail(usuarioSelecionado)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 48 48">
+                      <path fill="#4caf50" d="M45,16.2l-5,2.75l-5,4.75L35,40h7c1.657,0,3-1.343,3-3V16.2z" />
+                      <path fill="#1e88e5" d="M3,16.2l3.614,1.71L13,23.7V40H6c-1.657,0-3-1.343-3-3V16.2z" />
+                      <polygon fill="#e53935" points="35,11.2 24,19.45 13,11.2 12,17 13,23.7 24,31.95 35,23.7 36,17" />
+                      <path fill="#c62828"
+                        d="M3,12.298V16.2l10,7.5V11.2L9.876,8.859C9.132,8.301,8.228,8,7.298,8h0C4.924,8,3,9.924,3,12.298z" />
+                      <path fill="#fbc02d"
+                        d="M45,12.298V16.2l-10,7.5V11.2l3.124-2.341C38.868,8.301,39.772,8,40.702,8h0C43.076,8,45,9.924,45,12.298z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="info-row">
+                <div class="info-label">Telefone</div>
+                <div class="info-value info-actions">
+                  <span class="text-clip">{{ usuarioSelecionado.telefone || 'Nao informado' }}</span>
+
+                  <button v-if="usuarioSelecionado.telefone" class="icon-btn icon-btn-wa"
+                    @click="contatoWhatsApp(usuarioSelecionado)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#25D366" viewBox="0 0 16 16">
+                      <path
+                        d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
 
-          <div class="info-card contato-card">
-            <div class="card-title">Contato</div>
+          <div class="user-grid">
 
-            <div class="info-row">
-              <div class="info-label">E-mail</div>
-              <div class="info-value info-actions">
-                <span class="text-clip">{{ usuarioSelecionado.email || 'Nao informado' }}</span>
+            <div class="info-card perfil-card">
+              <div class="card-title">Perfil</div>
 
-                <button v-if="usuarioSelecionado.email" class="icon-btn" @click="contatoGmail(usuarioSelecionado)">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 48 48">
-                    <path fill="#4caf50" d="M45,16.2l-5,2.75l-5,4.75L35,40h7c1.657,0,3-1.343,3-3V16.2z" />
-                    <path fill="#1e88e5" d="M3,16.2l3.614,1.71L13,23.7V40H6c-1.657,0-3-1.343-3-3V16.2z" />
-                    <polygon fill="#e53935" points="35,11.2 24,19.45 13,11.2 12,17 13,23.7 24,31.95 35,23.7 36,17" />
-                    <path fill="#c62828"
-                      d="M3,12.298V16.2l10,7.5V11.2L9.876,8.859C9.132,8.301,8.228,8,7.298,8h0C4.924,8,3,9.924,3,12.298z" />
-                    <path fill="#fbc02d"
-                      d="M45,12.298V16.2l-10,7.5V11.2l3.124-2.341C38.868,8.301,39.772,8,40.702,8h0C43.076,8,45,9.924,45,12.298z" />
+              <div class="perfil-highlight">
+                <div class="perfil-highlight-title">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="shield-icon">
+                    <path d="M12 2.75l7 3.1v5.1c0 4.06-2.45 7.86-7 10.3-4.55-2.44-7-6.24-7-10.3v-5.1l7-3.1z"
+                      stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+                    <path d="M9.4 12.3l1.7 1.7 3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                      stroke-linejoin="round" />
                   </svg>
-                </button>
+                  <span>Perfil</span>
+                </div>
+
+                <div class="perfil-cadastro">
+                  Cadastrado desde: <strong>{{ dataCadastroSelecionado }}</strong>
+                </div>
+              </div>
+
+              <div class="info-row" v-if="usuarioSelecionado.permissaoId === 2">
+                <div class="info-label">Quadra</div>
+                <div class="info-value">{{ usuarioSelecionado.quadra?.nome || 'Nao vinculada' }}</div>
+              </div>
+
+              <div class="info-row" v-if="usuarioSelecionado.permissaoId === 5">
+                <div class="info-label">Times (Treinador)</div>
+                <div class="info-value">{{ usuarioSelecionado.timesComoTreinador?.map(t => t.nome).join(', ') || 'Nenhum' }}</div>
+              </div>
+
+              <div class="info-row" v-if="usuarioSelecionado.permissaoId === 3">
+                <div class="info-label">Times</div>
+                <div class="info-value">{{ usuarioSelecionado.times?.map(t => t.nome).join(', ') || 'Nenhum' }}</div>
+              </div>
+
+              <div class="info-row" v-if="usuarioSelecionado.permissaoId === 3 && usuarioSelecionado.jogador">
+                <div class="info-label">Jogador</div>
+                <div class="info-value">{{ usuarioSelecionado.jogador.nome }}</div>
               </div>
             </div>
 
-            <div class="info-row">
-              <div class="info-label">Telefone</div>
-              <div class="info-value info-actions">
-                <span class="text-clip">{{ usuarioSelecionado.telefone || 'Nao informado' }}</span>
+            <div class="info-card stats-card">
+              <div class="card-title">Estatísticas</div>
 
-                <button v-if="usuarioSelecionado.telefone" class="icon-btn icon-btn-wa"
-                  @click="contatoWhatsApp(usuarioSelecionado)">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#25D366" viewBox="0 0 16 16">
-                    <path
-                      d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+              <div class="stats-inline">
+                <div class="stat">
+                  <span class="stat-label">Agendamentos no mês de {{ nomeMesAtual }}:</span>
+                  <span class="stat-value">{{ agendamentosNoMesSelecionado }}</span>
+                </div>
 
-        <div class="user-grid">
-
-          <div class="info-card perfil-card">
-            <div class="card-title">Perfil</div>
-
-            <div class="perfil-highlight">
-              <div class="perfil-highlight-title">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="shield-icon">
-                  <path d="M12 2.75l7 3.1v5.1c0 4.06-2.45 7.86-7 10.3-4.55-2.44-7-6.24-7-10.3v-5.1l7-3.1z"
-                    stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
-                  <path d="M9.4 12.3l1.7 1.7 3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round" />
-                </svg>
-                <span>Perfil</span>
-              </div>
-
-              <div class="perfil-cadastro">
-                Cadastrado desde: <strong>{{ dataCadastroSelecionado }}</strong>
-              </div>
-            </div>
-
-            <div class="info-row" v-if="usuarioSelecionado.permissaoId === 2">
-              <div class="info-label">Quadra</div>
-              <div class="info-value">{{ usuarioSelecionado.quadra?.nome || 'Nao vinculada' }}</div>
-            </div>
-
-            <div class="info-row" v-if="usuarioSelecionado.permissaoId === 5">
-              <div class="info-label">Times (Treinador)</div>
-              <div class="info-value">{{ usuarioSelecionado.timesComoTreinador?.map(t => t.nome).join(', ') || 'Nenhum' }}</div>
-            </div>
-
-            <div class="info-row" v-if="usuarioSelecionado.permissaoId === 3">
-              <div class="info-label">Times</div>
-              <div class="info-value">{{ usuarioSelecionado.times?.map(t => t.nome).join(', ') || 'Nenhum' }}</div>
-            </div>
-
-            <div class="info-row" v-if="usuarioSelecionado.permissaoId === 3 && usuarioSelecionado.jogador">
-              <div class="info-label">Jogador</div>
-              <div class="info-value">{{ usuarioSelecionado.jogador.nome }}</div>
-            </div>
-          </div>
-
-          <div class="info-card stats-card">
-            <div class="card-title">Estatísticas</div>
-
-            <div class="stats-inline">
-              <div class="stat">
-                <span class="stat-label">Agendamentos no mês de {{ nomeMesAtual }}:</span>
-                <span class="stat-value">{{ agendamentosNoMesSelecionado }}</span>
-              </div>
-
-              <div class="stat">
-                <span class="stat-label">Última atividade:</span>
-                <span class="stat-text">{{ ultimaAtividadeSelecionado }}</span>
+                <div class="stat">
+                  <span class="stat-label">Última atividade:</span>
+                  <span class="stat-text">{{ ultimaAtividadeSelecionado }}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -324,7 +328,10 @@
                     <span>{{ j.nome }}</span>
                   </li>
 
-                  <li v-if="jogadoresFiltrados.length === 0" class="sem-jogador">
+                  <li v-if="isLoadingJogadores" class="sem-jogador">
+                    Carregando jogadores...
+                  </li>
+                  <li v-else-if="jogadoresFiltrados.length === 0" class="sem-jogador">
                     Nenhum jogador encontrado
                   </li>
                 </ul>
@@ -362,6 +369,7 @@ export default {
       busca: '',
       buscaJogador: '',
       isLoading: true,
+      isLoadingJogadores: false,
       isCarregandoModal: false,
       isSalvando: false,
       mostrarDetalhes: false,
@@ -391,7 +399,6 @@ export default {
         administradores: { label: 'Administradores', singular: 'administrador' },
         usuarios: { label: 'Usuarios', singular: 'usuario' },
         treinadores: { label: 'Treinadores', singular: 'treinador' },
-        mesarios: { label: 'Mesarios', singular: 'mesario' },
       }
     },
 
@@ -420,7 +427,7 @@ export default {
     },
 
     abasUsuarios() {
-      const ordemAbas = ['desenvolvedores', 'administradores', 'usuarios', 'treinadores', 'mesarios']
+      const ordemAbas = ['desenvolvedores', 'administradores', 'usuarios', 'treinadores']
       const permissaoLogado = this.permissaoLogadoId
 
       let abasVisiveis = ordemAbas
@@ -454,11 +461,10 @@ export default {
 
     usuariosFiltrados() {
       const mapaAbas = {
-        usuarios: [3],
+        usuarios: [3, 4],
         treinadores: [5],
         administradores: [2],
         desenvolvedores: [1],
-        mesarios: [4],
       }
 
       const permissoesDaAba = mapaAbas[this.abaUsuariosAtiva] || []
@@ -501,12 +507,12 @@ export default {
 
     permissoesFiltradas() {
       if (this.permissaoLogadoId === 1) {
-        return this.permissoes
+        return this.permissoes.filter(p => Number(p.id) !== 4)
       }
 
       if (this.permissaoLogadoId === 2) {
         return this.permissoes.filter(p =>
-          [3, 4, 5].includes(Number(p.id))
+          [3, 5].includes(Number(p.id))
         )
       }
 
@@ -686,9 +692,11 @@ export default {
       this.jogadores = []
       this.buscaJogador = ''
       this.abrirDropdown = false
+      this.isLoadingJogadores = Boolean(this.form.timeId)
 
       if (!this.form.timeId) {
         this.form.jogadorId = null
+        this.isLoadingJogadores = false
         return
       }
 
@@ -712,12 +720,23 @@ export default {
       } catch (err) {
         console.error('Erro ao carregar jogadores do time:', err)
         this.jogadores = []
+      } finally {
+        this.isLoadingJogadores = false
       }
     },
 
     async salvarEdicao() {
       this.isSalvando = true
       try {
+        if (Number(this.usuarioSelecionado?.permissaoId) === 4 && Number(this.form.permissaoId) === 4) {
+          await Swal.fire({
+            icon: 'warning',
+            title: 'Selecione outra permissão',
+            text: 'Para mesário, escolha uma nova permissão antes de salvar.',
+          })
+          return
+        }
+
         if (!this.form.permissaoId) {
           await Swal.fire({
             icon: 'warning',
@@ -754,7 +773,7 @@ export default {
           return
         }
 
-        await api.put('/editar/usuario', {
+        await api.put('/editar/permissao/usuario', {
           email: this.form.email,
           permissaoId: this.form.permissaoId,
           quadraId: this.form.quadra,
@@ -1577,18 +1596,43 @@ select:focus {
 .modal-content.modal-detalhes-user {
   width: min(840px, 90%);
   max-height: calc(100vh - 96px);
-  overflow-y: auto;
-  overflow-x: hidden;
-  scrollbar-width: none;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   border-radius: 14px;
   border: 1px solid #d4dced;
   box-shadow: 0 18px 48px rgba(15, 23, 42, 0.24);
   padding: 12px;
 }
 
-.modal-content.modal-detalhes-user::-webkit-scrollbar {
-  width: 0;
-  height: 0;
+.modal-detalhes-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  padding-right: 4px;
+  margin-right: -4px;
+}
+
+.modal-detalhes-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-detalhes-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-detalhes-body::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.22);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.modal-detalhes-body {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15, 23, 42, 0.28) transparent;
 }
 
 .modal-user-header {
@@ -1598,6 +1642,7 @@ select:focus {
   border-bottom: 1px solid #dbe3f0;
   padding-bottom: 6px;
   margin-bottom: 6px;
+  flex-shrink: 0;
 }
 
 .header-left {
@@ -1868,6 +1913,7 @@ select:focus {
   background: #f5f7fb;
   color:  #3b82f6;
   border: 2px solid #3b82f6;
+  flex-shrink: 0;
 }
 
 
@@ -1875,8 +1921,16 @@ select:focus {
   .modal-content.modal-detalhes-user {
     width: calc(100% - 12px);
     max-height: calc(100vh - 20px);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
     padding: 12px;
     border-radius: 18px;
+  }
+
+  .modal-detalhes-body {
+    padding-right: 2px;
+    margin-right: -2px;
   }
 
   .modal-user-header {
@@ -2314,8 +2368,16 @@ select:focus {
   .modal-content.modal-detalhes-user {
     width: calc(100% - 12px);
     max-height: calc(100vh - 20px);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
     padding: 12px;
     border-radius: 18px;
+  }
+
+  .modal-detalhes-body {
+    padding-right: 2px;
+    margin-right: -2px;
   }
 
   .modal-user-header {

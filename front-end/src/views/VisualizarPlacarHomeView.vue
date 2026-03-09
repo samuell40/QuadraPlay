@@ -98,7 +98,7 @@
               <ListaPartidas
                 v-else-if="campeonatoAtivo && faseAtualEhEliminatoria"
                 :partidas="partidas"
-                :loading="isLoadingPartidas"
+                :loading="deveMostrarLoadingPartidas"
                 loading-title="Carregando confrontos eliminatorios"
                 loading-description="Buscando confrontos da rodada para montar o mata-mata."
                 empty-title="Nenhum confronto cadastrado nesta rodada."
@@ -123,7 +123,10 @@
                 </div>
               </div>
 
-              <ListaPartidas :partidas="partidas" empty-title="Nenhuma partida cadastrada ainda"
+              <ListaPartidas :partidas="partidas" :loading="deveMostrarLoadingPartidas"
+                loading-title="Carregando partidas da rodada"
+                loading-description="Buscando confrontos, horarios e status da rodada selecionada."
+                empty-title="Nenhuma partida cadastrada ainda"
                 empty-subtitle="Assim que as partidas forem criadas ou iniciadas, elas aparecerão aqui."
                 :enable-scroll="temScrollPartidas" quadra-class="nome-quadra-visualizar" empty-align="left"
                 @time-click="abrirModalPartidasTime" />
@@ -177,12 +180,14 @@
           :campeonato-nome="campeonatoSelecionado?.nome || ''" :loading="isLoadingPartidas" />
       </div>
     </div>
+    <Footer />
   </div>
 </template>
 
 <script>
 import api from '@/axios'
 import NavBarHome from '@/components/NavBarHome.vue'
+import Footer from '@/components/Footer.vue'
 import LoadingState from '@/components/loading/LoadingState.vue'
 import TabelaClassificacao from '@/components/quadraplay/TabelaClassificacao.vue'
 import ListaPartidas from '@/components/quadraplay/ListaPartidas.vue'
@@ -193,10 +198,11 @@ import {
   inscreverCampeonatoSocket,
   desinscreverCampeonatoSocket
 } from '@/services/socket'
+import { ordenarPartidasPorStatusEDataDesc } from '@/utils/partidaOrdenacao'
 
 export default {
   name: 'VisualizarPlacarHome',
-  components: { NavBarHome, LoadingState, TabelaClassificacao, ListaPartidas, PartidasDoTimeModal },
+  components: { NavBarHome, Footer, LoadingState, TabelaClassificacao, ListaPartidas, PartidasDoTimeModal },
 
   data() {
     return {
@@ -208,6 +214,7 @@ export default {
       rodadaSelecionada: '',
       partidas: [],
       isLoadingPartidas: false,
+      partidasInicializadas: false,
       mostrarModalPartidasTime: false,
       timeSelecionadoPartidas: null,
       timesPlacar: null,
@@ -248,6 +255,9 @@ export default {
 
     temScrollPartidas() {
       return Array.isArray(this.partidas) && this.partidas.length >= 10
+    },
+    deveMostrarLoadingPartidas() {
+      return this.isLoadingPartidas || !this.partidasInicializadas
     },
 
     nomeFaseSelecionada() {
@@ -412,13 +422,14 @@ export default {
       }
     },
 
-    selecionarCampeonato(id) {
+    async selecionarCampeonato(id) {
       this.campeonatoAtivo = id
       this.fases = []
       this.rodadas = []
       this.faseSelecionada = ''
       this.rodadaSelecionada = ''
       this.partidas = []
+      this.partidasInicializadas = false
       this.timesPlacar = null
 
       this.inscreverSocketAtual(id)
@@ -431,13 +442,15 @@ export default {
 
       const ehVolei = ['volei', 'volei de areia', 'futevolei', 'beach tenis', 'beach tennis'].includes(mod)
 
-      this.carregarFases(id)
+      const tarefas = [this.carregarFases(id)]
 
-      if (!ehVolei) this.carregarArtilharia(id)
+      if (!ehVolei) tarefas.push(this.carregarArtilharia(id))
       else {
         this.artilharia = []
         this.loadingArtilharia = false
       }
+
+      await Promise.all(tarefas)
     },
 
     async carregarCampeonatos() {
@@ -445,7 +458,9 @@ export default {
       try {
         const { data } = await api.get('/todos/campeonatos')
         this.campeonatos = Array.isArray(data) ? data : []
-        if (this.campeonatos.length) this.selecionarCampeonato(this.campeonatos[0].id)
+        if (this.campeonatos.length) {
+          await this.selecionarCampeonato(this.campeonatos[0].id)
+        }
       } catch (err) {
         console.error('Erro ao carregar campeonatos:', err)
       } finally {
@@ -463,6 +478,7 @@ export default {
           this.rodadas = []
           this.rodadaSelecionada = ''
           this.partidas = []
+          this.partidasInicializadas = true
           this.timesPlacar = []
           this.gruposClassificacao = null
           return
@@ -482,6 +498,7 @@ export default {
         this.faseSelecionada = ''
         this.rodadaSelecionada = ''
         this.partidas = []
+        this.partidasInicializadas = true
       }
     },
 
@@ -503,6 +520,7 @@ export default {
 
       if (!this.campeonatoAtivo || !this.faseSelecionada || !this.rodadaSelecionada) {
         this.partidas = []
+        this.partidasInicializadas = true
         this.isLoadingPartidas = false
         return
       }
@@ -514,16 +532,13 @@ export default {
         )
 
         const lista = Array.isArray(data) ? data : []
-        this.partidas = lista.sort((a, b) => {
-          const da = new Date(a?.data || a?.createdAt || 0).getTime()
-          const db = new Date(b?.data || b?.createdAt || 0).getTime()
-          return db - da
-        })
+        this.partidas = ordenarPartidasPorStatusEDataDesc(lista)
       } catch (err) {
         console.error('Erro ao carregar partidas por rodada:', err)
         this.partidas = []
       } finally {
         this.isLoadingPartidas = false
+        this.partidasInicializadas = true
       }
     },
 

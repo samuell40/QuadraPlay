@@ -1,5 +1,5 @@
 <template>
-  <section :class="['loading-state', `loading-state--${size}`]" role="status" aria-live="polite">
+  <section :class="['loading-state', `loading-state--${size}`, `loading-state--${theme}`]" role="status" aria-live="polite">
     <div class="loading-illustration" aria-hidden="true">
       <img class="loading-player-art" :src="loadingArt" alt="" />
 
@@ -43,6 +43,13 @@ export default {
       validator(value) {
         return ['default', 'compact'].includes(value)
       }
+    },
+    theme: {
+      type: String,
+      default: 'default',
+      validator(value) {
+        return ['default', 'danger'].includes(value)
+      }
     }
   }
 }
@@ -50,6 +57,10 @@ export default {
 
 <style scoped>
 .loading-state {
+  --loading-accent-rgb: 37, 99, 235;
+  --loading-title-color: #0f172a;
+  --loading-border-color: rgba(148, 163, 184, 0.34);
+  --loading-surface-color: rgba(248, 250, 252, 0.9);
   --loading-visual-size: clamp(130px, 34vw, 220px);
   --loading-min-height: clamp(130px, 36vw, 210px);
   --loading-title-size: clamp(22px, 6.2vw, 34px);
@@ -67,11 +78,18 @@ export default {
   padding: var(--loading-padding-y) var(--loading-padding-x);
   text-align: center;
   border-radius: 28px;
-  border: 1.5px dashed rgba(148, 163, 184, 0.34);
-  background: rgba(248, 250, 252, 0.9);
+  border: 1.5px dashed var(--loading-border-color);
+  background: var(--loading-surface-color);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76);
   overflow: hidden;
   container-type: inline-size;
+}
+
+.loading-state--danger {
+  --loading-accent-rgb: 185, 28, 28;
+  --loading-title-color: #991b1b;
+  --loading-border-color: rgba(239, 68, 68, 0.35);
+  --loading-surface-color: rgba(254, 242, 242, 0.88);
 }
 
 .loading-state--compact {
@@ -106,7 +124,7 @@ export default {
   object-fit: contain;
   user-select: none;
   pointer-events: none;
-  filter: drop-shadow(0 8px 18px rgba(37, 99, 235, 0.24));
+  filter: drop-shadow(0 8px 18px rgba(var(--loading-accent-rgb), 0.24));
 }
 
 .loading-ball-shadow {
@@ -137,12 +155,12 @@ export default {
   height: 100%;
   user-select: none;
   pointer-events: none;
-  filter: drop-shadow(0 0 8px rgba(37, 99, 235, 0.42));
+  filter: drop-shadow(0 0 8px rgba(var(--loading-accent-rgb), 0.42));
   animation: ballSpin 0.9s linear infinite;
 }
 
 .loading-state--compact .loading-player-art {
-  filter: drop-shadow(0 6px 12px rgba(37, 99, 235, 0.22));
+  filter: drop-shadow(0 6px 12px rgba(var(--loading-accent-rgb), 0.22));
 }
 
 .loading-state--compact .loading-ball-shadow {
@@ -168,7 +186,7 @@ export default {
 
 .loading-title {
   margin: 0;
-  color: #0f172a;
+  color: var(--loading-title-color);
   font-size: var(--loading-title-size);
   font-weight: 800;
   line-height: 1.12;

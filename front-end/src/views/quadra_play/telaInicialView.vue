@@ -13,11 +13,16 @@
               <a class="header-subtitle">Filtre por modalidade para acompanhar e gerenciar os campeonatos cadastrados.</a>
             </div>
             <button v-if="!isMesario" class="btn-add" @click="abrirModalAdicionarCampeonato">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                class="bi bi-plus-circle-fill btn-add-icon" viewBox="0 0 16 16" aria-hidden="true">
+                <path
+                  d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0M8.5 4.5a.5.5 0 0 0-1 0v3h-3a.5.5 0 0 0 0 1h3v3a.5.5 0 0 0 1 0v-3h3a.5.5 0 0 0 0-1h-3z" />
+              </svg>
               <span class="btn-add-label-desktop">Adicionar Campeonato</span>
               <span class="btn-add-label-mobile">Adicionar</span>
             </button>
           </div>
-          <div class="abas-container">
+          <div v-if="!isLoading" class="abas-container">
             <div class="aba" :class="{ ativa: modalidadeSelecionada === null }" @click="selecionarModalidade(null)">
               Todas
             </div>
@@ -44,17 +49,48 @@
           <div class="card-quadra" v-for="campeonato in campeonatos" :key="campeonato.id"
             @click="abrirCampeonato(campeonato)">
 
-            <div class="status-badge" :class="classeStatus(campeonato.status)"
+            <div class="status-badge"
+              :class="[classeStatus(campeonato.status), { 'status-editavel': !isMesario && statusEmAndamento(campeonato.status) }]"
               @click.stop="!isMesario && abrirModalStatus(campeonato)">
-              {{ rotuloStatus(campeonato.status) }}
+              <span v-if="statusEmAndamento(campeonato.status)" class="status-live-dot" aria-hidden="true"></span>
+              <span>{{ rotuloStatus(campeonato.status) }}</span>
+              <svg
+                v-if="!isMesario && statusEmAndamento(campeonato.status)"
+                class="status-edit-icon"
+                xmlns="http://www.w3.org/2000/svg"
+                width="12"
+                height="12"
+                fill="currentColor"
+                viewBox="0 0 16 16"
+                aria-hidden="true"
+              >
+                <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10L4 14l.146-1.854zM11.207 2 5 8.207V9h.793L12 2.793z"/>
+                <path fill-rule="evenodd" d="M1 13.5V16h2.5l8.25-8.25-2.5-2.5z"/>
+              </svg>
             </div>
 
             <img :src="obterFotoCard(campeonato.foto)" alt="Foto do campeonato" class="imagem-quadra">
 
             <div class="overlay">
-              <h3 class="campeonato">{{ campeonato.nome }}</h3>
+              <h3 class="campeonato">
+                {{ campeonato.nome }}
+                <span class="campeonato-tipo">({{ rotuloTipoCampeonato(campeonato.tipo) }})</span>
+              </h3>
               <a class="modalidade">{{ campeonato.modalidade?.nome }}</a>
-              <button class="btn-acessar" @click.stop="abrirCampeonato(campeonato)">Acessar</button>
+              <button
+                class="btn-acessar"
+                :disabled="Boolean(campeonatoAcessandoId)"
+                @click.stop="abrirCampeonato(campeonato)"
+              >
+                <span class="btn-acessar-content">
+                  <span
+                    v-if="campeonatoAcessandoId === Number(campeonato.id)"
+                    class="btn-acessar-spinner"
+                    aria-hidden="true"
+                  ></span>
+                  <span>{{ campeonatoAcessandoId === Number(campeonato.id) ? 'Abrindo...' : 'Acessar' }}</span>
+                </span>
+              </button>
             </div>
           </div>
         </div>
@@ -63,23 +99,32 @@
     <AdicionarCampeonatoModal :aberto="mostrarModal" @fechar="fecharModalAdicionarCampeonato"
       @atualizar="carregarCampeonatos" />
 
-    <div v-if="mostrarModalStatus" class="modal-overlay" @click.self="fecharModalStatus">
+    <div v-if="mostrarModalStatus" class="modal-overlay" @click.self="!salvandoStatusCampeonato && fecharModalStatus()">
       <div class="modal-content modal-status">
         <div class="modal-header">
           <h2 class="titulo-modal-status">Alterar status do campeonato</h2>
-          <button type="button" class="btn-close-x" @click="fecharModalStatus">x</button>
+          <button type="button" class="btn-close-x" :disabled="salvandoStatusCampeonato" @click="fecharModalStatus">x</button>
         </div>
 
         <label class="label-status">Selecione o status</label>
 
-        <select v-model="novoStatusCampeonato" class="select-status-modal">
+        <select
+          v-model="novoStatusCampeonato"
+          :class="['select-status-modal', classeStatus(novoStatusCampeonato)]"
+          :disabled="salvandoStatusCampeonato"
+        >
           <option v-for="status in statusDisponiveisCampeonato" :key="status" :value="status">
             {{ rotuloStatus(status) }}
           </option>
         </select>
 
         <div class="botoes">
-          <button class="btn-save" @click="confirmarAlteracaoStatusCampeonato">Salvar</button>
+          <button class="btn-save" :disabled="salvandoStatusCampeonato" @click="confirmarAlteracaoStatusCampeonato">
+            <span class="btn-save-content">
+              <span v-if="salvandoStatusCampeonato" class="btn-save-spinner" aria-hidden="true"></span>
+              <span>{{ salvandoStatusCampeonato ? 'Salvando...' : 'Salvar' }}</span>
+            </span>
+          </button>
         </div>
       </div>
     </div>
@@ -116,10 +161,12 @@ export default {
       modalidadesDisponiveis: [],
       modalidadeSelecionada: null,
       anoSelecionado: new Date().getFullYear(),
+      campeonatoAcessandoId: null,
       mostrarModal: false,
       mostrarModalStatus: false,
       campeonatoSelecionadoStatus: null,
       novoStatusCampeonato: 'EM_ANDAMENTO',
+      salvandoStatusCampeonato: false,
       statusDisponiveisCampeonato: ['EM_ANDAMENTO', 'FINALIZADO', 'CANCELADO']
     }
   },
@@ -160,10 +207,29 @@ export default {
   },
 
   methods: {
-    abrirCampeonato(campeonato) {
+    async abrirCampeonato(campeonato) {
+      const campeonatoId = Number(campeonato?.id || 0)
+      if (!campeonatoId || this.campeonatoAcessandoId) return
+
       const store = useCampeonatoStore();
-      store.setCampeonato(campeonato);
-      router.push({ name: 'Detalhar_Campeonatos', query: { id: campeonato.id } });
+      this.campeonatoAcessandoId = campeonatoId
+      try {
+        const { data } = await api.get(`/campeonato/${campeonatoId}`, { silent: true })
+        const campeonatoCompleto = data && typeof data === 'object' ? data : campeonato
+        const possuiPartidas = Array.isArray(campeonatoCompleto?.partidas) && campeonatoCompleto.partidas.length > 0
+
+        store.setCampeonato(campeonatoCompleto);
+        router.push({
+          name: possuiPartidas ? 'gerenciar_partida' : 'Detalhar_Campeonatos',
+          query: { id: campeonatoId }
+        });
+      } catch (error) {
+        console.error('Erro ao verificar partidas do campeonato:', error)
+        store.setCampeonato(campeonato);
+        router.push({ name: 'Detalhar_Campeonatos', query: { id: campeonatoId } });
+      } finally {
+        this.campeonatoAcessandoId = null
+      }
     },
 
     abrirModalAdicionarCampeonato() {
@@ -202,29 +268,82 @@ export default {
       if (status === 'CANCELADO') return 'cancelado'
       return 'em-andamento'
     },
+    statusEmAndamento(status) {
+      return String(status || '').toUpperCase() === 'EM_ANDAMENTO'
+    },
+    ordenarCampeonatosPorStatus(campeonatos) {
+      const lista = Array.isArray(campeonatos) ? [...campeonatos] : []
+      const obterPrioridade = status => {
+        const valor = String(status || '').toUpperCase()
+        if (valor === 'EM_ANDAMENTO') return 0
+        if (valor === 'FINALIZADO' || valor === 'FINALIZADA') return 1
+        if (valor === 'CANCELADO' || valor === 'CANCELADA') return 2
+        return 3
+      }
+
+      return lista.sort((a, b) => obterPrioridade(a?.status) - obterPrioridade(b?.status))
+    },
+    rotuloTipoCampeonato(tipo) {
+      const valor = String(tipo || '')
+        .trim()
+        .toLowerCase()
+
+      if (valor === 'pontos_corridos' || valor === 'pontos corridos') {
+        return 'Pontos corridos'
+      }
+
+      if (
+        valor === 'pontos_corridos_eliminatorias'
+        || valor === 'pontos corridos + eliminatorias'
+        || valor === 'pontos corridos e eliminatorias'
+      ) {
+        return 'Pontos corridos + eliminatorias'
+      }
+
+      if (valor === 'eliminatorias' || valor === 'eliminatoria') {
+        return 'Eliminatorias'
+      }
+
+      return 'Tipo nao informado'
+    },
     abrirModalStatus(campeonato) {
       this.campeonatoSelecionadoStatus = campeonato
       this.novoStatusCampeonato = campeonato?.status || 'EM_ANDAMENTO'
       this.mostrarModalStatus = true
     },
     fecharModalStatus() {
+      if (this.salvandoStatusCampeonato) return
       this.mostrarModalStatus = false
       this.campeonatoSelecionadoStatus = null
       this.novoStatusCampeonato = 'EM_ANDAMENTO'
+      this.salvandoStatusCampeonato = false
     },
     async confirmarAlteracaoStatusCampeonato() {
+      if (this.salvandoStatusCampeonato) return
+
       const campeonato = this.campeonatoSelecionadoStatus
       if (!campeonato?.id) return
       if (!this.novoStatusCampeonato || this.novoStatusCampeonato === campeonato.status) {
         this.fecharModalStatus()
         return
       }
+
+      let atualizou = false
+      this.salvandoStatusCampeonato = true
+
       try {
         await api.put(`/campeonato/${campeonato.id}`, { status: this.novoStatusCampeonato })
         campeonato.status = this.novoStatusCampeonato
-        this.fecharModalStatus()
+        atualizou = true
       } catch (err) {
         console.error('Erro ao atualizar status do campeonato:', err)
+      } finally {
+        this.salvandoStatusCampeonato = false
+      }
+
+      if (atualizou) {
+        this.campeonatos = this.ordenarCampeonatosPorStatus(this.campeonatos)
+        this.fecharModalStatus()
       }
     },
     async carregarModalidades() {
@@ -260,7 +379,7 @@ export default {
           })
         }
 
-        this.campeonatos = res.data || []
+        this.campeonatos = this.ordenarCampeonatosPorStatus(res.data || [])
       } catch (err) {
         console.error('Erro ao carregar campeonatos:', err)
         this.campeonatos = []
@@ -273,11 +392,13 @@ export default {
       const base = Array.isArray(this.campeonatosMesario) ? this.campeonatosMesario : []
 
       if (!this.modalidadeSelecionada) {
-        this.campeonatos = [...base]
+        this.campeonatos = this.ordenarCampeonatosPorStatus(base)
         return
       }
 
-      this.campeonatos = base.filter(c => Number(c?.modalidadeId) === Number(this.modalidadeSelecionada))
+      this.campeonatos = this.ordenarCampeonatosPorStatus(
+        base.filter(c => Number(c?.modalidadeId) === Number(this.modalidadeSelecionada))
+      )
     },
 
     async carregarCampeonatosMesario() {
@@ -394,6 +515,14 @@ a {
   font-size: 15px;
   letter-spacing: -0.02em;
   box-shadow: 0 14px 26px rgba(59, 130, 246, 0.22);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-add-icon {
+  flex: 0 0 auto;
 }
 
 .btn-add-label-mobile {
@@ -505,6 +634,13 @@ a {
   overflow: hidden;
 }
 
+.campeonato-tipo {
+  font-size: 0.62em;
+  font-weight: 700;
+  color: rgba(226, 232, 240, 0.92);
+  letter-spacing: -0.01em;
+}
+
 .modalidade {
   margin: 0 0 8px;
   font-size: 11px;
@@ -532,10 +668,40 @@ a {
   box-shadow: 0 10px 18px rgba(59, 130, 246, 0.25);
 }
 
+.btn-acessar-content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-acessar-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.38);
+  border-top-color: #ffffff;
+  animation: btnAcessarSpin 0.75s linear infinite;
+  flex: 0 0 14px;
+}
+
 .btn-acessar:hover {
   background-color: #2563eb;
   transform: translateY(-1px);
   box-shadow: 0 14px 26px rgba(59, 130, 246, 0.32);
+}
+
+.btn-acessar:disabled {
+  cursor: not-allowed;
+  opacity: 0.85;
+  transform: none;
+  box-shadow: none;
+}
+
+@keyframes btnAcessarSpin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .status-badge {
@@ -548,29 +714,78 @@ a {
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #fff;
+  color: #f8fafc;
   z-index: 5;
-  cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  cursor: default;
+  border: 1px solid rgba(248, 250, 252, 0.35);
   box-shadow: 0 10px 20px rgba(15, 23, 42, 0.18);
   backdrop-filter: blur(8px);
   transition: transform 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-badge.status-editavel {
+  cursor: pointer;
 }
 
 .status-badge.em-andamento {
-  background: rgba(34, 197, 94, 0.88);
+  background: rgba(22, 163, 74, 0.92);
+  color: #f0fdf4;
+  border-color: rgba(187, 247, 208, 0.55);
 }
 
 .status-badge.finalizado {
-  background: rgba(239, 68, 68, 0.90);
+  background: rgba(185, 28, 28, 0.92);
+  color: #fef2f2;
+  border-color: rgba(254, 202, 202, 0.55);
 }
 
 .status-badge.cancelado {
-  background: rgba(100, 116, 139, 0.90);
+  background: rgba(220, 38, 38, 0.9);
+  color: #fef2f2;
+  border-color: rgba(252, 165, 165, 0.52);
 }
 
-.status-badge:hover {
+.status-badge.status-editavel:hover {
   transform: translateY(-1px);
+}
+
+.status-live-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: #bbf7d0;
+  display: inline-block;
+  box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55);
+  animation: statusDotPulse 1s infinite;
+  flex: 0 0 9px;
+}
+
+.status-edit-icon {
+  flex: 0 0 auto;
+  opacity: 0.95;
+}
+
+@keyframes statusDotPulse {
+  0% {
+    transform: scale(0.9);
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+  }
+
+  70% {
+    transform: scale(1.2);
+    opacity: 0.7;
+    box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+  }
+
+  100% {
+    transform: scale(0.9);
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
 }
 
 .modal-overlay {
@@ -658,6 +873,51 @@ a {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
 }
 
+.select-status-modal.em-andamento {
+  color: #16a34a;
+  background: rgba(22, 163, 74, 0.12);
+  border-color: rgba(22, 163, 74, 0.35);
+}
+
+.select-status-modal.em-andamento:hover {
+  border-color: rgba(22, 163, 74, 0.55);
+}
+
+.select-status-modal.em-andamento:focus {
+  border-color: rgba(22, 163, 74, 0.55);
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.18);
+}
+
+.select-status-modal.finalizado {
+  color: #bd1c1c;
+  background: rgba(189, 28, 28, 0.12);
+  border-color: rgba(189, 28, 28, 0.35);
+}
+
+.select-status-modal.finalizado:hover {
+  border-color: rgba(189, 28, 28, 0.55);
+}
+
+.select-status-modal.finalizado:focus {
+  border-color: rgba(189, 28, 28, 0.55);
+  box-shadow: 0 0 0 3px rgba(189, 28, 28, 0.18);
+}
+
+.select-status-modal.cancelado {
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.1);
+  border-color: rgba(220, 38, 38, 0.35);
+}
+
+.select-status-modal.cancelado:hover {
+  border-color: rgba(220, 38, 38, 0.55);
+}
+
+.select-status-modal.cancelado:focus {
+  border-color: rgba(220, 38, 38, 0.55);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.18);
+}
+
 .botoes {
   display: flex;
   gap: 10px;
@@ -680,6 +940,30 @@ a {
 .btn-save:hover {
   background-color: #2563eb;
   transform: translateY(-1px);
+}
+
+.btn-save:disabled,
+.btn-close-x:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+  transform: none;
+}
+
+.btn-save-content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-save-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.38);
+  border-top-color: #ffffff;
+  animation: btnAcessarSpin 0.75s linear infinite;
+  flex: 0 0 14px;
 }
 
 .btn-cancel {

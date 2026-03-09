@@ -1,9 +1,10 @@
-const {
+﻿const {
   criarAgendamentoService,
   listarAgendamentosService,
   listarTodosAgendamentosService,
   listarAgendamentosPorQuadraService,
   listarAgendamentosConfirmadosService,
+  listarAgendamentosOcupadosService,
   listarAgendamentosConfirmadosSemanaService,
   cancelarAgendamentoService,
   atualizarAgendamentoService,
@@ -16,7 +17,7 @@ const criarAgendamentoController = async (req, res) => {
   try {
     const usuarioId = req.user?.id || req.body.usuarioId;
     if (!usuarioId)
-      return res.status(400).json({ error: "Usuário não informado." });
+      return res.status(400).json({ error: "UsuÃ¡rio nÃ£o informado." });
 
     const {
       datahora,
@@ -30,12 +31,11 @@ const criarAgendamentoController = async (req, res) => {
       fixo,
     } = req.body;
 
-    if (!datahora || !quadraId || !modalidadeId) {
+    if (!datahora || !quadraId) {
       return res
         .status(400)
         .json({
-          error:
-            "Campos obrigatórios (datahora, quadra, modalidade) não preenchidos.",
+          error: "Campos obrigatorios (datahora e quadra) nao preenchidos.",
         });
     }
 
@@ -45,7 +45,7 @@ const criarAgendamentoController = async (req, res) => {
       duracao: Number(duracao ?? 1),
       tipo: tipo ?? "TREINO",
       quadraId: Number(quadraId),
-      modalidadeId: Number(modalidadeId),
+      modalidadeId: modalidadeId ? Number(modalidadeId) : null,
       timeId: timeId ? Number(timeId) : null,
       ignorarRegra,
       status: status ?? "Pendente",
@@ -69,7 +69,7 @@ const atualizarAgendamentosFixosController = async (req, res) => {
     const listaAgendamentos = Array.isArray(req.body) ? req.body : lote;
 
     if (!usuarioId) {
-      return res.status(400).json({ error: "Usuário não informado." });
+      return res.status(400).json({ error: "UsuÃ¡rio nÃ£o informado." });
     }
 
     const resultados = await atualizarAgendamentosFixosService(
@@ -117,7 +117,7 @@ const listarAgendamentosPorQuadraController = async (req, res) => {
     const { quadraId } = req.params;
 
     if (!quadraId) {
-      return res.status(400).json({ message: "Quadra não informada" });
+      return res.status(400).json({ message: "Quadra nÃ£o informada" });
     }
     const agendamentos = await listarAgendamentosPorQuadraService(quadraId);
     return res.status(200).json(agendamentos);
@@ -135,7 +135,7 @@ const listarAgendamentosAdminController = async (req, res) => {
     if (!quadraId) {
       return res
         .status(400)
-        .json({ message: "Usuário não está vinculado a nenhuma quadra." });
+        .json({ message: "UsuÃ¡rio nÃ£o estÃ¡ vinculado a nenhuma quadra." });
     }
 
     const agendamentos = await listarAgendamentosPorQuadraService(quadraId);
@@ -163,6 +163,26 @@ const listarAgendamentosConfirmadosController = async (req, res) => {
   } catch (err) {
     res.status(err.status || 500).json({
       message: err.message || "Erro ao listar agendamentos confirmados",
+    });
+  }
+};
+
+const listarAgendamentosOcupadosController = async (req, res) => {
+  try {
+    const { quadraId } = req.params;
+    const { ano, mes, dia } = req.query;
+
+    const agendamentos = await listarAgendamentosOcupadosService(
+      Number(quadraId),
+      Number(ano),
+      Number(mes),
+      Number(dia),
+    );
+
+    res.json(agendamentos);
+  } catch (err) {
+    res.status(err.status || 500).json({
+      message: err.message || "Erro ao listar agendamentos ocupados",
     });
   }
 };
@@ -248,7 +268,7 @@ const listarAgendamentosPorTimeController = async (req, res) => {
     const { inicio, fim } = req.query;
 
     if (!timeId) {
-      return res.status(400).json({ message: "Time não informado." });
+      return res.status(400).json({ message: "Time nÃ£o informado." });
     }
 
     const agendamentos = await listarAgendamentosPorTimeService(
@@ -273,6 +293,7 @@ module.exports = {
   listarAgendamentosAdminController,
   listarAgendamentosPorQuadraController,
   listarAgendamentosConfirmadosController,
+  listarAgendamentosOcupadosController,
   listarAgendamentosConfirmadosSemana,
   cancelarAgendamentoController,
   aceitarAgendamentoController,

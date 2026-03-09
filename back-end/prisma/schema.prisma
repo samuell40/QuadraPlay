@@ -99,6 +99,8 @@ model Agendamento {
   motivoRecusa      String?
   deletedAt         DateTime?
   fixo              Boolean         @default(false)
+  encaixe           Boolean         @default(false)
+  limiteSemanalAtingido Boolean     @default(false)
   usuario           Usuario?        @relation(fields: [usuarioId], references: [id])
   quadra            Quadra?         @relation(fields: [quadraId], references: [id])
   modalidade        Modalidade?     @relation("AgendamentoModalidade", fields: [modalidadeId], references: [id])

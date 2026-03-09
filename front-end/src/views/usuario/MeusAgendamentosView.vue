@@ -62,16 +62,16 @@
             </div>
 
             <div class="abas-config-container-agendamento">
-              <button type="button" class="aba-config-agendamento" :class="{ ativa: abaAtiva === 'confirmados' }"
-                @click="abaAtiva = 'confirmados'">
-                <span>Confirmados</span>
-                <span class="badge-total">{{ getTodosPorTipo("confirmados").length }}</span>
-              </button>
-
               <button type="button" class="aba-config-agendamento" :class="{ ativa: abaAtiva === 'pendentes' }"
                 @click="abaAtiva = 'pendentes'">
                 <span>Pendentes</span>
                 <span class="badge-total">{{ getTodosPorTipo("pendentes").length }}</span>
+              </button>
+
+              <button type="button" class="aba-config-agendamento" :class="{ ativa: abaAtiva === 'confirmados' }"
+                @click="abaAtiva = 'confirmados'">
+                <span>Confirmados</span>
+                <span class="badge-total">{{ getTodosPorTipo("confirmados").length }}</span>
               </button>
 
               <button type="button" class="aba-config-agendamento" :class="{ ativa: abaAtiva === 'recusados' }"
@@ -143,12 +143,18 @@ const router = useRouter();
 const authStore = useAuthStore();
 const isLoading = ref(true);
 const allAgendamentos = ref([]);
-const abaAtiva = ref("confirmados");
+const abaAtiva = ref("pendentes");
 const avisoDestaque = ref(null);
 const abaInicialDefinida = ref(false);
 
 const ITENS_POR_PAGINA = 10;
 const ORDEM_ABAS_PRIORIDADE = ["pendentes", "confirmados", "recusados"];
+const ORDEM_STATUS_LISTA = {
+  pendente: 0,
+  confirmado: 1,
+  recusado: 2,
+  cancelado: 2,
+};
 
 const paginasAtuais = ref({
   confirmados: 1,
@@ -202,7 +208,8 @@ const getItensPagina = (tipo) => {
 const getTotalPaginas = (tipo) => Math.ceil(getTodosPorTipo(tipo).length / ITENS_POR_PAGINA) || 1;
 
 const sincronizarAbaAtiva = () => {
-  const primeiraAbaComItens = ORDEM_ABAS_PRIORIDADE.find((tipo) => getTodosPorTipo(tipo).length > 0) || "confirmados";
+  const primeiraAbaComItens =
+    ORDEM_ABAS_PRIORIDADE.find((tipo) => getTodosPorTipo(tipo).length > 0) || ORDEM_ABAS_PRIORIDADE[0];
 
   if (!abaInicialDefinida.value || getTodosPorTipo(abaAtiva.value).length === 0) {
     abaAtiva.value = primeiraAbaComItens;
@@ -230,6 +237,33 @@ const getUsuarioId = () => {
   }
 };
 
+const normalizarNomeArquivo = (texto, fallback = "arquivo") => {
+  const nome = String(texto || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .toLowerCase();
+
+  return nome || fallback;
+};
+
+const carregarLogoPdf = () => {
+  const img = new Image();
+  img.src = logoImg;
+
+  return new Promise((resolve) => {
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+  });
+};
+
+const formatarDuracaoPdf = (duracao) => {
+  const numero = Number(duracao);
+  if (!Number.isFinite(numero) || numero <= 0) return "Nao informado";
+  return `${numero} hora${numero === 1 ? "" : "s"}`;
+};
+
 const carregarAgendamentos = async () => {
   isLoading.value = true;
   try {
@@ -255,8 +289,9 @@ const carregarAgendamentos = async () => {
         };
       })
       .sort((a, b) => {
-        if (a.status === "pendente" && b.status !== "pendente") return -1;
-        if (a.status !== "pendente" && b.status === "pendente") return 1;
+        const ordemA = ORDEM_STATUS_LISTA[a.status] ?? Number.MAX_SAFE_INTEGER;
+        const ordemB = ORDEM_STATUS_LISTA[b.status] ?? Number.MAX_SAFE_INTEGER;
+        if (ordemA !== ordemB) return ordemA - ordemB;
         return b.dataObj - a.dataObj;
       });
 
@@ -377,72 +412,184 @@ const cancelarAgendamento = async (id) => {
 
 const gerarPdfAgendamento = async (agendamento) => {
   const doc = new jsPDF({
-    orientation: "landscape",
+    orientation: "portrait",
     unit: "mm",
-    format: [140, 80],
+    format: "a4",
   });
 
-  const corPrimaria = [30, 58, 138];
-  const codigoFinal = agendamento.codigoVerificacao || `ID-${agendamento.id}`;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margemX = 14;
+  const status = String(agendamento?.status || "").toLowerCase();
+  const statusMeta = {
+    pendente: { label: "PENDENTE", bg: [254, 243, 199], text: [146, 64, 14], border: [245, 158, 11] },
+    confirmado: { label: "CONFIRMADO", bg: [220, 252, 231], text: [21, 128, 61], border: [74, 222, 128] },
+    recusado: { label: "RECUSADO", bg: [254, 226, 226], text: [185, 28, 28], border: [248, 113, 113] },
+    cancelado: { label: "CANCELADO", bg: [226, 232, 240], text: [51, 65, 85], border: [148, 163, 184] },
+  }[status] || { label: "STATUS", bg: [226, 232, 240], text: [51, 65, 85], border: [148, 163, 184] };
 
-  doc.setDrawColor(220, 220, 220);
-  doc.rect(5, 5, 130, 70);
+  const cores = {
+    header: [15, 23, 42],
+    headerAccent: [56, 189, 248],
+    primary: [29, 78, 216],
+    text: [15, 23, 42],
+    muted: [100, 116, 139],
+    border: [203, 213, 225],
+    panel: [248, 250, 252],
+    white: [255, 255, 255],
+    codeBg: [239, 246, 255],
+    codeBorder: [191, 219, 254],
+  };
 
-  const img = new Image();
-  img.src = logoImg;
+  const codigoFinal = String(agendamento?.codigoVerificacao || `ID-${agendamento?.id || "N-A"}`);
+  const nomeQuadra = String(agendamento?.quadra || "Nao informado");
+  const tipoReserva = String(agendamento?.tipo || "Nao informado");
+  const dataReserva = String(agendamento?.dataFormatada || "--/--/----");
+  const horaReserva = String(agendamento?.hora || "--:--");
+  const duracaoReserva = formatarDuracaoPdf(agendamento?.duracao);
+  const dataGeracao = new Date();
+  const dataGeracaoLabel = `${dataGeracao.toLocaleDateString("pt-BR")} as ${dataGeracao.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  })}`;
 
-  await new Promise((resolve) => {
-    img.onload = () => {
-      doc.addImage(img, "PNG", 10, 10, 12, 12);
-      resolve();
-    };
+  const logo = await carregarLogoPdf();
+
+  const desenharCampo = ({ x, y, w, h = 14, label, valor }) => {
+    doc.setFillColor(...cores.white);
+    doc.setDrawColor(...cores.border);
+    doc.roundedRect(x, y, w, h, 2.2, 2.2, "FD");
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7);
+    doc.setTextColor(...cores.muted);
+    doc.text(label.toUpperCase(), x + 3, y + 4.1);
+
+    const linhas = doc.splitTextToSize(String(valor || "Nao informado"), w - 6);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(...cores.text);
+    doc.text(linhas.slice(0, 2), x + 3, y + 9.3);
+  };
+
+  doc.setFillColor(...cores.header);
+  doc.rect(0, 0, pageWidth, 19, "F");
+  doc.setFillColor(...cores.headerAccent);
+  doc.rect(0, 0, pageWidth, 2, "F");
+
+  if (logo) {
+    doc.addImage(logo, "PNG", margemX, 5.1, 8.5, 8.5);
+  }
+
+  const tituloX = logo ? margemX + 11 : margemX;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.setTextColor(...cores.white);
+  doc.text("Quadra Play", tituloX, 9.6);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.2);
+  doc.setTextColor(191, 219, 254);
+  doc.text("Comprovante de agendamento", tituloX, 13.9);
+  doc.text(`Gerado em ${dataGeracaoLabel}`, pageWidth - margemX, 9.3, { align: "right" });
+  doc.text(`Codigo ${codigoFinal}`, pageWidth - margemX, 14, { align: "right" });
+
+  const painelX = margemX;
+  const painelY = 25;
+  const painelW = pageWidth - margemX * 2;
+  const painelH = 104;
+
+  doc.setFillColor(...cores.panel);
+  doc.setDrawColor(...cores.border);
+  doc.roundedRect(painelX, painelY, painelW, painelH, 3.2, 3.2, "FD");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10.5);
+  doc.setTextColor(...cores.primary);
+  doc.text("Dados da reserva", painelX + 6, painelY + 9.2);
+
+  const badgeW = 34;
+  const badgeH = 7.8;
+  const badgeX = painelX + painelW - badgeW - 6;
+  const badgeY = painelY + 3.6;
+  doc.setFillColor(...statusMeta.bg);
+  doc.setDrawColor(...statusMeta.border);
+  doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 4, 4, "FD");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(6.5);
+  doc.setTextColor(...statusMeta.text);
+  doc.text(statusMeta.label, badgeX + badgeW / 2, badgeY + 5.2, { align: "center" });
+
+  const conteudoX = painelX + 6;
+  const conteudoW = painelW - 12;
+  const gap = 4;
+  const colW = (conteudoW - gap) / 2;
+
+  desenharCampo({
+    x: conteudoX,
+    y: painelY + 13,
+    w: conteudoW,
+    h: 16,
+    label: "Quadra",
+    valor: nomeQuadra,
   });
 
-  doc.setFontSize(16);
-  doc.setTextColor(...corPrimaria);
+  desenharCampo({
+    x: conteudoX,
+    y: painelY + 32,
+    w: colW,
+    label: "Data",
+    valor: dataReserva,
+  });
+
+  desenharCampo({
+    x: conteudoX + colW + gap,
+    y: painelY + 32,
+    w: colW,
+    label: "Horario",
+    valor: horaReserva,
+  });
+
+  desenharCampo({
+    x: conteudoX,
+    y: painelY + 49,
+    w: colW,
+    label: "Duracao",
+    valor: duracaoReserva,
+  });
+
+  desenharCampo({
+    x: conteudoX + colW + gap,
+    y: painelY + 49,
+    w: colW,
+    label: "Tipo",
+    valor: tipoReserva,
+  });
+
+  doc.setFillColor(...cores.codeBg);
+  doc.setDrawColor(...cores.codeBorder);
+  doc.roundedRect(conteudoX, painelY + 66, conteudoW, 17.5, 2.2, 2.2, "FD");
   doc.setFont("helvetica", "bold");
-  doc.text("QuadraLivre", 25, 18);
+  doc.setFontSize(6.8);
+  doc.setTextColor(...cores.primary);
+  doc.text("CODIGO DE VERIFICACAO", painelX + painelW / 2, painelY + 72.4, { align: "center" });
+  doc.setFontSize(12);
+  doc.text(codigoFinal, painelX + painelW / 2, painelY + 79.5, { align: "center" });
 
-  doc.setFontSize(9);
-  doc.setTextColor(150, 150, 150);
-  doc.text("COMPROVANTE DE AGENDAMENTO", 130, 18, { align: "right" });
-
-  doc.setDrawColor(...corPrimaria);
-  doc.setLineWidth(0.5);
-  doc.line(10, 25, 130, 25);
-
-  doc.setTextColor(0, 0, 0);
-  doc.setFontSize(10);
-
-  doc.setFont("helvetica", "bold");
-  doc.text("Local:", 15, 38);
-  doc.text("Data/Hora:", 15, 48);
-
+  doc.setDrawColor(...cores.border);
+  doc.line(margemX, pageHeight - 16, pageWidth - margemX, pageHeight - 16);
   doc.setFont("helvetica", "normal");
-  doc.text(agendamento.quadra, 40, 38);
-  doc.text(`${agendamento.dataFormatada} as ${agendamento.hora}`, 40, 48);
+  doc.setFontSize(7);
+  doc.setTextColor(...cores.muted);
+  doc.text("Apresente este comprovante ao chegar na quadra.", margemX, pageHeight - 11);
+  doc.text("Quadra Play", pageWidth - margemX, pageHeight - 11, { align: "right" });
 
-  doc.setFont("helvetica", "bold");
-  doc.text("Tipo:", 85, 38);
-  doc.text("Status:", 85, 48);
-
-  doc.setFont("helvetica", "normal");
-  doc.text(agendamento.tipo.toUpperCase(), 105, 38);
-  doc.text(agendamento.status.toUpperCase(), 105, 48);
-
-  doc.setDrawColor(230, 230, 230);
-  doc.line(15, 58, 125, 58);
-
-  doc.setFontSize(8);
-  doc.setTextColor(120, 120, 120);
-  doc.text("CÓDIGO DE VERIFICAÇÃO", 70, 64, { align: "center" });
-
-  doc.setFontSize(14);
-  doc.setTextColor(...corPrimaria);
-  doc.setFont("helvetica", "bold");
-  doc.text(codigoFinal, 70, 71, { align: "center" });
-
-  doc.save(`Voucher_${agendamento.quadra}_${codigoFinal}.pdf`);
+  doc.save(
+    `comprovante_agendamento_${normalizarNomeArquivo(nomeQuadra, "quadra")}_${normalizarNomeArquivo(
+      codigoFinal,
+      "codigo"
+    )}.pdf`
+  );
 
   Swal.fire({
     icon: "success",

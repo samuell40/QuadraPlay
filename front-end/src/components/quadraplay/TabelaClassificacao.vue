@@ -1,8 +1,16 @@
 <template>
-  <div class="placar-table">
+  <div
+    class="placar-table"
+    :class="{
+      'mobile-compact-no-scroll': compactMobileNoScroll,
+      'tema-navegacao': theme === 'navegacao',
+      'tema-finalizado': theme === 'finalizado'
+    }"
+  >
     <div v-if="loading" class="loader-container-centralizado">
       <LoadingState
         size="compact"
+        :theme="loadingTheme"
         :title="loadingTitle"
         :description="loadingDescription"
       />
@@ -37,7 +45,7 @@
             <tbody>
               <tr v-for="(time, index) in grupo.times" :key="`${grupo.id}-${obterIdTime(time)}-${index}`">
                 <td class="time-info time-info-click" @click="onTimeClick(time)">
-                  <span class="posicao">{{ index + 1 }}</span>
+                  <span class="posicao">{{ index + 1 }}º</span>
                   <img :src="obterFotoTimeCard(time?.time?.foto ?? time?.foto)" class="time-image" />
                   <span class="nome-time">{{ time.time?.nome }}</span>
                 </td>
@@ -194,7 +202,10 @@ export default {
     showGlossary: { type: Boolean, default: true },
     colunasVisiveis: { type: Array, default: () => [] },
     gruposConfig: { type: Object, default: null },
-    exibirPorGrupos: { type: Boolean, default: true }
+    exibirPorGrupos: { type: Boolean, default: true },
+    compactMobileNoScroll: { type: Boolean, default: false },
+    theme: { type: String, default: 'default' },
+    loadingTheme: { type: String, default: 'default' }
   },
   data() {
     return {
@@ -526,6 +537,23 @@ export default {
   white-space: nowrap;
 }
 
+.placar-table.tema-navegacao {
+  border: 1px solid rgba(191, 219, 254, 0.45);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12);
+}
+
+.placar-table.tema-navegacao .placar thead th {
+  background: #2252a8;
+  border-bottom: 1px solid rgba(147, 197, 253, 0.36);
+  color: #f8fafc;
+}
+
+.placar-table.tema-finalizado .placar thead th {
+  background: linear-gradient(135deg, #b91c1c, #ef4444);
+  border-bottom: 1px solid rgba(248, 113, 113, 0.36);
+  color: #fff;
+}
+
 .placar thead th:not(:first-child),
 .placar tbody td:not(:first-child) {
   text-align: center;
@@ -607,11 +635,25 @@ export default {
 }
 
 .posicao {
-  font-weight: bold;
-  font-size: 14px;
-  min-width: 20px;
-  text-align: right;
-  color: #3b82f6;
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 13px;
+  line-height: 1;
+  color: #2563eb;
+  background: rgba(59, 130, 246, 0.14);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.placar-table.tema-finalizado .posicao {
+  color: #b91c1c;
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(239, 68, 68, 0.28);
 }
 
 .time-image {
@@ -774,7 +816,9 @@ export default {
   }
 
   .posicao {
-    min-width: 14px;
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
     font-size: 10px;
   }
 
@@ -802,5 +846,56 @@ export default {
     line-height: 1.25;
     white-space: normal;
   }
+
+  .placar-table.mobile-compact-no-scroll {
+    overflow-x: hidden;
+  }
+
+  .placar-table.mobile-compact-no-scroll .placar {
+    min-width: 0;
+    table-layout: fixed;
+  }
+
+  .placar-table.mobile-compact-no-scroll .placar thead th,
+  .placar-table.mobile-compact-no-scroll .placar tbody td {
+    padding: 4px 2px;
+    font-size: 10px;
+  }
+
+  .placar-table.mobile-compact-no-scroll .placar thead th:first-child,
+  .placar-table.mobile-compact-no-scroll .placar tbody td:first-child {
+    width: 46%;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .placar-table.mobile-compact-no-scroll .placar thead th:not(:first-child),
+  .placar-table.mobile-compact-no-scroll .placar tbody td:not(:first-child) {
+    width: 13.5%;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .placar-table.mobile-compact-no-scroll .time-info {
+    gap: 3px;
+  }
+
+  .placar-table.mobile-compact-no-scroll .time-image {
+    width: 16px;
+    height: 16px;
+  }
+
+  .placar-table.mobile-compact-no-scroll .posicao {
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+    font-size: 9px;
+  }
+
+  .placar-table.mobile-compact-no-scroll .nome-time {
+    max-width: 100%;
+    font-size: 10px;
+  }
 }
 </style>
+

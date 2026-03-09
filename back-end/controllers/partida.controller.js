@@ -400,6 +400,8 @@ async function listarPartidasDaRodadaDaFaseController(req, res) {
   const cId = Number(campeonatoId)
   const fId = Number(faseId)
   const rId = Number(rodadaId)
+  const usuarioId = Number(req.user?.id)
+  const permissaoId = Number(req.user?.permissaoId)
   const detalhes = ['1', 'true', 'sim'].includes(
     String(req.query?.detalhes || '').toLowerCase()
   )
@@ -409,7 +411,13 @@ async function listarPartidasDaRodadaDaFaseController(req, res) {
   }
 
   try {
-    const partida = await partidas.listarPartidasDaRodadaDaFase(cId, fId, rId, { detalhes })
+    const partida = await partidas.listarPartidasDaRodadaDaFase(cId, fId, rId, {
+      detalhes,
+      usuario: {
+        id: Number.isFinite(usuarioId) ? usuarioId : null,
+        permissaoId: Number.isFinite(permissaoId) ? permissaoId : null
+      }
+    })
     return res.json(partida)
   } catch (error) {
     console.error(error)

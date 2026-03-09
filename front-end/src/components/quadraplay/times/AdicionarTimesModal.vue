@@ -3,7 +3,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h2>Adicionar Time</h2>
-        <button type="button" class="btn-close-x" @click="fecharModalAdicionarTime">x</button>
+        <button type="button" class="btn-close-x" :disabled="salvandoCadastro" @click="fecharModalAdicionarTime">x</button>
       </div>
       <form @submit.prevent="adicionarTime">
         <div class="form-group">
@@ -58,7 +58,12 @@
         </div>
 
         <div class="buttons">
-          <button type="submit" class="btn-save">Cadastrar</button>
+          <button type="submit" class="btn-save" :disabled="salvandoCadastro">
+            <span class="btn-inline-content">
+              <span v-if="salvandoCadastro" class="btn-save-spinner" aria-hidden="true"></span>
+              {{ salvandoCadastro ? 'Cadastrando...' : 'Cadastrar' }}
+            </span>
+          </button>
         </div>
       </form>
     </div>
@@ -84,7 +89,8 @@ export default {
       treinadores: [],
       treinadorSelecionado: null,
       abrirDropdownTreinador: false,
-      buscaTreinador: ''
+      buscaTreinador: '',
+      salvandoCadastro: false
     };
   },
   computed: {
@@ -104,7 +110,9 @@ export default {
     }
   },
   methods: {
-    fecharModalAdicionarTime() {
+    fecharModalAdicionarTime(forcarFechamento = false) {
+      if (this.salvandoCadastro && !forcarFechamento) return;
+
       this.modalidadeSelecionada = null;
       this.timeParaAdicionar = '';
       this.arquivoFoto = null;
@@ -137,10 +145,14 @@ export default {
     },
 
     async adicionarTime() {
+      if (this.salvandoCadastro) return;
+
       if (!this.modalidadeSelecionada || !this.timeParaAdicionar.trim()) {
         Swal.fire('Atenção', 'Preencha todos os campos.', 'warning');
         return;
       }
+
+      this.salvandoCadastro = true;
 
       try {
         let urlImagem = fotoTime;
@@ -167,7 +179,7 @@ export default {
 
         Swal.fire('Sucesso', 'Time adicionado com sucesso!', 'success');
 
-        this.fecharModalAdicionarTime();
+        this.fecharModalAdicionarTime(true);
 
         this.$emit('atualizar');
 
@@ -178,6 +190,8 @@ export default {
           error.response?.data?.erro || error.message || 'Erro ao adicionar time.',
           'error'
         );
+      } finally {
+        this.salvandoCadastro = false;
       }
     }
   }
@@ -268,6 +282,33 @@ input[type='file'] {
 
 .btn-save {
   background-color: #3b82f6;
+}
+
+.btn-save:disabled,
+.btn-close-x:disabled {
+  opacity: 0.72;
+  cursor: not-allowed;
+}
+
+.btn-inline-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-save-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: btnSpinner 0.7s linear infinite;
+}
+
+@keyframes btnSpinner {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .btn-cancel {

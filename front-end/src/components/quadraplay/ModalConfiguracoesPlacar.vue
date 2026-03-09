@@ -71,6 +71,20 @@
           </span>
           <small class="btn-tipo-sub">Seleciona quais colunas devem aparecer no placar</small>
         </button>
+
+        <button class="btn-tipo btn-tipo-card" :disabled="carregandoAcaoEscolha"
+          @click="onEscolherConfiguracao('COMPARTILHAR')">
+          <span class="btn-tipo-titulo btn-tipo-titulo-com-icone">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-share-fill"
+              viewBox="0 0 16 16">
+              <path d="M11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.5 2.5 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488.876l-6.718-3.12a2.5 2.5 0 1 1 0-3.256l6.718-3.12A2.5 2.5 0 0 1 11 2.5" />
+            </svg>
+            <span class="titulo-acao-modal">Gerar Imagem do Classificacao</span>
+            <span v-if="carregandoAcaoEscolha && acaoSelecionada === 'COMPARTILHAR'" class="acao-loading-spinner"
+              aria-hidden="true"></span>
+          </span>
+          <small class="btn-tipo-sub">Escolha PDF ou imagem e salva automaticamente</small>
+        </button>
       </div>
 
       <div class="botoes">
@@ -234,19 +248,46 @@
 <script>
 import api from "@/axios"
 import Swal from "sweetalert2"
+import jsPDF from "jspdf"
+import autoTable from "jspdf-autotable"
 import {
   getColunasClassificacaoPorModalidade,
   getChavesPadraoColunasClassificacao,
   resolverColunasVisiveisClassificacao
 } from "@/utils/classificacaoColunas"
 import { obterFotoTime } from "@/utils/timeImagem"
+import logoQuadraPlay from "@/assets/logo.png"
 
 export default {
   name: "ModalConfiguracoesCampeonato",
 
   props: {
     modelValue: Boolean,
-    campeonato: Object
+    campeonato: Object,
+    timesPlacar: {
+      type: Array,
+      default: () => []
+    },
+    colunasVisiveis: {
+      type: Array,
+      default: () => []
+    },
+    gruposConfig: {
+      type: Object,
+      default: null
+    },
+    exibirPorGrupos: {
+      type: Boolean,
+      default: false
+    },
+    faseNome: {
+      type: String,
+      default: ""
+    },
+    rodadaNome: {
+      type: String,
+      default: ""
+    }
   },
 
   emits: ["update:modelValue", "faseCriada", "criterios", "colunas", "grupos"],
@@ -313,10 +354,1201 @@ export default {
 
         if (acao === 'COLUNAS') {
           await this.colunasClassificacao()
+          return
+        }
+
+        if (acao === 'COMPARTILHAR') {
+          await this.compartilharPlacar()
         }
       } finally {
         this.carregandoAcaoEscolha = false
         this.acaoSelecionada = ''
+      }
+    },
+
+    obterNomeTimeLinha(time) {
+      return String(time?.time?.nome ?? time?.nome ?? "Time").trim() || "Time"
+    },
+
+    normalizarResultadoCompartilhamento(valor) {
+      const token = String(valor || "")
+        .toUpperCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+
+      if (["V", "W", "WIN", "WON", "VITORIA", "VITORIAS", "GANHOU"].includes(token)) return "V"
+      if (["E", "DRAW", "EMPATE", "EMPATES", "TIE"].includes(token)) return "E"
+      if (["D", "L", "LOSS", "LOST", "DERROTA", "DERROTAS", "PERDEU", "X"].includes(token)) return "D"
+      if (["-", "N", "NULL", "SEM"].includes(token)) return "-"
+      return "-"
+    },
+
+    obterUltimosJogosCompartilhamento(time) {
+      const candidatas = [
+        time?.ultimosJogos,
+        time?.ultimos_jogos,
+        time?.ultimosResultados,
+        time?.ultimos_resultados,
+        time?.historico,
+        time?.recentes,
+        time?.forma,
+        time?.form
+      ]
+
+      const bruto = candidatas.find(valor => Array.isArray(valor) || typeof valor === "string")
+      let resultados = []
+
+      if (Array.isArray(bruto)) {
+        resultados = bruto.map(item => this.normalizarResultadoCompartilhamento(item))
+      } else if (typeof bruto === "string") {
+        const tokens = bruto
+          .toUpperCase()
+          .split(/[,\s;/|-]+/)
+          .filter(Boolean)
+        resultados = tokens.map(item => this.normalizarResultadoCompartilhamento(item))
+      }
+
+      const normalizados = resultados
+        .filter(item => ["V", "E", "D", "-"].includes(item))
+        .slice(0, 3)
+
+      while (normalizados.length < 3) normalizados.push("-")
+      return normalizados
+    },
+
+    obterValorColunaCompartilhamento(time, chave) {
+      if (chave === "aproveitamento") {
+        return `${time?.aproveitamento ?? 0}%`
+      }
+
+      if (chave === "pontosAverage") {
+        const valor = Number(time?.pontosAverage ?? 0)
+        return Number.isFinite(valor) ? valor.toFixed(2) : "0.00"
+      }
+
+      if (chave === "ultimosJogos") {
+        return this.obterUltimosJogosCompartilhamento(time).join(" ")
+      }
+
+      const valor = time?.[chave]
+      return valor == null ? "-" : String(valor)
+    },
+
+    simboloResultadoCompartilhamento(resultado) {
+      if (resultado === "V") return "\u2713"
+      if (resultado === "D") return "\u2715"
+      return "-"
+    },
+
+    coresResultadoCompartilhamento(resultado) {
+      if (resultado === "V") {
+        return { fundo: "#16a34a", texto: "#ffffff" }
+      }
+
+      if (resultado === "E") {
+        return { fundo: "#9ca3af", texto: "#ffffff" }
+      }
+
+      if (resultado === "D") {
+        return { fundo: "#ef4444", texto: "#ffffff" }
+      }
+
+      return { fundo: "#cbd5e1", texto: "#334155" }
+    },
+
+    obterColunasCompartilhamento() {
+      const chavesVisiveis = resolverColunasVisiveisClassificacao(
+        this.campeonato?.modalidade?.nome,
+        this.colunasVisiveis
+      )
+
+      const mapa = new Map(this.colunasDisponiveis.map(coluna => [coluna.key, coluna]))
+      const colunas = chavesVisiveis
+        .map(chave => mapa.get(chave))
+        .filter(Boolean)
+
+      if (colunas.length) return colunas
+      return this.colunasDisponiveis.slice(0, 6)
+    },
+
+    obterIdTimeCompartilhamento(time) {
+      const id = Number(time?.timeId ?? time?.time?.id ?? time?.id ?? 0)
+      return Number.isFinite(id) && id > 0 ? id : 0
+    },
+
+    compartilhamentoPorGruposAtivo() {
+      return Boolean(
+        this.exibirPorGrupos
+        && Array.isArray(this.gruposConfig?.grupos)
+        && this.gruposConfig.grupos.length > 0
+      )
+    },
+
+    obterBlocosClassificacaoCompartilhamento(maxTimes = null) {
+      const times = Array.isArray(this.timesPlacar) ? this.timesPlacar : []
+      if (!times.length) return []
+
+      const limite = Number(maxTimes)
+      const aplicarLimite = Number.isFinite(limite) && limite > 0
+      const limitarLista = lista => aplicarLimite ? lista.slice(0, limite) : lista.slice()
+
+      if (!this.compartilhamentoPorGruposAtivo()) {
+        const linhas = limitarLista(times)
+        return linhas.length
+          ? [{ id: "classificacao-geral", nome: "", times: linhas }]
+          : []
+      }
+
+      const idsUsados = new Set()
+      const blocos = this.gruposConfig.grupos
+        .map((grupo, indice) => {
+          const idsGrupo = new Set(
+            (Array.isArray(grupo?.timeIds) ? grupo.timeIds : [])
+              .map(id => Number(id))
+              .filter(id => Number.isInteger(id) && id > 0)
+          )
+
+          const timesGrupo = times.filter(time => idsGrupo.has(this.obterIdTimeCompartilhamento(time)))
+          timesGrupo.forEach(time => idsUsados.add(this.obterIdTimeCompartilhamento(time)))
+
+          return {
+            id: String(grupo?.id || `grupo-${indice + 1}`),
+            nome: String(grupo?.nome || "").trim() || `Grupo ${indice + 1}`,
+            times: timesGrupo
+          }
+        })
+        .filter(bloco => bloco.times.length)
+
+      const timesSemGrupo = times.filter(time => !idsUsados.has(this.obterIdTimeCompartilhamento(time)))
+      if (timesSemGrupo.length) {
+        blocos.push({
+          id: "sem-grupo",
+          nome: "Sem grupo",
+          times: timesSemGrupo
+        })
+      }
+
+      if (!aplicarLimite) return blocos
+
+      let restante = limite
+      const blocosLimitados = []
+
+      for (const bloco of blocos) {
+        if (restante <= 0) break
+        const timesLimitados = bloco.times.slice(0, restante)
+        if (!timesLimitados.length) continue
+        blocosLimitados.push({
+          ...bloco,
+          times: timesLimitados
+        })
+        restante -= timesLimitados.length
+      }
+
+      return blocosLimitados
+    },
+
+    obterResumoCompartilhamento() {
+      const partes = []
+      if (this.campeonato?.nome) partes.push(`Campeonato: ${this.campeonato.nome}`)
+      if (this.faseNome) partes.push(`Fase: ${this.faseNome}`)
+      if (this.compartilhamentoPorGruposAtivo()) partes.push("Classificacao por grupo")
+      partes.push(`Gerado em ${new Date().toLocaleDateString("pt-BR")}`)
+      return partes.join(" | ")
+    },
+
+    obterItensGlossarioCompartilhamento(colunas = []) {
+      const descricaoPorChave = {
+        pontuacao: "Pontos",
+        jogos: "Jogos",
+        vitorias: "Vitorias",
+        empates: "Empates",
+        derrotas: "Derrotas",
+        golsPro: "Gols marcados",
+        golsSofridos: "Gols sofridos",
+        saldoDeGols: "Saldo de gols",
+        aproveitamento: "Aproveitamento",
+        setsVencidos: "Sets pro",
+        setsContra: "Sets contra",
+        diferencaSets: "Diferenca de sets",
+        pontosPro: "Pontos pro",
+        pontosContra: "Pontos contra",
+        diferencaPontos: "Diferenca de pontos",
+        pontosAverage: "Pontos average",
+        derrotaWo: "Derrota por W.O.",
+        gamesPro: "Games a favor",
+        gamesContra: "Games contra",
+        diferencaGames: "Diferenca de games",
+        ultimosJogos: "Ultimos jogos"
+      }
+
+      const siglaPorChave = {
+        vitorias: "V",
+        derrotas: "D",
+        empates: "E",
+        ultimosJogos: "ULT",
+        derrotaWo: "W.O."
+      }
+
+      const usados = new Set()
+      const itens = []
+
+      for (const coluna of colunas) {
+        const chave = String(coluna?.key || "").trim()
+        if (!chave || usados.has(chave)) continue
+
+        const siglaBase = siglaPorChave[chave] || String(coluna?.abbr || coluna?.label || chave).toUpperCase()
+        const sigla = String(siglaBase).replace(/\s+/g, " ").trim()
+        const descricao = String(descricaoPorChave[chave] || coluna?.label || chave).trim()
+
+        itens.push({ sigla, descricao })
+        usados.add(chave)
+      }
+
+      return itens
+    },
+
+    normalizarUrlImagemCompartilhamento(url) {
+      const src = String(url || "").trim()
+      if (!src) return ""
+      if (/^(data:|blob:)/i.test(src)) return src
+      if (/^https?:\/\//i.test(src)) return src
+      if (/^\/?(assets|img|images)\//i.test(src)) return src
+
+      const baseApi = String(api?.defaults?.baseURL || "").trim().replace(/\/+$/, "")
+      if (!baseApi) return src
+
+      if (/^\/uploads\//i.test(src)) return `${baseApi}${src}`
+      if (/^uploads\//i.test(src)) return `${baseApi}/${src}`
+      return src
+    },
+
+    obterFotoTimeCompartilhamento(foto) {
+      const fotoNormalizada = obterFotoTime(foto)
+      const urlAbsoluta = this.normalizarUrlImagemCompartilhamento(fotoNormalizada)
+
+      if (!/^https?:\/\//i.test(urlAbsoluta)) {
+        return {
+          principal: urlAbsoluta,
+          fallback: urlAbsoluta
+        }
+      }
+
+      const baseApi = String(api?.defaults?.baseURL || "").trim().replace(/\/+$/, "")
+      if (!baseApi) {
+        return {
+          principal: urlAbsoluta,
+          fallback: urlAbsoluta
+        }
+      }
+
+      const proxyUrl = `${baseApi}/media/proxy?url=${encodeURIComponent(urlAbsoluta)}`
+      return {
+        principal: proxyUrl,
+        fallback: urlAbsoluta
+      }
+    },
+
+    carregarImagemDataUrlCompartilhamento(url) {
+      return new Promise((resolve) => {
+        const src = String(url || "").trim()
+        if (!src) {
+          resolve(null)
+          return
+        }
+
+        const imagem = new Image()
+        let finalizado = false
+        const timeoutId = window.setTimeout(() => {
+          if (finalizado) return
+          finalizado = true
+          resolve(null)
+        }, 8000)
+
+        const finalizar = (resultado) => {
+          if (finalizado) return
+          finalizado = true
+          window.clearTimeout(timeoutId)
+          resolve(resultado)
+        }
+
+        if (/^https?:\/\//i.test(src)) {
+          imagem.crossOrigin = "anonymous"
+        }
+
+        imagem.decoding = "async"
+        imagem.onload = () => {
+          try {
+            const largura = imagem.naturalWidth || imagem.width || 0
+            const altura = imagem.naturalHeight || imagem.height || 0
+            if (largura <= 0 || altura <= 0) {
+              finalizar(null)
+              return
+            }
+
+            const canvas = document.createElement("canvas")
+            canvas.width = largura
+            canvas.height = altura
+            const ctx = canvas.getContext("2d")
+            if (!ctx) {
+              finalizar(null)
+              return
+            }
+
+            ctx.drawImage(imagem, 0, 0, largura, altura)
+            finalizar(canvas.toDataURL("image/png"))
+          } catch {
+            finalizar(null)
+          }
+        }
+        imagem.onerror = () => finalizar(null)
+        imagem.src = src
+      })
+    },
+
+    async carregarImagemDataUrlCompartilhamentoComFallback(urlPrincipal, urlFallback = "") {
+      const principal = await this.carregarImagemDataUrlCompartilhamento(urlPrincipal)
+      if (principal) return principal
+
+      const fallback = String(urlFallback || "").trim()
+      if (!fallback || fallback === String(urlPrincipal || "").trim()) {
+        return null
+      }
+
+      return this.carregarImagemDataUrlCompartilhamento(fallback)
+    },
+
+    carregarImagemObjetoCompartilhamento(url) {
+      return new Promise((resolve) => {
+        const src = String(url || "").trim()
+        if (!src) {
+          resolve(null)
+          return
+        }
+
+        const imagem = new Image()
+        let finalizado = false
+        const timeoutId = window.setTimeout(() => {
+          if (finalizado) return
+          finalizado = true
+          resolve(null)
+        }, 8000)
+
+        const finalizar = (resultado) => {
+          if (finalizado) return
+          finalizado = true
+          window.clearTimeout(timeoutId)
+          resolve(resultado)
+        }
+
+        if (/^https?:\/\//i.test(src)) {
+          imagem.crossOrigin = "anonymous"
+        }
+
+        imagem.decoding = "async"
+        imagem.onload = () => finalizar(imagem)
+        imagem.onerror = () => finalizar(null)
+        imagem.src = src
+      })
+    },
+
+    async obterEscudosTimesCompartilhamento(times = []) {
+      const referencias = times.map((time) => {
+        const foto = time?.time?.foto ?? time?.foto ?? ""
+        const urls = this.obterFotoTimeCompartilhamento(foto)
+        const chave = `${String(urls?.principal || "")}||${String(urls?.fallback || "")}`
+        return { chave, urls }
+      })
+
+      const cache = new Map()
+      const listaUnica = []
+
+      for (const referencia of referencias) {
+        if (!referencia.chave || cache.has(referencia.chave)) continue
+        cache.set(referencia.chave, null)
+        listaUnica.push(referencia)
+      }
+
+      await Promise.all(listaUnica.map(async (referencia) => {
+        const imagem = await this.carregarImagemDataUrlCompartilhamentoComFallback(
+          referencia.urls?.principal,
+          referencia.urls?.fallback
+        )
+        cache.set(referencia.chave, imagem || null)
+      }))
+
+      return referencias.map(referencia => cache.get(referencia.chave) || null)
+    },
+
+    criarPayloadArquivo(blob, extensao = "png") {
+      const nomeNormalizado = String(this.campeonato?.nome || "campeonato")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9]+/g, "_")
+        .replace(/^_+|_+$/g, "")
+        .toLowerCase()
+
+      const arquivoNome = `placar_${nomeNormalizado || "campeonato"}.${extensao}`
+      const mime = extensao === "png" ? "image/png" : "application/octet-stream"
+      const arquivo = new File([blob], arquivoNome, { type: mime })
+      const url = URL.createObjectURL(blob)
+      setTimeout(() => URL.revokeObjectURL(url), 60_000)
+
+      return {
+        arquivo,
+        arquivoNome,
+        url,
+        texto: this.obterResumoCompartilhamento()
+      }
+    },
+
+    desenharRetanguloArredondado(ctx, x, y, largura, altura, raio) {
+      const r = Math.min(raio, largura / 2, altura / 2)
+      ctx.beginPath()
+      ctx.moveTo(x + r, y)
+      ctx.lineTo(x + largura - r, y)
+      ctx.quadraticCurveTo(x + largura, y, x + largura, y + r)
+      ctx.lineTo(x + largura, y + altura - r)
+      ctx.quadraticCurveTo(x + largura, y + altura, x + largura - r, y + altura)
+      ctx.lineTo(x + r, y + altura)
+      ctx.quadraticCurveTo(x, y + altura, x, y + altura - r)
+      ctx.lineTo(x, y + r)
+      ctx.quadraticCurveTo(x, y, x + r, y)
+      ctx.closePath()
+    },
+
+    baixarArquivo(url, nomeArquivo) {
+      if (!url) return
+      const link = document.createElement("a")
+      link.href = url
+      link.download = nomeArquivo || "arquivo"
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    },
+
+    async compartilharArquivoCanal(canal, payload) {
+      const shareNativoDisponivel = !!(navigator.share && navigator.canShare && payload?.arquivo)
+      const canShareArquivo = shareNativoDisponivel && navigator.canShare({ files: [payload.arquivo] })
+
+      if (canShareArquivo) {
+        try {
+          await navigator.share({
+            title: "Compartilhar placar",
+            text: payload.texto,
+            files: [payload.arquivo]
+          })
+          return
+        } catch (error) {
+          if (error?.name === "AbortError") return
+        }
+      }
+
+      if (canal === "whatsapp") {
+        const linkWhatsApp = `https://wa.me/?text=${encodeURIComponent(payload.texto)}`
+        window.open(linkWhatsApp, "_blank", "noopener,noreferrer")
+        this.baixarArquivo(payload.url, payload.arquivoNome)
+        await Swal.fire({
+          title: "Imagem pronta",
+          text: "Abrimos o WhatsApp e baixamos a imagem para voce anexar.",
+          icon: "info",
+          target: ".modal-escolha-config"
+        })
+        return
+      }
+
+      this.baixarArquivo(payload.url, payload.arquivoNome)
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(payload.texto)
+        }
+      } catch (error) {
+        console.warn("Nao foi possivel copiar o texto automaticamente:", error)
+      }
+
+      await Swal.fire({
+        title: "Imagem pronta",
+        text: "A imagem foi baixada para publicar no Instagram.",
+        icon: "info",
+        target: ".modal-escolha-config"
+      })
+    },
+
+    async gerarBlobImagemPlacar() {
+      const blocos = this.obterBlocosClassificacaoCompartilhamento(26)
+      const colunasBase = this.obterColunasCompartilhamento()
+      if (!blocos.length) {
+        throw new Error("Sem dados de classificacao para compartilhar.")
+      }
+
+      const compartilhandoPorGrupo = this.compartilhamentoPorGruposAtivo()
+      const colunas = colunasBase.slice()
+      const largura = 1536
+      const margem = 56
+      const larguraCard = largura - (margem * 2)
+      const xTabela = margem + 34
+      const larguraTabela = larguraCard - 68
+      const paddingHorizontalTabela = 16
+      const larguraUtilTabela = Math.max(1, larguraTabela - (paddingHorizontalTabela * 2))
+      let larguraColunaTime = 340
+      if (colunas.length >= 9) larguraColunaTime = 300
+      else if (colunas.length >= 7) larguraColunaTime = 320
+      else if (colunas.length <= 4) larguraColunaTime = 420
+      const larguraMinimaColuna = 72
+
+      while (colunas.length > 4) {
+        const larguraDisponivelOutras = larguraUtilTabela - larguraColunaTime
+        const larguraColunaAtual = larguraDisponivelOutras / Math.max(colunas.length, 1)
+        if (larguraColunaAtual >= larguraMinimaColuna) break
+        colunas.pop()
+      }
+
+      const larguraDisponivelOutras = Math.max(1, larguraUtilTabela - larguraColunaTime)
+      const larguraColuna = larguraDisponivelOutras / Math.max(colunas.length, 1)
+      const alturaCabecalhoTabela = 58
+      const alturaLinha = 50
+      const alturaTituloGrupo = compartilhandoPorGrupo ? 38 : 0
+      const espacamentoEntreBlocos = compartilhandoPorGrupo ? 18 : 0
+      const linhas = blocos.flatMap(bloco => bloco.times)
+      const logoRodape = await this.carregarImagemObjetoCompartilhamento(logoQuadraPlay)
+      const escudosDataUrl = await this.obterEscudosTimesCompartilhamento(linhas)
+      const escudosLinhas = await Promise.all(
+        escudosDataUrl.map((src) => this.carregarImagemObjetoCompartilhamento(src))
+      )
+      const alturaTabelas = blocos.reduce((total, bloco, indice) => {
+        const alturaTabelaBloco = alturaCabecalhoTabela + (bloco.times.length * alturaLinha)
+        const tituloBloco = compartilhandoPorGrupo ? alturaTituloGrupo : 0
+        const gap = indice < blocos.length - 1 ? espacamentoEntreBlocos : 0
+        return total + tituloBloco + alturaTabelaBloco + gap
+      }, 0)
+      const altura = Math.max(900, 290 + alturaTabelas + 90)
+
+      const canvas = document.createElement("canvas")
+      canvas.width = largura
+      canvas.height = altura
+      const ctx = canvas.getContext("2d")
+
+      if (!ctx) {
+        throw new Error("Nao foi possivel iniciar o canvas para compartilhar placar.")
+      }
+
+      const gradienteFundo = ctx.createLinearGradient(0, 0, 0, altura)
+      gradienteFundo.addColorStop(0, "#081845")
+      gradienteFundo.addColorStop(0.55, "#0f2f7b")
+      gradienteFundo.addColorStop(1, "#0b1f55")
+      ctx.fillStyle = gradienteFundo
+      ctx.fillRect(0, 0, largura, altura)
+
+      const xCard = margem
+      const yCard = 68
+      const hCard = altura - 120
+      this.desenharRetanguloArredondado(ctx, xCard, yCard, larguraCard, hCard, 34)
+      ctx.fillStyle = "rgba(15, 23, 42, 0.34)"
+      ctx.fill()
+      ctx.strokeStyle = "rgba(125, 211, 252, 0.42)"
+      ctx.lineWidth = 2
+      ctx.stroke()
+
+      const titulo = `Classificacao - ${this.campeonato?.nome || "Campeonato"}`
+      ctx.textAlign = "left"
+      ctx.textBaseline = "alphabetic"
+      ctx.fillStyle = "#f8fafc"
+      ctx.font = "700 52px Montserrat, Arial, sans-serif"
+      ctx.fillText(titulo, xCard + 38, yCard + 70)
+
+      ctx.fillStyle = "rgba(191, 219, 254, 0.96)"
+      ctx.font = "500 25px Montserrat, Arial, sans-serif"
+      ctx.fillText(this.obterResumoCompartilhamento(), xCard + 38, yCard + 108)
+
+      const yInicioTabelas = yCard + 148
+
+      const truncarTexto = (texto, larguraMaxima) => {
+        let saida = String(texto || "")
+        if (ctx.measureText(saida).width <= larguraMaxima) return saida
+        while (saida.length && ctx.measureText(`${saida}...`).width > larguraMaxima) {
+          saida = saida.slice(0, -1)
+        }
+        return `${saida}...`
+      }
+
+      const xPrimeiraColuna = xTabela + paddingHorizontalTabela
+      const xInicioDemais = xPrimeiraColuna + larguraColunaTime
+      const fonteCabecalhoColunas = colunas.length >= 10 ? 14 : (colunas.length >= 8 ? 16 : 20)
+      const fonteValorColunas = colunas.length >= 10 ? 14 : (colunas.length >= 8 ? 16 : 20)
+      const obterTituloColunaImagem = (coluna) => {
+        if (coluna?.key === "ultimosJogos") return "ULT"
+        return String(coluna?.abbr || coluna?.label || "").toUpperCase()
+      }
+
+      let yCursorTabela = yInicioTabelas
+      let indiceEscudoGlobal = 0
+
+      blocos.forEach((bloco, indiceBloco) => {
+        if (compartilhandoPorGrupo) {
+          ctx.textAlign = "left"
+          ctx.textBaseline = "alphabetic"
+          ctx.fillStyle = "rgba(191, 219, 254, 0.98)"
+          ctx.font = "700 28px Montserrat, Arial, sans-serif"
+          ctx.fillText(bloco.nome || `Grupo ${indiceBloco + 1}`, xTabela, yCursorTabela + 28)
+          yCursorTabela += alturaTituloGrupo
+        }
+
+        const alturaTabelaAtual = alturaCabecalhoTabela + (bloco.times.length * alturaLinha)
+        const yHeader = yCursorTabela + 37
+
+        this.desenharRetanguloArredondado(ctx, xTabela, yCursorTabela, larguraTabela, alturaTabelaAtual, 20)
+        ctx.fillStyle = "rgba(15, 23, 42, 0.4)"
+        ctx.fill()
+
+        this.desenharRetanguloArredondado(ctx, xTabela, yCursorTabela, larguraTabela, alturaCabecalhoTabela, 20)
+        ctx.fillStyle = "rgba(59, 130, 246, 0.86)"
+        ctx.fill()
+
+        ctx.textAlign = "left"
+        ctx.fillStyle = "#ffffff"
+        ctx.font = "700 24px Montserrat, Arial, sans-serif"
+        ctx.fillText("Time", xPrimeiraColuna, yHeader)
+
+        ctx.textAlign = "center"
+        ctx.font = `700 ${fonteCabecalhoColunas}px Montserrat, Arial, sans-serif`
+        colunas.forEach((coluna, indice) => {
+          const centroColuna = xInicioDemais + (indice * larguraColuna) + (larguraColuna / 2)
+          const tituloColuna = obterTituloColunaImagem(coluna)
+          ctx.fillText(truncarTexto(tituloColuna, larguraColuna - 8), centroColuna, yHeader)
+        })
+
+        bloco.times.forEach((time, indiceLinha) => {
+          const yLinhaTop = yCursorTabela + alturaCabecalhoTabela + (indiceLinha * alturaLinha)
+          const yLinhaTexto = yLinhaTop + 33
+          const escudo = escudosLinhas[indiceEscudoGlobal]
+          indiceEscudoGlobal += 1
+          const tamanhoEscudo = 30
+          const larguraPosicao = 46
+          const xPosicao = xPrimeiraColuna + 2
+          const xEscudo = xPosicao + larguraPosicao
+          const yEscudo = yLinhaTop + ((alturaLinha - tamanhoEscudo) / 2)
+
+          ctx.fillStyle = indiceLinha % 2 === 0
+            ? "rgba(248, 250, 252, 0.08)"
+            : "rgba(15, 23, 42, 0.16)"
+          ctx.fillRect(xTabela, yLinhaTop, larguraTabela, alturaLinha)
+
+          ctx.textAlign = "left"
+          ctx.fillStyle = "#e2e8f0"
+          ctx.font = "700 21px Montserrat, Arial, sans-serif"
+          ctx.fillText(`${indiceLinha + 1}\u00BA`, xPosicao, yLinhaTexto)
+
+          if (escudo) {
+            const raio = tamanhoEscudo / 2
+            const centroX = xEscudo + raio
+            const centroY = yEscudo + raio
+
+            ctx.save()
+            ctx.beginPath()
+            ctx.arc(centroX, centroY, raio, 0, Math.PI * 2)
+            ctx.closePath()
+            ctx.clip()
+            ctx.drawImage(escudo, xEscudo, yEscudo, tamanhoEscudo, tamanhoEscudo)
+            ctx.restore()
+
+            ctx.strokeStyle = "rgba(191, 219, 254, 0.75)"
+            ctx.lineWidth = 1.1
+            ctx.beginPath()
+            ctx.arc(centroX, centroY, raio, 0, Math.PI * 2)
+            ctx.closePath()
+            ctx.stroke()
+          }
+
+          ctx.textAlign = "left"
+          ctx.fillStyle = "#e2e8f0"
+          ctx.font = "600 22px Montserrat, Arial, sans-serif"
+          const nomeTime = truncarTexto(
+            this.obterNomeTimeLinha(time),
+            larguraColunaTime - (larguraPosicao + tamanhoEscudo + 18)
+          )
+          ctx.fillText(nomeTime, xEscudo + tamanhoEscudo + 10, yLinhaTexto)
+
+          ctx.textAlign = "center"
+          ctx.font = `600 ${fonteValorColunas}px Montserrat, Arial, sans-serif`
+          colunas.forEach((coluna, indiceColuna) => {
+            const centroColuna = xInicioDemais + (indiceColuna * larguraColuna) + (larguraColuna / 2)
+            if (coluna?.key === "ultimosJogos") {
+              const resultados = this.obterUltimosJogosCompartilhamento(time)
+              const diametro = Math.max(11, Math.min(20, Math.floor((larguraColuna - 10) / 3)))
+              const gap = Math.max(2, Math.min(5, Math.floor((larguraColuna - (diametro * 3)) / 4)))
+              const larguraGrupo = (diametro * 3) + (gap * 2)
+              const centroY = yLinhaTop + (alturaLinha / 2)
+              const xPrimeiro = centroColuna - (larguraGrupo / 2) + (diametro / 2)
+
+              resultados.forEach((resultado, indiceResultado) => {
+                const xResultado = xPrimeiro + (indiceResultado * (diametro + gap))
+                const cores = this.coresResultadoCompartilhamento(resultado)
+
+                ctx.fillStyle = cores.fundo
+                ctx.beginPath()
+                ctx.arc(xResultado, centroY, diametro / 2, 0, Math.PI * 2)
+                ctx.closePath()
+                ctx.fill()
+
+                ctx.fillStyle = cores.texto
+                ctx.textAlign = "center"
+                ctx.textBaseline = "middle"
+                ctx.font = `700 ${Math.max(9, Math.floor(diametro * 0.58))}px Montserrat, Arial, sans-serif`
+                ctx.fillText(this.simboloResultadoCompartilhamento(resultado), xResultado, centroY + 0.5)
+              })
+
+              ctx.textBaseline = "alphabetic"
+              return
+            }
+
+            const valor = this.obterValorColunaCompartilhamento(time, coluna.key)
+            ctx.fillStyle = "#e2e8f0"
+            ctx.textAlign = "center"
+            ctx.textBaseline = "alphabetic"
+            ctx.font = `600 ${fonteValorColunas}px Montserrat, Arial, sans-serif`
+            ctx.fillText(truncarTexto(valor, larguraColuna - 16), centroColuna, yLinhaTexto)
+          })
+        })
+
+        yCursorTabela += alturaTabelaAtual
+        if (compartilhandoPorGrupo && indiceBloco < blocos.length - 1) {
+          yCursorTabela += espacamentoEntreBlocos
+        }
+      })
+
+      const textoMarca = "QuadraPlaySV"
+      ctx.font = "600 22px Montserrat, Arial, sans-serif"
+      const larguraTextoMarca = ctx.measureText(textoMarca).width
+      const tamanhoLogoRodape = 28
+      const gapLogoTexto = logoRodape ? 9 : 0
+      const larguraTotalMarca = larguraTextoMarca + (logoRodape ? (tamanhoLogoRodape + gapLogoTexto) : 0)
+      const xInicioMarca = (largura - larguraTotalMarca) / 2
+      const yMarca = altura - 20
+
+      if (logoRodape) {
+        const yLogo = yMarca - tamanhoLogoRodape + 5
+        ctx.drawImage(logoRodape, xInicioMarca, yLogo, tamanhoLogoRodape, tamanhoLogoRodape)
+      }
+
+      ctx.textAlign = "left"
+      ctx.fillStyle = "rgba(191, 219, 254, 0.95)"
+      ctx.font = "600 22px Montserrat, Arial, sans-serif"
+      ctx.fillText(textoMarca, xInicioMarca + (logoRodape ? (tamanhoLogoRodape + gapLogoTexto) : 0), yMarca)
+
+      const blob = await new Promise((resolve, reject) => {
+        canvas.toBlob((arquivo) => {
+          if (arquivo) resolve(arquivo)
+          else reject(new Error("Falha ao gerar imagem do placar"))
+        }, "image/png", 0.95)
+      })
+
+      return blob
+    },
+
+    async gerarPdfPlacar() {
+      const blocos = this.obterBlocosClassificacaoCompartilhamento()
+      if (!blocos.length) {
+        throw new Error("Sem dados de classificacao para gerar PDF.")
+      }
+
+      const compartilhandoPorGrupo = this.compartilhamentoPorGruposAtivo()
+      const colunas = this.obterColunasCompartilhamento()
+      const itensGlossario = this.obterItensGlossarioCompartilhamento(colunas)
+      const logoPdf = await this.carregarImagemDataUrlCompartilhamento(logoQuadraPlay)
+      const doc = new jsPDF("l", "mm", "a4")
+      const pageWidth = doc.internal.pageSize.getWidth()
+      const pageHeight = doc.internal.pageSize.getHeight()
+      const margemX = 12
+      const limiteInferior = pageHeight - 12
+      const dataGeracao = new Date()
+      const titulo = `Classificacao - ${this.campeonato?.nome || "Campeonato"}`
+      const resumo = this.obterResumoCompartilhamento()
+      const dataGeracaoLabel = `${dataGeracao.toLocaleDateString("pt-BR")} as ${dataGeracao.toLocaleTimeString("pt-BR")}`
+
+      const cores = {
+        header: [15, 23, 42],
+        headerAccent: [56, 189, 248],
+        primary: [29, 78, 216],
+        primarySoft: [239, 246, 255],
+        text: [15, 23, 42],
+        muted: [100, 116, 139],
+        border: [203, 213, 225],
+        white: [255, 255, 255]
+      }
+
+      let cursorY = 0
+
+      const desenharCabecalho = (continuacao = false) => {
+        const altura = continuacao ? 14 : 22
+
+        doc.setFillColor(...cores.header)
+        doc.rect(0, 0, pageWidth, altura, "F")
+        doc.setFillColor(...cores.headerAccent)
+        doc.rect(0, 0, pageWidth, 2.2, "F")
+
+        if (logoPdf) {
+          const yLogoCabecalho = continuacao ? 4.2 : 5.2
+          doc.addImage(
+            logoPdf,
+            "PNG",
+            margemX,
+            yLogoCabecalho,
+            continuacao ? 7.6 : 9.2,
+            continuacao ? 7.6 : 9.2
+          )
+        }
+
+        const xTextoCabecalho = logoPdf ? margemX + (continuacao ? 10 : 13.2) : margemX
+
+        if (continuacao) {
+          doc.setTextColor(...cores.white)
+          doc.setFont("helvetica", "bold")
+          doc.setFontSize(10.5)
+          doc.text("QuadraPlaySV", xTextoCabecalho, 8.8)
+
+          doc.setFont("helvetica", "normal")
+          doc.setFontSize(7.6)
+          doc.setTextColor(191, 219, 254)
+          doc.text("Relatorio de classificacao", pageWidth - margemX, 8.8, { align: "right" })
+          cursorY = 18
+          return
+        }
+
+        doc.setFont("helvetica", "bold")
+        doc.setFontSize(15.2)
+        doc.setTextColor(...cores.white)
+        doc.text("QuadraPlaySV", xTextoCabecalho, 10.8)
+
+        doc.setFont("helvetica", "normal")
+        doc.setFontSize(9)
+        doc.setTextColor(191, 219, 254)
+        doc.text("Relatorio de classificacao", xTextoCabecalho, 15.5)
+
+        doc.setFont("helvetica", "bold")
+        doc.setFontSize(15.5)
+        doc.setTextColor(...cores.text)
+        doc.text(titulo, margemX, 30)
+
+        doc.setFont("helvetica", "normal")
+        doc.setFontSize(8.3)
+        doc.setTextColor(...cores.muted)
+        const resumoLinhas = doc.splitTextToSize(resumo, pageWidth - margemX * 2)
+        doc.text(resumoLinhas, margemX, 35)
+        const yGerado = 35 + (resumoLinhas.length * 4.1)
+        doc.text(`Gerado em ${dataGeracaoLabel}`, margemX, yGerado)
+
+        const yBloco = yGerado + 4
+        doc.setFillColor(...cores.primarySoft)
+        doc.setDrawColor(...cores.border)
+        doc.roundedRect(margemX, yBloco, pageWidth - margemX * 2, 10.5, 3.2, 3.2, "FD")
+
+        doc.setFont("helvetica", "bold")
+        doc.setFontSize(7.6)
+        doc.setTextColor(...cores.primary)
+        doc.text("Leitura da classificacao", margemX + 4, yBloco + 4.3)
+
+        doc.setFont("helvetica", "normal")
+        doc.setFontSize(7.2)
+        doc.setTextColor(...cores.muted)
+        doc.text(
+          "Tabela da fase e rodada selecionadas com posicao, desempenho e escudos dos times.",
+          margemX + 4,
+          yBloco + 7.8
+        )
+
+        cursorY = yBloco + 14.5
+      }
+
+      const desenharRodape = (paginaAtual, totalPaginas) => {
+        doc.setDrawColor(...cores.border)
+        doc.line(margemX, pageHeight - 8.5, pageWidth - margemX, pageHeight - 8.5)
+
+        doc.setFont("helvetica", "normal")
+        doc.setFontSize(7.4)
+        doc.setTextColor(...cores.muted)
+        doc.text("Relatorio exportado pela tela de classificacao.", margemX, pageHeight - 4.4)
+        doc.text(`Pagina ${paginaAtual}/${totalPaginas}`, pageWidth - margemX, pageHeight - 4.4, { align: "right" })
+      }
+
+      const garantirEspaco = (alturaNecessaria) => {
+        if (cursorY + alturaNecessaria <= limiteInferior) return
+        doc.addPage()
+        desenharCabecalho(true)
+      }
+
+      desenharCabecalho(false)
+
+      const head = [[
+        "Pos",
+        "Escudo",
+        "Time",
+        ...colunas.map((coluna) => {
+          if (coluna?.key === "ultimosJogos") return "ULT"
+          return String(coluna?.abbr || coluna?.label || "").toUpperCase()
+        })
+      ]]
+
+      const larguraUtil = pageWidth - (margemX * 2)
+      const larguraColPos = 14
+      const larguraColEscudo = 16
+      const larguraColTime = Math.max(52, Math.min(70, larguraUtil * 0.24))
+      const indiceColunaUlt = colunas.findIndex(coluna => coluna?.key === "ultimosJogos")
+      const temColunaUlt = indiceColunaUlt >= 0
+      const indiceColunaUltReal = temColunaUlt ? indiceColunaUlt + 3 : -1
+      const larguraColUlt = temColunaUlt ? Math.max(20, Math.min(28, larguraUtil * 0.09)) : 0
+      const larguraRestante = larguraUtil - larguraColPos - larguraColEscudo - larguraColTime - larguraColUlt
+      const qtdColunasRestantes = colunas.length - (temColunaUlt ? 1 : 0)
+      const larguraPadrao = qtdColunasRestantes > 0 ? Math.max(10.8, larguraRestante / qtdColunasRestantes) : 0
+      const columnStyles = {
+        0: { halign: "center", cellWidth: larguraColPos },
+        1: { halign: "center", cellWidth: larguraColEscudo },
+        2: { halign: "left", cellWidth: larguraColTime }
+      }
+
+      colunas.forEach((coluna, indice) => {
+        const indiceReal = indice + 3
+        if (coluna?.key === "ultimosJogos") {
+          columnStyles[indiceReal] = { halign: "center", cellWidth: larguraColUlt }
+          return
+        }
+        columnStyles[indiceReal] = { halign: "center", cellWidth: larguraPadrao }
+      })
+
+      for (let indiceBloco = 0; indiceBloco < blocos.length; indiceBloco += 1) {
+        const bloco = blocos[indiceBloco]
+        const timesBloco = Array.isArray(bloco?.times) ? bloco.times : []
+        if (!timesBloco.length) continue
+
+        if (compartilhandoPorGrupo) {
+          garantirEspaco(14)
+          doc.setFont("helvetica", "bold")
+          doc.setFontSize(11.4)
+          doc.setTextColor(...cores.primary)
+          doc.text(bloco.nome || `Grupo ${indiceBloco + 1}`, margemX, cursorY + 4.4)
+          cursorY += 7
+        }
+
+        const body = timesBloco.map((time, index) => ([
+          `${index + 1}\u00BA`,
+          "",
+          this.obterNomeTimeLinha(time),
+          ...colunas.map((coluna) => {
+            if (coluna?.key === "ultimosJogos") {
+              return ""
+            }
+            return this.obterValorColunaCompartilhamento(time, coluna.key)
+          })
+        ]))
+
+        const escudosBloco = await this.obterEscudosTimesCompartilhamento(timesBloco)
+        garantirEspaco(24)
+
+        autoTable(doc, {
+          startY: cursorY,
+          head,
+          body,
+          margin: { left: margemX, right: margemX, bottom: 14 },
+          styles: { fontSize: 8.6, cellPadding: 2.2, textColor: [15, 23, 42], lineColor: [226, 232, 240], lineWidth: 0.2 },
+          headStyles: { fillColor: [37, 99, 235], textColor: [255, 255, 255], fontStyle: "bold", fontSize: 8.3 },
+          alternateRowStyles: { fillColor: [245, 248, 255] },
+          bodyStyles: { fillColor: [255, 255, 255] },
+          columnStyles,
+          didDrawCell: (data) => {
+            if (data.section !== "body") return
+
+            if (data.column.index === 1) {
+              const imagemDataUrl = escudosBloco?.[data.row.index]
+              if (!imagemDataUrl) return
+
+              try {
+                const padding = 1.1
+                const lado = Math.max(1, Math.min(
+                  data.cell.width - (padding * 2),
+                  data.cell.height - (padding * 2)
+                ))
+                const x = data.cell.x + ((data.cell.width - lado) / 2)
+                const y = data.cell.y + ((data.cell.height - lado) / 2)
+                doc.addImage(imagemDataUrl, "PNG", x, y, lado, lado, undefined, "FAST")
+              } catch {
+                // ignora falha de imagem individual para nao interromper o PDF
+              }
+              return
+            }
+
+            if (temColunaUlt && data.column.index === indiceColunaUltReal) {
+              const resultados = this.obterUltimosJogosCompartilhamento(timesBloco?.[data.row.index])
+              const gap = 0.9
+              const diametro = Math.max(
+                2.2,
+                Math.min(
+                  3.8,
+                  data.cell.height - 1.8,
+                  (data.cell.width - 2 - (gap * 2)) / 3
+                )
+              )
+              const larguraTotal = (diametro * 3) + (gap * 2)
+              const yCentro = data.cell.y + (data.cell.height / 2)
+              const xInicial = data.cell.x + ((data.cell.width - larguraTotal) / 2) + (diametro / 2)
+
+              resultados.forEach((resultado, indiceResultado) => {
+                const xCentro = xInicial + (indiceResultado * (diametro + gap))
+                const simbolo = this.simboloResultadoCompartilhamento(resultado)
+
+                let corFundo = [203, 213, 225]
+                let corTexto = [51, 65, 85]
+
+                if (resultado === "V") {
+                  corFundo = [22, 163, 74]
+                  corTexto = [255, 255, 255]
+                } else if (resultado === "E") {
+                  corFundo = [156, 163, 175]
+                  corTexto = [255, 255, 255]
+                } else if (resultado === "D") {
+                  corFundo = [239, 68, 68]
+                  corTexto = [255, 255, 255]
+                }
+
+                doc.setFillColor(...corFundo)
+                doc.circle(xCentro, yCentro, diametro / 2, "F")
+
+                doc.setTextColor(...corTexto)
+                doc.setFont("helvetica", "bold")
+                doc.setFontSize(7)
+                doc.text(simbolo, xCentro, yCentro + 0.9, { align: "center" })
+              })
+            }
+          }
+        })
+
+        cursorY = (doc.lastAutoTable?.finalY || cursorY) + 6
+      }
+
+      if (itensGlossario.length) {
+        const qtdColunasGlossario = 4
+        const qtdLinhasGlossario = Math.ceil(itensGlossario.length / qtdColunasGlossario)
+        const alturaGlossario = 12 + (qtdLinhasGlossario * 6.6)
+        garantirEspaco(alturaGlossario + 2)
+
+        const yGlossario = cursorY
+        const larguraCard = pageWidth - (margemX * 2)
+        doc.setFillColor(...cores.primarySoft)
+        doc.setDrawColor(...cores.border)
+        doc.roundedRect(margemX, yGlossario, larguraCard, alturaGlossario, 3.4, 3.4, "FD")
+
+        doc.setFont("helvetica", "bold")
+        doc.setFontSize(10.2)
+        doc.setTextColor(...cores.primary)
+        doc.text("Glossario da classificacao", margemX + 5, yGlossario + 6.2)
+
+        const larguraUtilGloss = larguraCard - 10
+        const larguraColunaGloss = larguraUtilGloss / qtdColunasGlossario
+        const yItensBase = yGlossario + 10.8
+        const truncarDescricaoPdf = (texto, larguraMax) => {
+          let saida = String(texto || "")
+          if (doc.getTextWidth(saida) <= larguraMax) return saida
+          while (saida.length && doc.getTextWidth(`${saida}...`) > larguraMax) {
+            saida = saida.slice(0, -1)
+          }
+          return `${saida}...`
+        }
+
+        itensGlossario.forEach((item, indice) => {
+          const coluna = indice % qtdColunasGlossario
+          const linha = Math.floor(indice / qtdColunasGlossario)
+          const xBase = margemX + 5 + (coluna * larguraColunaGloss)
+          const yLinha = yItensBase + (linha * 6.6)
+          const sigla = String(item?.sigla || "").toUpperCase()
+
+          doc.setFont("helvetica", "bold")
+          doc.setFontSize(7.2)
+          const larguraSigla = Math.max(10, doc.getTextWidth(sigla) + 5)
+          doc.setFillColor(...cores.primary)
+          doc.roundedRect(xBase, yLinha - 3.6, larguraSigla, 4.8, 1.8, 1.8, "F")
+
+          doc.setTextColor(...cores.white)
+          doc.text(sigla, xBase + (larguraSigla / 2), yLinha - 0.3, { align: "center" })
+
+          const larguraDescricao = larguraColunaGloss - larguraSigla - 3
+          const descricao = truncarDescricaoPdf(item?.descricao, larguraDescricao)
+          doc.setFont("helvetica", "normal")
+          doc.setFontSize(7.2)
+          doc.setTextColor(...cores.muted)
+          doc.text(descricao, xBase + larguraSigla + 2, yLinha)
+        })
+
+        cursorY = yGlossario + alturaGlossario + 3
+      }
+
+      const totalPaginas = doc.getNumberOfPages()
+      for (let pagina = 1; pagina <= totalPaginas; pagina++) {
+        doc.setPage(pagina)
+        desenharRodape(pagina, totalPaginas)
+      }
+
+      const nomeArquivo = String(this.campeonato?.nome || "campeonato")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9]+/g, "_")
+        .replace(/^_+|_+$/g, "")
+        .toLowerCase()
+
+      doc.save(`classificacao_${nomeArquivo || "campeonato"}.pdf`)
+    },
+
+    async compartilharPlacar() {
+      if (!this.obterBlocosClassificacaoCompartilhamento().length) {
+        await Swal.fire({
+          title: "Atenção",
+          text: "Nao ha dados de classificacao para compartilhar.",
+          icon: "warning",
+          target: ".modal-escolha-config"
+        })
+        return
+      }
+
+      try {
+        const escolhaFormato = await Swal.fire({
+          title: "Compartilhar placar",
+          text: "Escolha o formato para compartilhar.",
+          icon: "question",
+          showDenyButton: true,
+          showCancelButton: true,
+          confirmButtonText: "Imagem",
+          denyButtonText: "PDF",
+          cancelButtonText: "Cancelar",
+          target: ".modal-escolha-config"
+        })
+
+        if (escolhaFormato.isConfirmed) {
+          const blob = await this.gerarBlobImagemPlacar()
+          const payload = this.criarPayloadArquivo(blob, "png")
+          this.baixarArquivo(payload.url, payload.arquivoNome)
+          await Swal.fire({
+            title: "Imagem pronta",
+            text: "A imagem do placar foi baixada.",
+            icon: "success",
+            target: ".modal-escolha-config"
+          })
+          return
+        }
+
+        if (escolhaFormato.isDenied) {
+          await this.gerarPdfPlacar()
+          await Swal.fire({
+            title: "PDF gerado",
+            text: "O arquivo PDF do placar foi baixado.",
+            icon: "success",
+            target: ".modal-escolha-config"
+          })
+        }
+      } catch (error) {
+        console.error("Erro ao compartilhar placar:", error)
+        await Swal.fire({
+          title: "Erro",
+          text: "Nao foi possivel compartilhar o placar.",
+          icon: "error",
+          target: ".modal-escolha-config"
+        })
       }
     },
 
@@ -1325,3 +2557,5 @@ export default {
   }
 }
 </style>
+
+

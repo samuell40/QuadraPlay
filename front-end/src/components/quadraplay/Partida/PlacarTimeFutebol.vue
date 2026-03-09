@@ -102,8 +102,18 @@
         <div v-if="carregando" class="loader">Carregando jogadores...</div>
 
         <div v-else-if="jogadores.length" class="coluna coluna-evento">
-          <div v-for="jogador in jogadores" :key="jogador.id" class="jogador-card">
+          <div class="busca-evento-wrap">
+            <input
+              v-model.trim="buscaJogadorEvento"
+              type="text"
+              class="input-busca-evento"
+              placeholder="Buscar por nome ou numero..."
+            />
+          </div>
+
+          <div v-for="jogador in jogadoresFiltradosEvento" :key="jogador.id" class="jogador-card">
             <div class="jogador-info">
+              <span v-if="temNumeroJogador(jogador.numero)" class="numero-jogador-badge">{{ jogador.numero }}</span>
               <img v-if="jogador.foto" :src="jogador.foto" class="foto-jogador" />
               <div class="dados-jogador">
                 <span class="nome">{{ jogador.nome }}</span>
@@ -115,6 +125,10 @@
               <span class="valor">{{ obterValorEvento(jogador) }}</span>
               <button @click="alterarEventoJogador(jogador, 'increment')">+</button>
             </div>
+          </div>
+
+          <div v-if="!jogadoresFiltradosEvento.length" class="estado-vazio-busca">
+            Nenhum jogador encontrado para esta busca.
           </div>
         </div>
 
@@ -140,23 +154,47 @@
         <div v-else class="colunas">
           <div class="coluna">
             <h3 class="subtitulo">Jogador que sai</h3>
-            <div v-for="j in jogadoresEmCampo" :key="j.id" class="jogador-card"
+            <div class="busca-substituicao-wrap">
+              <input
+                v-model.trim="buscaJogadorSai"
+                type="text"
+                class="input-busca-evento"
+                placeholder="Buscar por nome ou numero..."
+              />
+            </div>
+            <div v-for="j in jogadoresEmCampoFiltradosSubstituicao" :key="j.id" class="jogador-card"
               :class="{ selecionado: jogadorSai?.id === j.id }" @click="toggleJogadorSai(j)">
               <div class="jogador-info">
+                <span v-if="temNumeroJogador(j.numero)" class="numero-jogador-badge">{{ j.numero }}</span>
                 <img v-if="j.foto" :src="j.foto" class="foto-jogador" />
                 <span class="nome">{{ j.nome }}</span>
               </div>
+            </div>
+            <div v-if="!jogadoresEmCampoFiltradosSubstituicao.length" class="estado-vazio-busca">
+              Nenhum jogador encontrado para esta busca.
             </div>
           </div>
 
           <div class="coluna">
             <h3 class="subtitulo">Jogador que entra</h3>
-            <div v-for="j in jogadoresBanco" :key="j.id" class="jogador-card"
+            <div class="busca-substituicao-wrap">
+              <input
+                v-model.trim="buscaJogadorEntra"
+                type="text"
+                class="input-busca-evento"
+                placeholder="Buscar por nome ou numero..."
+              />
+            </div>
+            <div v-for="j in jogadoresBancoFiltradosSubstituicao" :key="j.id" class="jogador-card"
               :class="{ selecionado: jogadorEntra?.id === j.id }" @click="toggleJogadorEntra(j)">
               <div class="jogador-info">
+                <span v-if="temNumeroJogador(j.numero)" class="numero-jogador-badge">{{ j.numero }}</span>
                 <img v-if="j.foto" :src="j.foto" class="foto-jogador" />
                 <span class="nome">{{ j.nome }}</span>
               </div>
+            </div>
+            <div v-if="!jogadoresBancoFiltradosSubstituicao.length" class="estado-vazio-busca">
+              Nenhum jogador encontrado para esta busca.
             </div>
           </div>
         </div>
@@ -243,11 +281,14 @@ export default {
       modalAberto: false,
       tipoEvento: 'gol',
       jogadores: [],
+      buscaJogadorEvento: '',
       carregando: false,
 
       substituicaoModal: false,
       jogadoresEmCampo: [],
       jogadoresBanco: [],
+      buscaJogadorSai: '',
+      buscaJogadorEntra: '',
       jogadorSai: null,
       jogadorEntra: null,
       substituicoesPendentes: [],
@@ -287,6 +328,39 @@ export default {
         'modal-finalizada': this.partidaEncerradaGlobal,
         'modal-andamento': this.partidaEmAndamentoGlobal
       }
+    },
+
+    jogadoresFiltradosEvento() {
+      const termo = this.normalizarTexto(this.buscaJogadorEvento)
+      if (!termo) return this.jogadores
+
+      return this.jogadores.filter((jogador) => {
+        const nome = this.normalizarTexto(jogador?.nome)
+        const numero = String(jogador?.numero ?? '').trim()
+        return nome.includes(termo) || numero.includes(termo)
+      })
+    },
+
+    jogadoresEmCampoFiltradosSubstituicao() {
+      const termo = this.normalizarTexto(this.buscaJogadorSai)
+      if (!termo) return this.jogadoresEmCampo
+
+      return this.jogadoresEmCampo.filter((jogador) => {
+        const nome = this.normalizarTexto(jogador?.nome)
+        const numero = String(jogador?.numero ?? '').trim()
+        return nome.includes(termo) || numero.includes(termo)
+      })
+    },
+
+    jogadoresBancoFiltradosSubstituicao() {
+      const termo = this.normalizarTexto(this.buscaJogadorEntra)
+      if (!termo) return this.jogadoresBanco
+
+      return this.jogadoresBanco.filter((jogador) => {
+        const nome = this.normalizarTexto(jogador?.nome)
+        const numero = String(jogador?.numero ?? '').trim()
+        return nome.includes(termo) || numero.includes(termo)
+      })
     }
   },
 
@@ -373,6 +447,17 @@ export default {
       if (this.tipoEvento === 'vermelho') return removendo ? 'Removendo cartao vermelho...' : 'Registrando cartao vermelho...'
       return 'Registrando alteracao...'
     },
+    normalizarTexto(valor) {
+      return String(valor || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim()
+    },
+    temNumeroJogador(numero) {
+      const numeroNormalizado = Number(numero)
+      return Number.isInteger(numeroNormalizado) && numeroNormalizado > 0
+    },
 
     acionarEvento(tipo, delta) {
       if (!this.temJogadoresEmCampo) {
@@ -409,11 +494,13 @@ export default {
     async abrirModalJogadores(tipo) {
       this.tipoEvento = tipo
       this.modalAberto = true
+      this.buscaJogadorEvento = ''
       await this.carregarJogadores()
     },
 
     fecharModal() {
       this.modalAberto = false
+      this.buscaJogadorEvento = ''
     },
 
     async carregarJogadores() {
@@ -426,6 +513,7 @@ export default {
           .map(j => ({
             id: j.id,
             nome: j.nome,
+            numero: j.numero,
             foto: j.foto,
             gols: j.gols,
             cartoesAmarelos: j.cartoesAmarelos,
@@ -486,6 +574,8 @@ export default {
       this.substituicaoModal = true
       this.jogadorSai = null
       this.jogadorEntra = null
+      this.buscaJogadorSai = ''
+      this.buscaJogadorEntra = ''
       this.substituicoesPendentes = []
       await this.carregarJogadoresSubstituicao()
     },
@@ -494,6 +584,8 @@ export default {
       this.substituicaoModal = false
       this.jogadorSai = null
       this.jogadorEntra = null
+      this.buscaJogadorSai = ''
+      this.buscaJogadorEntra = ''
       this.substituicoesPendentes = []
     },
 
@@ -949,6 +1041,37 @@ export default {
   max-height: 56vh;
 }
 
+.busca-evento-wrap {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: linear-gradient(180deg, var(--modal-accent-soft), rgba(255, 255, 255, 0.98));
+  padding-bottom: 10px;
+  margin-bottom: 6px;
+}
+
+.input-busca-evento {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.input-busca-evento:focus {
+  border-color: rgba(37, 99, 235, 0.45);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+.busca-substituicao-wrap {
+  margin: 0 0 8px;
+}
+
 .estado-vazio-modal {
   display: flex;
   align-items: center;
@@ -1017,6 +1140,23 @@ export default {
 
 .dados-jogador {
   min-width: 0;
+}
+
+.numero-jogador-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid #93c5fd;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1;
+  flex: 0 0 auto;
 }
 
 .foto-jogador {
@@ -1250,6 +1390,21 @@ export default {
     max-height: calc(100dvh - 210px);
   }
 
+  .busca-evento-wrap {
+    padding-bottom: 8px;
+  }
+
+  .input-busca-evento {
+    min-height: 40px;
+    padding: 9px 11px;
+    font-size: 13px;
+    border-radius: 10px;
+  }
+
+  .busca-substituicao-wrap {
+    margin-bottom: 7px;
+  }
+
   .estado-vazio-modal {
     min-height: 180px;
   }
@@ -1262,6 +1417,13 @@ export default {
   .jogador-card {
     padding: 10px 12px;
     border-radius: 17px;
+  }
+
+  .numero-jogador-badge {
+    min-width: 32px;
+    height: 24px;
+    padding: 0 8px;
+    font-size: 13px;
   }
 
   .foto-jogador {
@@ -1302,6 +1464,17 @@ export default {
   .lista-remover {
     min-height: 0;
   }
+}
+
+.estado-vazio-busca {
+  border: 1px dashed rgba(148, 163, 184, 0.38);
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #64748b;
+  text-align: center;
+  padding: 14px 12px;
+  font-size: 13px;
+  font-weight: 600;
 }
 </style>
 

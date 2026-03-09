@@ -1,4 +1,5 @@
 const prisma = require('../lib/prisma');
+const partidaService = require('./partida.service');
 const {
   enviarEmailVinculoMesarioCampeonato,
   enviarEmailStatusAgendamento
@@ -368,6 +369,7 @@ function regrasPadraoPorModalidade(nomeModalidade) {
     pontosVitoria: 3,
     pontosEmpate: 1,
     pontosDerrota: 0,
+    duracaoSuspensaoPartidas: 1,
     suspensaoAmarelos: null,
     suspensaoVermelhos: null,
     separarCartoesPorFase: false,
@@ -376,6 +378,78 @@ function regrasPadraoPorModalidade(nomeModalidade) {
 }
 
 const REGRAS_PADRAO_CAMPEONATO = regrasPadraoPorModalidade('futebol');
+const STATUS_CAMPEONATO_ENCERRADO = new Set([
+  'FINALIZADO',
+  'FINALIZADA',
+  'CANCELADO',
+  'CANCELADA',
+  'DELETADO',
+  'DELETADA'
+]);
+
+function statusCampeonatoEncerrado(status) {
+  return STATUS_CAMPEONATO_ENCERRADO.has(String(status || '').toUpperCase());
+}
+
+function extrairSuspensoesManuais(regras) {
+  const lista = Array.isArray(regras?.suspensoesManuais) ? regras.suspensoesManuais : [];
+  const mapa = new Map();
+
+  for (const item of lista) {
+    const jogadorId = Number(item?.jogadorId);
+    if (!Number.isInteger(jogadorId) || jogadorId <= 0) continue;
+
+    const suspenso = Boolean(item?.suspenso);
+    const motivo = String(item?.motivo || '').trim();
+    const atualizadoPor = Number(item?.atualizadoPor);
+    const timeId = Number(item?.timeId);
+    const tipoDuracaoBase = String(item?.tipoDuracao || '').toUpperCase();
+    const tipoDuracao = tipoDuracaoBase === 'PARTIDAS' ? 'PARTIDAS' : 'CAMPEONATO';
+    const quantidadePartidasBruta = Number(item?.quantidadePartidas);
+    const quantidadePartidas = tipoDuracao === 'PARTIDAS'
+      && Number.isInteger(quantidadePartidasBruta)
+      && quantidadePartidasBruta > 0
+      && quantidadePartidasBruta <= 10
+      ? quantidadePartidasBruta
+      : null;
+
+    mapa.set(jogadorId, {
+      jogadorId,
+      suspenso,
+      motivo: motivo || (suspenso
+        ? 'Suspensao manual definida pela administracao.'
+        : 'Suspensao retirada manualmente pela administracao.'),
+      atualizadoEm: item?.atualizadoEm || null,
+      atualizadoPor: Number.isInteger(atualizadoPor) && atualizadoPor > 0 ? atualizadoPor : null,
+      timeId: Number.isInteger(timeId) && timeId > 0 ? timeId : null,
+      tipoDuracao: quantidadePartidas ? 'PARTIDAS' : 'CAMPEONATO',
+      quantidadePartidas
+    });
+  }
+
+  return mapa;
+}
+
+function serializarSuspensoesManuais(mapa) {
+  return Array.from(mapa.values())
+    .sort((a, b) => Number(a.jogadorId) - Number(b.jogadorId))
+    .map((item) => ({
+      jogadorId: Number(item.jogadorId),
+      suspenso: Boolean(item.suspenso),
+      motivo: String(item.motivo || '').trim() || (item.suspenso
+        ? 'Suspensao manual definida pela administracao.'
+        : 'Suspensao retirada manualmente pela administracao.'),
+      atualizadoEm: item.atualizadoEm || new Date().toISOString(),
+      atualizadoPor: item.atualizadoPor ?? null,
+      timeId: Number.isInteger(Number(item.timeId)) && Number(item.timeId) > 0 ? Number(item.timeId) : null,
+      tipoDuracao: String(item.tipoDuracao || '').toUpperCase() === 'PARTIDAS' ? 'PARTIDAS' : 'CAMPEONATO',
+      quantidadePartidas: Number.isInteger(Number(item.quantidadePartidas))
+        && Number(item.quantidadePartidas) > 0
+        && Number(item.quantidadePartidas) <= 10
+        ? Number(item.quantidadePartidas)
+        : null
+    }));
+}
 
 function normalizarRegrasCampeonato(regras, nomeModalidade) {
   return {
@@ -691,6 +765,31 @@ async function listarCampeonatosAnoAtual() {
   }));
 }
 
+async function listarTodosCampeonatosAtivos() {
+  const campeonatos = await prisma.campeonato.findMany({
+    where: {
+      ativo: true,
+      deletedAt: null
+    },
+    include: {
+      modalidade: true,
+      quadra: true,
+      placares: {
+        where: { visivel: true, deletedAt: null },
+        include: { time: true },
+        orderBy: { posicao: 'asc' }
+      }
+    },
+    orderBy: { dataInicio: 'desc' }
+  });
+
+  return campeonatos.map(c => ({
+    ...c,
+    ordemClassificacao: normalizarOrdemClassificacao(c.ordemClassificacao, c.modalidade?.nome),
+    criteriosClassificacao: normalizarOrdemClassificacao(c.ordemClassificacao, c.modalidade?.nome)
+  }));
+}
+
 function extrairMesariosVinculados(regras) {
   if (!regras || typeof regras !== 'object') return [];
   const ids = Array.isArray(regras.mesariosVinculados) ? regras.mesariosVinculados : [];
@@ -698,6 +797,26 @@ function extrairMesariosVinculados(regras) {
   return ids
     .map(id => Number(id))
     .filter(id => Number.isInteger(id) && id > 0);
+}
+
+function ordenarUsuariosGestaoMesarios(usuarios = [], vinculadosIds = []) {
+  const vinculadosSet = new Set(
+    (Array.isArray(vinculadosIds) ? vinculadosIds : [])
+      .map(id => Number(id))
+      .filter(id => Number.isInteger(id) && id > 0)
+  );
+
+  return [...usuarios].sort((a, b) => {
+    const aVinculado = vinculadosSet.has(Number(a?.id)) ? 1 : 0;
+    const bVinculado = vinculadosSet.has(Number(b?.id)) ? 1 : 0;
+    if (aVinculado !== bVinculado) return bVinculado - aVinculado;
+
+    const aMesario = Number(a?.permissaoId) === 4 ? 1 : 0;
+    const bMesario = Number(b?.permissaoId) === 4 ? 1 : 0;
+    if (aMesario !== bMesario) return bMesario - aMesario;
+
+    return String(a?.nome || '').localeCompare(String(b?.nome || ''), 'pt-BR', { sensitivity: 'base' });
+  });
 }
 
 async function listarCampeonatosEmAndamentoMesario(usuarioId) {
@@ -760,9 +879,9 @@ async function listarMesariosCampeonato(campeonatoId) {
 
   const vinculadosIds = extrairMesariosVinculados(campeonato.regras);
 
-  const mesarios = await prisma.usuario.findMany({
+  const usuariosGestaoMesarios = await prisma.usuario.findMany({
     where: {
-      permissaoId: 4,
+      permissaoId: { in: [3, 4] },
       ativo: true,
       deletedAt: null
     },
@@ -770,10 +889,12 @@ async function listarMesariosCampeonato(campeonatoId) {
       id: true,
       nome: true,
       email: true,
-      foto: true
-    },
-    orderBy: { nome: 'asc' }
+      foto: true,
+      permissaoId: true
+    }
   });
+
+  const mesarios = ordenarUsuariosGestaoMesarios(usuariosGestaoMesarios, vinculadosIds);
 
   return {
     mesarios,
@@ -811,24 +932,50 @@ async function atualizarMesariosCampeonato(campeonatoId, mesariosIds = []) {
     .map(valor => Number(valor))
     .filter(valor => Number.isInteger(valor) && valor > 0))];
 
-  let mesariosValidos = [];
+  let usuariosValidos = [];
   if (idsLimpos.length > 0) {
-    mesariosValidos = await prisma.usuario.findMany({
+    usuariosValidos = await prisma.usuario.findMany({
       where: {
         id: { in: idsLimpos },
-        permissaoId: 4,
+        permissaoId: { in: [3, 4] },
         ativo: true,
         deletedAt: null
       },
       select: {
         id: true,
         nome: true,
-        email: true
+        email: true,
+        permissaoId: true
       }
     });
 
-    if (mesariosValidos.length !== idsLimpos.length) {
-      throw new Error('Um ou mais usuarios informados nao sao mesarios validos.');
+    if (usuariosValidos.length !== idsLimpos.length) {
+      throw new Error('Um ou mais usuarios informados nao sao validos para gestao de mesarios.');
+    }
+
+    const idsParaPromover = usuariosValidos
+      .filter(item => Number(item.permissaoId) === 3)
+      .map(item => Number(item.id))
+      .filter(item => Number.isInteger(item) && item > 0);
+
+    if (idsParaPromover.length > 0) {
+      await prisma.usuario.updateMany({
+        where: {
+          id: { in: idsParaPromover },
+          permissaoId: 3,
+          ativo: true,
+          deletedAt: null
+        },
+        data: {
+          permissaoId: 4
+        }
+      });
+
+      usuariosValidos = usuariosValidos.map((item) => (
+        idsParaPromover.includes(Number(item.id))
+          ? { ...item, permissaoId: 4 }
+          : item
+      ));
     }
   }
 
@@ -848,7 +995,7 @@ async function atualizarMesariosCampeonato(campeonatoId, mesariosIds = []) {
 
   const novosVinculosIds = idsLimpos.filter(idMesario => !idsVinculadosAntes.includes(idMesario));
   if (novosVinculosIds.length > 0) {
-    const mesariosNovos = mesariosValidos.filter(item => novosVinculosIds.includes(Number(item.id)));
+    const mesariosNovos = usuariosValidos.filter(item => novosVinculosIds.includes(Number(item.id)));
     const envios = mesariosNovos.map(mesario =>
       enviarEmailVinculoMesarioCampeonato(mesario, campeonato)
     );
@@ -862,6 +1009,783 @@ async function atualizarMesariosCampeonato(campeonatoId, mesariosIds = []) {
   }
 
   return listarMesariosCampeonato(id);
+}
+
+async function listarEquipesCampeonato(campeonatoId) {
+  const id = Number(campeonatoId);
+  if (!Number.isInteger(id) || id <= 0) {
+    throw new Error('ID do campeonato invalido.');
+  }
+
+  const campeonato = await prisma.campeonato.findFirst({
+    where: {
+      id,
+      ativo: true,
+      deletedAt: null
+    },
+    select: {
+      id: true,
+      nome: true,
+      status: true,
+      modalidadeId: true,
+      modalidade: {
+        select: {
+          id: true,
+          nome: true
+        }
+      },
+      times: {
+        where: {
+          ativo: true,
+          deletedAt: null,
+          time: {
+            ativo: true,
+            deletedAt: null
+          }
+        },
+        orderBy: {
+          time: {
+            nome: 'asc'
+          }
+        },
+        include: {
+          time: {
+            include: {
+              treinador: {
+                include: {
+                  usuario: {
+                    select: {
+                      id: true,
+                      nome: true
+                    }
+                  }
+                }
+              },
+              _count: {
+                select: {
+                  jogadores: true
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+
+  if (!campeonato) {
+    throw new Error('Campeonato nao encontrado.');
+  }
+
+  return {
+    campeonatoId: campeonato.id,
+    campeonatoNome: campeonato.nome,
+    campeonatoStatus: campeonato.status,
+    modalidade: campeonato.modalidade,
+    equipes: (campeonato.times || []).map((item) => {
+      const treinador = item?.time?.treinador;
+
+      return {
+        id: item.time.id,
+        nome: item.time.nome,
+        foto: item.time.foto,
+        modalidadeId: item.time.modalidadeId,
+        qtdJogadores: Number(item.time?._count?.jogadores) || 0,
+        treinador: treinador && treinador.ativo && !treinador.deletedAt
+          ? treinador.usuario?.nome || null
+          : null
+      };
+    })
+  };
+}
+
+async function listarEquipesDisponiveisCampeonato(campeonatoId) {
+  const id = Number(campeonatoId);
+  if (!Number.isInteger(id) || id <= 0) {
+    throw new Error('ID do campeonato invalido.');
+  }
+
+  const campeonato = await prisma.campeonato.findFirst({
+    where: {
+      id,
+      ativo: true,
+      deletedAt: null
+    },
+    select: {
+      id: true,
+      modalidadeId: true
+    }
+  });
+
+  if (!campeonato) {
+    throw new Error('Campeonato nao encontrado.');
+  }
+
+  const times = await prisma.time.findMany({
+    where: {
+      modalidadeId: campeonato.modalidadeId,
+      ativo: true,
+      deletedAt: null,
+      campeonatos: {
+        none: {
+          campeonatoId: id,
+          ativo: true,
+          deletedAt: null
+        }
+      }
+    },
+    include: {
+      treinador: {
+        include: {
+          usuario: {
+            select: {
+              id: true,
+              nome: true
+            }
+          }
+        }
+      },
+      _count: {
+        select: {
+          jogadores: true
+        }
+      }
+    },
+    orderBy: {
+      nome: 'asc'
+    }
+  });
+
+  return times.map((time) => ({
+    id: time.id,
+    nome: time.nome,
+    foto: time.foto,
+    modalidadeId: time.modalidadeId,
+    qtdJogadores: Number(time?._count?.jogadores) || 0,
+    treinador: time.treinador && time.treinador.ativo && !time.treinador.deletedAt
+      ? time.treinador.usuario?.nome || null
+      : null
+  }));
+}
+
+async function adicionarEquipeCampeonato(campeonatoId, timeId) {
+  const idCampeonato = Number(campeonatoId);
+  const idTime = Number(timeId);
+
+  if (!Number.isInteger(idCampeonato) || idCampeonato <= 0) {
+    throw new Error('ID do campeonato invalido.');
+  }
+
+  if (!Number.isInteger(idTime) || idTime <= 0) {
+    throw new Error('ID do time invalido.');
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const campeonato = await tx.campeonato.findFirst({
+      where: {
+        id: idCampeonato,
+        ativo: true,
+        deletedAt: null
+      },
+      select: {
+        id: true,
+        status: true,
+        modalidadeId: true
+      }
+    });
+
+    if (!campeonato) {
+      throw new Error('Campeonato nao encontrado.');
+    }
+
+    if (statusCampeonatoEncerrado(campeonato.status)) {
+      throw new Error('Nao e possivel adicionar time em campeonato encerrado.');
+    }
+
+    const time = await tx.time.findFirst({
+      where: {
+        id: idTime,
+        ativo: true,
+        deletedAt: null
+      },
+      select: {
+        id: true,
+        modalidadeId: true
+      }
+    });
+
+    if (!time) {
+      throw new Error('Time nao encontrado.');
+    }
+
+    if (Number(time.modalidadeId) !== Number(campeonato.modalidadeId)) {
+      throw new Error('O time precisa ser da mesma modalidade do campeonato.');
+    }
+
+    const vinculo = await tx.campeonatoTime.findUnique({
+      where: {
+        campeonatoId_timeId: {
+          campeonatoId: idCampeonato,
+          timeId: idTime
+        }
+      }
+    });
+
+    if (vinculo?.ativo && !vinculo?.deletedAt) {
+      throw new Error('Esse time ja participa do campeonato.');
+    }
+
+    if (vinculo) {
+      await tx.campeonatoTime.update({
+        where: {
+          campeonatoId_timeId: {
+            campeonatoId: idCampeonato,
+            timeId: idTime
+          }
+        },
+        data: {
+          ativo: true,
+          deletedAt: null
+        }
+      });
+    } else {
+      await tx.campeonatoTime.create({
+        data: {
+          campeonatoId: idCampeonato,
+          timeId: idTime
+        }
+      });
+    }
+
+    await tx.placar.updateMany({
+      where: {
+        campeonatoId: idCampeonato,
+        timeId: idTime
+      },
+      data: {
+        visivel: true,
+        deletedAt: null
+      }
+    });
+
+    const fasesAtivas = await tx.fase.findMany({
+      where: {
+        campeonatoId: idCampeonato,
+        ativo: true,
+        deletedAt: null
+      },
+      select: {
+        id: true
+      },
+      orderBy: {
+        id: 'asc'
+      }
+    });
+
+    const placaresExistentes = await tx.placar.findMany({
+      where: {
+        campeonatoId: idCampeonato,
+        visivel: true,
+        deletedAt: null
+      },
+      select: {
+        faseId: true,
+        posicao: true
+      }
+    });
+
+    const proximaPosicaoPorFase = new Map();
+    for (const placar of placaresExistentes) {
+      const chave = placar.faseId == null ? 'null' : String(placar.faseId);
+      const posicaoAtual = Number(placar.posicao) || 0;
+      const maior = proximaPosicaoPorFase.get(chave) || 0;
+      proximaPosicaoPorFase.set(chave, Math.max(maior, posicaoAtual));
+    }
+
+    if (fasesAtivas.length) {
+      const dadosPlacares = fasesAtivas.map((fase) => {
+        const chave = String(fase.id);
+        const proximaPosicao = (proximaPosicaoPorFase.get(chave) || 0) + 1;
+        proximaPosicaoPorFase.set(chave, proximaPosicao);
+
+        return {
+          campeonatoId: idCampeonato,
+          timeId: idTime,
+          faseId: fase.id,
+          posicao: proximaPosicao
+        };
+      });
+
+      await tx.placar.createMany({
+        data: dadosPlacares,
+        skipDuplicates: true
+      });
+    } else {
+      const placarSemFase = await tx.placar.findFirst({
+        where: {
+          campeonatoId: idCampeonato,
+          timeId: idTime,
+          faseId: null
+        },
+        select: {
+          id: true
+        }
+      });
+
+      if (!placarSemFase) {
+        const chave = 'null';
+        const proximaPosicao = (proximaPosicaoPorFase.get(chave) || 0) + 1;
+        await tx.placar.create({
+          data: {
+            campeonatoId: idCampeonato,
+            timeId: idTime,
+            faseId: null,
+            posicao: proximaPosicao
+          }
+        });
+      }
+    }
+  });
+
+  return listarEquipesCampeonato(idCampeonato);
+}
+
+async function removerEquipeCampeonato(campeonatoId, timeId) {
+  const idCampeonato = Number(campeonatoId);
+  const idTime = Number(timeId);
+
+  if (!Number.isInteger(idCampeonato) || idCampeonato <= 0) {
+    throw new Error('ID do campeonato invalido.');
+  }
+
+  if (!Number.isInteger(idTime) || idTime <= 0) {
+    throw new Error('ID do time invalido.');
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const campeonato = await tx.campeonato.findFirst({
+      where: {
+        id: idCampeonato,
+        ativo: true,
+        deletedAt: null
+      },
+      select: {
+        id: true,
+        status: true
+      }
+    });
+
+    if (!campeonato) {
+      throw new Error('Campeonato nao encontrado.');
+    }
+
+    if (statusCampeonatoEncerrado(campeonato.status)) {
+      throw new Error('Nao e possivel remover time de campeonato encerrado.');
+    }
+
+    const vinculo = await tx.campeonatoTime.findFirst({
+      where: {
+        campeonatoId: idCampeonato,
+        timeId: idTime,
+        ativo: true,
+        deletedAt: null
+      },
+      select: {
+        campeonatoId: true,
+        timeId: true
+      }
+    });
+
+    if (!vinculo) {
+      throw new Error('Esse time nao esta vinculado ao campeonato.');
+    }
+
+    const partidaVinculada = await tx.partida.findFirst({
+      where: {
+        campeonatoId: idCampeonato,
+        OR: [
+          { timeAId: idTime },
+          { timeBId: idTime }
+        ],
+        status: {
+          notIn: ['CANCELADA', 'DELETADA']
+        }
+      },
+      select: {
+        id: true
+      }
+    });
+
+    if (partidaVinculada) {
+      throw new Error('Nao e possivel remover um time com partidas vinculadas no campeonato.');
+    }
+
+    const agora = new Date();
+
+    await tx.campeonatoTime.update({
+      where: {
+        campeonatoId_timeId: {
+          campeonatoId: idCampeonato,
+          timeId: idTime
+        }
+      },
+      data: {
+        ativo: false,
+        deletedAt: agora
+      }
+    });
+
+    await tx.placar.updateMany({
+      where: {
+        campeonatoId: idCampeonato,
+        timeId: idTime,
+        deletedAt: null
+      },
+      data: {
+        visivel: false,
+        deletedAt: agora
+      }
+    });
+  });
+
+  return listarEquipesCampeonato(idCampeonato);
+}
+
+async function listarJogadoresEquipeCampeonato(campeonatoId, timeId) {
+  const idCampeonato = Number(campeonatoId);
+  const idTime = Number(timeId);
+
+  if (!Number.isInteger(idCampeonato) || idCampeonato <= 0) {
+    throw new Error('ID do campeonato invalido.');
+  }
+
+  if (!Number.isInteger(idTime) || idTime <= 0) {
+    throw new Error('ID do time invalido.');
+  }
+
+  const campeonato = await prisma.campeonato.findFirst({
+    where: {
+      id: idCampeonato,
+      ativo: true,
+      deletedAt: null
+    },
+    select: {
+      id: true,
+      nome: true,
+      status: true
+    }
+  });
+
+  if (!campeonato) {
+    throw new Error('Campeonato nao encontrado.');
+  }
+
+  const vinculo = await prisma.campeonatoTime.findFirst({
+    where: {
+      campeonatoId: idCampeonato,
+      timeId: idTime,
+      ativo: true,
+      deletedAt: null
+    },
+    select: {
+      campeonatoId: true
+    }
+  });
+
+  if (!vinculo) {
+    throw new Error('Esse time nao esta vinculado ao campeonato.');
+  }
+
+  const time = await prisma.time.findFirst({
+    where: {
+      id: idTime,
+      ativo: true,
+      deletedAt: null
+    },
+    select: {
+      id: true,
+      nome: true,
+      foto: true,
+      jogadores: {
+        where: {
+          ativo: true,
+          deletedAt: null,
+          jogador: {
+            ativo: true,
+            deletedAt: null
+          }
+        },
+        orderBy: {
+          jogador: {
+            nome: 'asc'
+          }
+        },
+        select: {
+          jogadorId: true,
+          jogador: {
+            select: {
+              id: true,
+              nome: true,
+              numero: true,
+              foto: true,
+              funcao: {
+                select: {
+                  id: true,
+                  nome: true
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+
+  if (!time) {
+    throw new Error('Time nao encontrado.');
+  }
+
+  const jogadorIds = (time.jogadores || [])
+    .map((item) => Number(item?.jogador?.id || item?.jogadorId))
+    .filter((id) => Number.isInteger(id) && id > 0);
+
+  const cartoesPorJogador = new Map();
+  if (jogadorIds.length) {
+    const acumulados = await prisma.jogadorPartida.groupBy({
+      by: ['jogadorId'],
+      where: {
+        jogadorId: { in: jogadorIds },
+        timeId: idTime,
+        partida: {
+          is: {
+            campeonatoId: idCampeonato,
+            status: 'FINALIZADA'
+          }
+        }
+      },
+      _sum: {
+        cartoesAmarelos: true,
+        cartoesVermelhos: true
+      }
+    });
+
+    for (const item of acumulados) {
+      cartoesPorJogador.set(Number(item.jogadorId), {
+        amarelos: Number(item._sum?.cartoesAmarelos) || 0,
+        vermelhos: Number(item._sum?.cartoesVermelhos) || 0
+      });
+    }
+  }
+
+  const suspensoes = await partidaService.mapearSuspensaoJogadores({
+    campeonatoId: idCampeonato,
+    faseId: null,
+    jogadorIds
+  });
+
+  return {
+    campeonatoId: idCampeonato,
+    campeonatoNome: campeonato.nome,
+    campeonatoStatus: campeonato.status,
+    time: {
+      id: time.id,
+      nome: time.nome,
+      foto: time.foto
+    },
+    jogadores: (time.jogadores || []).map((item) => {
+      const jogador = item?.jogador || {};
+      const jogadorId = Number(jogador.id || item?.jogadorId);
+      const cartoes = cartoesPorJogador.get(jogadorId) || { amarelos: 0, vermelhos: 0 };
+      const suspensao = suspensoes.get(jogadorId) || {};
+
+      return {
+        id: jogadorId,
+        nome: jogador.nome || '',
+        numero: jogador.numero ?? null,
+        foto: jogador.foto || null,
+        funcao: jogador.funcao || null,
+        cartoesAmarelos: cartoes.amarelos,
+        cartoesVermelhos: cartoes.vermelhos,
+        suspenso: Boolean(suspensao.suspenso),
+        motivoSuspensao: suspensao.motivoSuspensao || null,
+        origemSuspensao: suspensao.origemSuspensao || null,
+        suspensaoManual: Object.prototype.hasOwnProperty.call(suspensao, 'suspensaoManual')
+          ? Boolean(suspensao.suspensaoManual)
+          : null
+      };
+    })
+  };
+}
+
+async function atualizarSuspensaoJogadorEquipeCampeonato(campeonatoId, timeId, jogadorId, payload = {}, usuarioId = null) {
+  const idCampeonato = Number(campeonatoId);
+  const idTime = Number(timeId);
+  const idJogador = Number(jogadorId);
+
+  if (!Number.isInteger(idCampeonato) || idCampeonato <= 0) {
+    throw new Error('ID do campeonato invalido.');
+  }
+
+  if (!Number.isInteger(idTime) || idTime <= 0) {
+    throw new Error('ID do time invalido.');
+  }
+
+  if (!Number.isInteger(idJogador) || idJogador <= 0) {
+    throw new Error('ID do jogador invalido.');
+  }
+
+  if (typeof payload?.suspenso !== 'boolean') {
+    throw new Error('O campo suspenso precisa ser booleano.');
+  }
+
+  const motivo = String(payload?.motivo || '').trim();
+  const suspenso = Boolean(payload.suspenso);
+  const tipoDuracaoSolicitado = String(payload?.tipoDuracao || '').toUpperCase();
+  const quantidadePartidasSolicitada = Number(payload?.quantidadePartidas);
+  const tipoDuracao = suspenso
+    ? (tipoDuracaoSolicitado === 'PARTIDAS' ? 'PARTIDAS' : 'CAMPEONATO')
+    : 'CAMPEONATO';
+  const quantidadePartidas = suspenso && tipoDuracao === 'PARTIDAS'
+    ? (Number.isInteger(quantidadePartidasSolicitada) ? quantidadePartidasSolicitada : null)
+    : null;
+  const editorId = Number(usuarioId);
+  const editorValido = Number.isInteger(editorId) && editorId > 0 ? editorId : null;
+
+  if (suspenso && tipoDuracao === 'PARTIDAS' && (!quantidadePartidas || quantidadePartidas < 1 || quantidadePartidas > 10)) {
+    throw new Error('A quantidade de partidas da suspensao manual precisa ser entre 1 e 10.');
+  }
+
+  const motivoPadraoSuspensao = suspenso
+    ? (tipoDuracao === 'PARTIDAS'
+      ? `Suspensao manual definida por ${quantidadePartidas} ${quantidadePartidas === 1 ? 'partida' : 'partidas'}.`
+      : 'Suspensao manual definida ate o fim do campeonato.')
+    : 'Suspensao retirada manualmente pela administracao.';
+
+  await prisma.$transaction(async (tx) => {
+    const campeonato = await tx.campeonato.findFirst({
+      where: {
+        id: idCampeonato,
+        ativo: true,
+        deletedAt: null
+      },
+      select: {
+        id: true,
+        status: true,
+        regras: true
+      }
+    });
+
+    if (!campeonato) {
+      throw new Error('Campeonato nao encontrado.');
+    }
+
+    if (statusCampeonatoEncerrado(campeonato.status)) {
+      throw new Error('Nao e possivel editar suspensoes em campeonato encerrado.');
+    }
+
+    const vinculo = await tx.campeonatoTime.findFirst({
+      where: {
+        campeonatoId: idCampeonato,
+        timeId: idTime,
+        ativo: true,
+        deletedAt: null
+      },
+      select: {
+        campeonatoId: true
+      }
+    });
+
+    if (!vinculo) {
+      throw new Error('Esse time nao esta vinculado ao campeonato.');
+    }
+
+    const jogadorNoTime = await tx.jogadorTime.findFirst({
+      where: {
+        jogadorId: idJogador,
+        timeId: idTime,
+        ativo: true,
+        deletedAt: null
+      },
+      select: {
+        id: true
+      }
+    });
+
+    if (!jogadorNoTime) {
+      throw new Error('Jogador nao pertence ao time informado.');
+    }
+
+    const regrasBase = campeonato.regras && typeof campeonato.regras === 'object'
+      ? campeonato.regras
+      : {};
+
+    const suspensoesManuais = extrairSuspensoesManuais(regrasBase);
+    suspensoesManuais.set(idJogador, {
+      jogadorId: idJogador,
+      suspenso,
+      motivo: motivo || (suspenso
+        ? motivoPadraoSuspensao
+        : 'Suspensao retirada manualmente pela administracao.'),
+      atualizadoEm: new Date().toISOString(),
+      atualizadoPor: editorValido,
+      timeId: idTime,
+      tipoDuracao,
+      quantidadePartidas
+    });
+
+    await tx.campeonato.update({
+      where: {
+        id: idCampeonato
+      },
+      data: {
+        regras: {
+          ...regrasBase,
+          suspensoesManuais: serializarSuspensoesManuais(suspensoesManuais)
+        }
+      }
+    });
+  });
+
+  const cartoes = await prisma.jogadorPartida.groupBy({
+    by: ['jogadorId'],
+    where: {
+      jogadorId: idJogador,
+      timeId: idTime,
+      partida: {
+        is: {
+          campeonatoId: idCampeonato,
+          status: 'FINALIZADA'
+        }
+      }
+    },
+    _sum: {
+      cartoesAmarelos: true,
+      cartoesVermelhos: true
+    }
+  });
+
+  const cartoesAcumulados = cartoes[0]?._sum || {};
+  const suspensoes = await partidaService.mapearSuspensaoJogadores({
+    campeonatoId: idCampeonato,
+    faseId: null,
+    jogadorIds: [idJogador]
+  });
+  const statusSuspensao = suspensoes.get(idJogador) || {};
+
+  return {
+    jogadorId: idJogador,
+    timeId: idTime,
+    campeonatoId: idCampeonato,
+    cartoesAmarelos: Number(cartoesAcumulados.cartoesAmarelos) || 0,
+    cartoesVermelhos: Number(cartoesAcumulados.cartoesVermelhos) || 0,
+    suspenso: Boolean(statusSuspensao.suspenso),
+    motivoSuspensao: statusSuspensao.motivoSuspensao || null,
+    origemSuspensao: statusSuspensao.origemSuspensao || null,
+    suspensaoManual: Object.prototype.hasOwnProperty.call(statusSuspensao, 'suspensaoManual')
+      ? Boolean(statusSuspensao.suspensaoManual)
+      : null,
+    partidasRestantesSuspensao: Number(statusSuspensao.partidasRestantesSuspensao) || 0
+  };
 }
 
 async function listarArtilhariaCampeonato(campeonatoId, limite = 5) {
@@ -1458,9 +2382,16 @@ module.exports = {
   removerCampeonato,
   listarCampeonatosPorModalidade,
   listarCampeonatosAnoAtual,
+  listarTodosCampeonatosAtivos,
   listarCampeonatosEmAndamentoMesario,
   listarMesariosCampeonato,
   atualizarMesariosCampeonato,
+  listarEquipesCampeonato,
+  listarEquipesDisponiveisCampeonato,
+  adicionarEquipeCampeonato,
+  removerEquipeCampeonato,
+  listarJogadoresEquipeCampeonato,
+  atualizarSuspensaoJogadorEquipeCampeonato,
   listarArtilhariaCampeonato,
   getCampeonatoById,
   atualizarDadosCampeonato,

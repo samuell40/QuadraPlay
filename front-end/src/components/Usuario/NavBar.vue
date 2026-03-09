@@ -50,9 +50,36 @@
             {{ totalNotificacoes }}
           </span>
         </button>
+
+        <button
+          v-if="possuiJogadorVinculado"
+          type="button"
+          class="nav-link"
+          :class="{ active: isActive('/minhasestatisticas') }"
+          @click="navegar('/minhasestatisticas')"
+        >
+          Minhas Estatisticas
+        </button>
       </div>
 
       <div class="nav-actions">
+        <button
+          type="button"
+          class="desktop-profile-trigger"
+          aria-label="Editar perfil"
+          @click="abrirModalPerfil"
+        >
+          <span class="desktop-profile-avatar">
+            <img
+              v-if="usuarioLogado?.foto"
+              :src="usuarioLogado.foto"
+              :alt="`Foto de ${usuarioLogado?.nome || 'usuario'}`"
+            />
+            <span v-else>{{ userInitial }}</span>
+          </span>
+          <span class="desktop-profile-name">{{ usuarioLogado?.nome || 'Usuario' }}</span>
+        </button>
+
         <button type="button" class="desktop-logout" @click="logout">
           Sair
         </button>
@@ -77,7 +104,6 @@
             </div>
           </div>
 
-          <span class="drawer-subtitle">Acesse seus agendamentos, avisos e atalhos principais.</span>
         </div>
 
         <button type="button" class="drawer-close" aria-label="Fechar menu" @click="closeMenu">
@@ -123,10 +149,26 @@
             {{ totalNotificacoes }}
           </span>
         </button>
+
+        <button
+          v-if="possuiJogadorVinculado"
+          type="button"
+          class="drawer-link"
+          :class="{ active: isActive('/minhasestatisticas') }"
+          @click="navegar('/minhasestatisticas')"
+        >
+          <span class="drawer-link-title">Minhas Estatisticas</span>
+          <span class="drawer-link-subtitle">Veja gols, cartoes e desempenho do jogador vinculado.</span>
+        </button>
       </div>
 
       <div class="drawer-footer">
-        <div class="drawer-user-card">
+        <button
+          type="button"
+          class="drawer-user-card"
+          aria-label="Editar perfil"
+          @click="abrirModalPerfil"
+        >
           <div class="drawer-user-avatar">
             <img
               v-if="usuarioLogado?.foto"
@@ -140,19 +182,113 @@
             <strong>{{ usuarioLogado?.nome || 'Usuario' }}</strong>
             <span>{{ userResumo }}</span>
           </div>
-        </div>
+        </button>
 
         <button type="button" class="drawer-logout" @click="logout">
           Sair
         </button>
       </div>
     </aside>
+
+    <transition name="drawer-fade">
+      <div v-if="isPerfilModalOpen" class="profile-modal-overlay" @click="fecharModalPerfil">
+        <div
+          class="profile-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="profile-modal-title"
+          @click.stop
+        >
+          <header class="profile-modal-header">
+            <h2 id="profile-modal-title">Editar perfil</h2>
+            <button type="button" class="profile-modal-close" aria-label="Fechar" @click="fecharModalPerfil">
+              x
+            </button>
+          </header>
+
+          <div class="profile-avatar-wrap">
+            <div class="profile-avatar-preview">
+              <img
+                v-if="perfilFotoPreview || perfilForm.foto"
+                :src="perfilFotoPreview || perfilForm.foto"
+                :alt="`Foto de ${perfilForm.nome || 'usuario'}`"
+              />
+              <span v-else>{{ userInitial }}</span>
+            </div>
+
+            <label class="profile-avatar-upload">
+              Alterar foto
+              <input
+                type="file"
+                accept=".jpg,.jpeg,.png,image/*"
+                @change="handlePerfilFotoChange"
+              />
+            </label>
+          </div>
+
+          <div class="profile-form-grid">
+            <label class="profile-field">
+              <span>Nome</span>
+              <input
+                v-model.trim="perfilForm.nome"
+                type="text"
+                maxlength="120"
+                placeholder="Digite seu nome"
+              />
+            </label>
+
+            <label class="profile-field">
+              <span>Telefone</span>
+              <input
+                v-model="perfilForm.telefone"
+                type="tel"
+                inputmode="tel"
+                maxlength="15"
+                placeholder="(00) 00000-0000"
+                @input="formatarTelefonePerfil"
+              />
+            </label>
+
+            <label class="profile-field">
+              <span>E-mail</span>
+              <input
+                v-model.trim="perfilForm.email"
+                type="email"
+                maxlength="120"
+                placeholder="Digite seu e-mail"
+              />
+            </label>
+          </div>
+
+          <div class="profile-actions">
+            <button
+              type="button"
+              class="profile-save"
+              :disabled="isSalvandoPerfil || isExcluindoConta"
+              @click="salvarPerfil"
+            >
+              {{ isSalvandoPerfil ? 'Salvando...' : 'Salvar' }}
+            </button>
+
+            <button
+              type="button"
+              class="profile-delete"
+              :disabled="isSalvandoPerfil || isExcluindoConta"
+              @click="confirmarExclusaoConta"
+            >
+              {{ isExcluindoConta ? 'Excluindo...' : 'Excluir conta' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
   </nav>
 </template>
 
 <script>
 import router from '@/router'
 import api from '@/axios'
+import Swal from 'sweetalert2'
 
 export default {
   name: 'NavbarUser',
@@ -162,7 +298,18 @@ export default {
       isMenuOpen: false,
       isMobile: typeof window !== 'undefined' ? window.innerWidth <= 768 : false,
       usuarioLogado: {},
-      todosAvisos: []
+      todosAvisos: [],
+      isPerfilModalOpen: false,
+      isSalvandoPerfil: false,
+      isExcluindoConta: false,
+      perfilFotoArquivo: null,
+      perfilFotoPreview: '',
+      perfilForm: {
+        nome: '',
+        telefone: '',
+        email: '',
+        foto: '',
+      },
     }
   },
 
@@ -191,11 +338,20 @@ export default {
         return `${this.totalNotificacoes} aviso(s) pendente(s)`
       }
       return 'Area do usuario'
+    },
+
+    possuiJogadorVinculado() {
+      const jogadorIdDireto = Number(this.usuarioLogado?.jogadorId)
+      if (Number.isInteger(jogadorIdDireto) && jogadorIdDireto > 0) return true
+
+      const jogadorIdObjeto = Number(this.usuarioLogado?.jogador?.id)
+      return Number.isInteger(jogadorIdObjeto) && jogadorIdObjeto > 0
     }
   },
 
   mounted() {
     this.carregarUsuario()
+    this.sincronizarVinculoJogador()
     this.carregarAvisos()
     window.addEventListener('resize', this.handleResize)
     window.addEventListener('avisos-atualizados', this.carregarAvisos)
@@ -206,6 +362,7 @@ export default {
     window.removeEventListener('resize', this.handleResize)
     window.removeEventListener('avisos-atualizados', this.carregarAvisos)
     this.syncBodyScroll(false)
+    this.limparPerfilFotoSelecionada()
   },
 
   watch: {
@@ -220,6 +377,212 @@ export default {
         this.usuarioLogado = JSON.parse(localStorage.getItem('usuario')) || {}
       } catch {
         this.usuarioLogado = {}
+      }
+      this.sincronizarPerfilForm()
+    },
+
+    async sincronizarVinculoJogador() {
+      if (!this.usuarioLogado?.id) return
+
+      const possuiIndicadorJogador =
+        Object.prototype.hasOwnProperty.call(this.usuarioLogado, 'jogadorId') ||
+        Object.prototype.hasOwnProperty.call(this.usuarioLogado, 'jogador')
+
+      if (possuiIndicadorJogador) return
+
+      try {
+        const { data } = await api.get('/estatisticas/jogador', {
+          requiresAuth: true,
+          silent: true,
+        })
+
+        const jogador = data?.jogador || null
+        const jogadorId = Number(jogador?.id)
+
+        this.usuarioLogado = {
+          ...this.usuarioLogado,
+          jogadorId: Number.isInteger(jogadorId) && jogadorId > 0 ? jogadorId : null,
+          jogador,
+        }
+
+        localStorage.setItem('usuario', JSON.stringify(this.usuarioLogado))
+      } catch (err) {
+        if (Number(err?.response?.status) !== 404) return
+
+        this.usuarioLogado = {
+          ...this.usuarioLogado,
+          jogadorId: null,
+          jogador: null,
+        }
+
+        localStorage.setItem('usuario', JSON.stringify(this.usuarioLogado))
+      }
+    },
+
+    sincronizarPerfilForm() {
+      this.perfilForm = {
+        nome: String(this.usuarioLogado?.nome || '').trim(),
+        telefone: String(this.usuarioLogado?.telefone || '').trim(),
+        email: String(this.usuarioLogado?.email || '').trim(),
+        foto: String(this.usuarioLogado?.foto || '').trim(),
+      }
+    },
+
+    abrirModalPerfil() {
+      this.sincronizarPerfilForm()
+      this.limparPerfilFotoSelecionada()
+      this.isPerfilModalOpen = true
+    },
+
+    fecharModalPerfil() {
+      if (this.isSalvandoPerfil || this.isExcluindoConta) return
+      this.isPerfilModalOpen = false
+      this.limparPerfilFotoSelecionada()
+      this.sincronizarPerfilForm()
+    },
+
+    limparPerfilFotoSelecionada() {
+      if (this.perfilFotoPreview && typeof URL !== 'undefined') {
+        URL.revokeObjectURL(this.perfilFotoPreview)
+      }
+      this.perfilFotoPreview = ''
+      this.perfilFotoArquivo = null
+    },
+
+    handlePerfilFotoChange(event) {
+      const arquivo = event?.target?.files?.[0]
+      this.limparPerfilFotoSelecionada()
+
+      if (!arquivo) return
+
+      this.perfilFotoArquivo = arquivo
+      this.perfilFotoPreview = URL.createObjectURL(arquivo)
+    },
+
+    formatarTelefonePerfil() {
+      const valor = String(this.perfilForm.telefone || '').replace(/\D/g, '').slice(0, 11)
+      if (!valor) {
+        this.perfilForm.telefone = ''
+        return
+      }
+
+      if (valor.length <= 2) {
+        this.perfilForm.telefone = `(${valor}`
+      } else if (valor.length <= 6) {
+        this.perfilForm.telefone = `(${valor.slice(0, 2)}) ${valor.slice(2)}`
+      } else if (valor.length <= 10) {
+        this.perfilForm.telefone = `(${valor.slice(0, 2)}) ${valor.slice(2, 6)}-${valor.slice(6)}`
+      } else {
+        this.perfilForm.telefone = `(${valor.slice(0, 2)}) ${valor.slice(2, 7)}-${valor.slice(7)}`
+      }
+    },
+
+    async uploadFotoPerfil() {
+      if (!this.perfilFotoArquivo) {
+        return this.perfilForm.foto || null
+      }
+
+      const formData = new FormData()
+      formData.append('file', this.perfilFotoArquivo)
+
+      const { data } = await api.post('/upload', formData, { requiresAuth: true })
+      return data?.fileUrl || data?.url || null
+    },
+
+    async salvarPerfil() {
+      if (this.isSalvandoPerfil || this.isExcluindoConta) return
+
+      const nome = String(this.perfilForm.nome || '').trim()
+      const email = String(this.perfilForm.email || '').trim().toLowerCase()
+      const telefone = String(this.perfilForm.telefone || '').trim()
+      const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+
+      if (!nome || !email) {
+        await Swal.fire('Atencao', 'Preencha nome e e-mail para continuar.', 'warning')
+        return
+      }
+
+      if (!emailValido) {
+        await Swal.fire('Atencao', 'Informe um e-mail valido.', 'warning')
+        return
+      }
+
+      this.isSalvandoPerfil = true
+
+      try {
+        const foto = await this.uploadFotoPerfil()
+        const payload = { nome, email, telefone, foto }
+        const { data } = await api.put('/editar/usuario', payload, { requiresAuth: true })
+
+        const usuarioAtualizado = data?.usuario || {}
+        if (data?.token) {
+          localStorage.setItem('token', data.token)
+        }
+
+        if (usuarioAtualizado?.id) {
+          this.usuarioLogado = usuarioAtualizado
+        } else {
+          this.usuarioLogado = { ...this.usuarioLogado, ...payload }
+        }
+
+        localStorage.setItem('usuario', JSON.stringify(this.usuarioLogado))
+        this.isPerfilModalOpen = false
+        this.limparPerfilFotoSelecionada()
+        this.sincronizarPerfilForm()
+
+        await Swal.fire('Sucesso', 'Perfil atualizado com sucesso.', 'success')
+      } catch (err) {
+        const mensagem =
+          err?.response?.data?.error ||
+          err?.response?.data?.message ||
+          'Nao foi possivel atualizar o perfil.'
+        await Swal.fire('Erro', mensagem, 'error')
+      } finally {
+        this.isSalvandoPerfil = false
+      }
+    },
+
+    async confirmarExclusaoConta() {
+      if (this.isSalvandoPerfil || this.isExcluindoConta) return
+
+      const confirmacao = await Swal.fire({
+        title: 'Excluir conta?',
+        text: 'Voce tem certeza que deseja excluir sua conta?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sim, excluir',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#64748b',
+      })
+
+      if (!confirmacao.isConfirmed) return
+      await this.excluirConta()
+    },
+
+    async excluirConta() {
+      this.isExcluindoConta = true
+
+      try {
+        await api.delete('/delete/usuario', { requiresAuth: true })
+
+        this.isPerfilModalOpen = false
+        this.limparPerfilFotoSelecionada()
+        this.closeMenu()
+        localStorage.removeItem('token')
+        localStorage.removeItem('usuario')
+        localStorage.removeItem('quadraPlayLoginAtivo')
+
+        await Swal.fire('Conta excluida', 'Sua conta foi excluida com sucesso.', 'success')
+        router.push('/')
+      } catch (err) {
+        const mensagem =
+          err?.response?.data?.error ||
+          err?.response?.data?.message ||
+          'Nao foi possivel excluir sua conta.'
+        await Swal.fire('Erro', mensagem, 'error')
+      } finally {
+        this.isExcluindoConta = false
       }
     },
 
@@ -269,6 +632,7 @@ export default {
     },
 
     logout() {
+      this.isPerfilModalOpen = false
       this.closeMenu()
       localStorage.removeItem('token')
       localStorage.removeItem('usuario')
@@ -407,6 +771,65 @@ export default {
   cursor: pointer;
 }
 
+.desktop-profile-trigger {
+  min-height: 42px;
+  max-width: 220px;
+  padding: 4px 12px 4px 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+  font: inherit;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.desktop-profile-trigger:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(191, 219, 254, 0.35);
+}
+
+.desktop-profile-trigger:focus-visible {
+  outline: 2px solid rgba(96, 165, 250, 0.9);
+  outline-offset: 2px;
+}
+
+.desktop-profile-avatar {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border-radius: 999px;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.desktop-profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.desktop-profile-name {
+  display: block;
+  max-width: 145px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .desktop-logout {
   border: 1px solid rgba(96, 165, 250, 0.18);
   background: rgba(37, 99, 235, 0.88);
@@ -478,11 +901,11 @@ export default {
 
 .mobile-drawer {
   position: fixed;
-  top: 82px;
-  left: 12px;
-  bottom: calc(12px + env(safe-area-inset-bottom));
+  top: 78px;
+  left: 10px;
+  bottom: calc(8px + env(safe-area-inset-bottom));
   z-index: 1220;
-  width: min(86vw, 360px);
+  width: min(88vw, 352px);
   display: flex;
   flex-direction: column;
   background:
@@ -504,8 +927,8 @@ export default {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
-  padding: 20px 18px 16px;
+  gap: 10px;
+  padding: 14px 14px 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -543,9 +966,9 @@ export default {
 
 .drawer-kicker {
   color: rgba(191, 219, 254, 0.76);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
@@ -557,14 +980,14 @@ export default {
 
 .drawer-subtitle {
   color: rgba(191, 219, 254, 0.72);
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .drawer-close {
-  width: 42px;
-  height: 42px;
-  flex: 0 0 42px;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -590,17 +1013,25 @@ export default {
   min-height: 0;
   overflow-y: auto;
   display: grid;
-  gap: 10px;
-  padding: 16px 14px;
+  gap: 8px;
+  padding: 10px 12px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.drawer-links::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 .drawer-link {
   width: 100%;
   display: grid;
-  gap: 4px;
-  padding: 16px 16px;
+  gap: 3px;
+  padding: 12px 13px;
   border: 1px solid transparent;
-  border-radius: 20px;
+  border-radius: 16px;
   background: rgba(255, 255, 255, 0.04);
   color: #ffffff;
   text-align: left;
@@ -631,39 +1062,248 @@ export default {
 }
 
 .drawer-link-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.15;
 }
 
 .drawer-link-subtitle {
   color: rgba(191, 219, 254, 0.72);
-  font-size: 13px;
-  line-height: 1.45;
+  font-size: 12px;
+  line-height: 1.32;
 }
 
 .drawer-footer {
   display: grid;
-  gap: 12px;
-  padding: 16px 14px 18px;
+  gap: 8px;
+  padding: 10px 12px 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .drawer-user-card {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+
+.drawer-user-card:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.drawer-user-card:focus-visible {
+  outline: 2px solid rgba(96, 165, 250, 0.9);
+  outline-offset: 1px;
+  border-color: rgba(96, 165, 250, 0.5);
+}
+
+.profile-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1250;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(2, 6, 23, 0.68);
+  backdrop-filter: blur(6px);
+}
+
+.profile-modal {
+  width: min(92vw, 620px);
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background:
+    radial-gradient(circle at top right, rgba(59, 130, 246, 0.2), transparent 46%),
+    linear-gradient(180deg, #162452 0%, #0f1d47 100%);
+  box-shadow: 0 20px 44px rgba(2, 6, 23, 0.45);
+  color: #e2e8f0;
+}
+
+.profile-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.profile-modal-header h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.profile-modal-close {
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  font: inherit;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.profile-modal-close:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.profile-modal-close:focus-visible {
+  outline: 2px solid rgba(96, 165, 250, 0.8);
+  outline-offset: 2px;
+}
+
+.profile-avatar-wrap {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px;
+}
+
+.profile-avatar-preview {
+  width: 74px;
+  height: 74px;
+  flex: 0 0 74px;
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.profile-avatar-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-avatar-upload {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(96, 165, 250, 0.32);
+  background: rgba(37, 99, 235, 0.22);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.profile-avatar-upload input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.profile-form-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.profile-field {
+  display: grid;
+  gap: 6px;
+}
+
+.profile-field span {
+  color: rgba(191, 219, 254, 0.9);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.profile-field input {
+  width: 100%;
+  min-height: 42px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(15, 23, 42, 0.55);
+  color: #f8fafc;
+  font: inherit;
+  font-size: 14px;
+  padding: 0 12px;
+}
+
+.profile-field input::placeholder {
+  color: rgba(191, 219, 254, 0.55);
+}
+
+.profile-field input:focus {
+  outline: none;
+  border-color: rgba(96, 165, 250, 0.85);
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.18);
+}
+
+.profile-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.profile-save,
+.profile-delete {
+  min-height: 44px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  color: #ffffff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.profile-save {
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  border-color: rgba(147, 197, 253, 0.4);
+}
+
+.profile-delete {
+  background: rgba(239, 68, 68, 0.16);
+  border-color: rgba(248, 113, 113, 0.32);
+}
+
+.profile-save:disabled,
+.profile-delete:disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+}
+
+.profile-save:not(:disabled):hover,
+.profile-delete:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+.profile-save:not(:disabled):active,
+.profile-delete:not(:disabled):active {
+  transform: translateY(0);
 }
 
 .drawer-user-avatar {
-  width: 46px;
-  height: 46px;
-  flex: 0 0 46px;
-  border-radius: 16px;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  border-radius: 14px;
   overflow: hidden;
   display: inline-flex;
   align-items: center;
@@ -688,24 +1328,24 @@ export default {
 
 .drawer-user-copy strong {
   color: #ffffff;
-  font-size: 15px;
+  font-size: 14px;
 }
 
 .drawer-user-copy span {
   color: rgba(191, 219, 254, 0.72);
-  font-size: 12px;
-  line-height: 1.4;
+  font-size: 11px;
+  line-height: 1.3;
 }
 
 .drawer-logout {
-  min-height: 48px;
+  min-height: 42px;
   padding: 0 16px;
   border: 1px solid rgba(248, 113, 113, 0.24);
-  border-radius: 18px;
+  border-radius: 14px;
   background: rgba(248, 113, 113, 0.1);
   color: #ffffff;
   font: inherit;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 800;
   cursor: pointer;
   transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
@@ -733,7 +1373,8 @@ export default {
   }
 
   .nav-links,
-  .desktop-logout {
+  .desktop-logout,
+  .desktop-profile-trigger {
     display: none;
   }
 
@@ -744,6 +1385,22 @@ export default {
 
   .logo-img {
     height: 48px;
+  }
+
+  .profile-modal-overlay {
+    padding: 12px;
+  }
+
+  .profile-modal {
+    width: 100%;
+    max-height: calc(100vh - 24px);
+    overflow-y: auto;
+    padding: 16px;
+  }
+
+  .profile-avatar-wrap {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 

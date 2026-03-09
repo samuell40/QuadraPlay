@@ -2,14 +2,8 @@
   <nav class="navbar-custom">
     <div class="navbar-container">
       <div class="left-actions">
-        <button
-          type="button"
-          class="hamburger"
-          :class="{ active: isMenuOpen }"
-          aria-label="Abrir menu"
-          :aria-expanded="String(isMenuOpen)"
-          @click="toggleMenu"
-        >
+        <button type="button" class="hamburger" :class="{ active: isMenuOpen }" aria-label="Abrir menu"
+          :aria-expanded="String(isMenuOpen)" @click="toggleMenu">
           <span :class="{ open: isMenuOpen }"></span>
           <span :class="{ open: isMenuOpen }"></span>
           <span :class="{ open: isMenuOpen }"></span>
@@ -18,10 +12,8 @@
         <a href="#" class="quadra-play desktop-only nav-quadra-desktop" @click.prevent="loginQuadraPlayComGoogle">
           <span>Campeonatos</span>
           <svg viewBox="0 0 16 16" aria-hidden="true">
-            <path
-              fill-rule="evenodd"
-              d="M1 11.5a.5.5 0 0 0 .5.5h11.793l-3.147 3.146a.5.5 0 0 0 .708.708l4-4a.5.5 0 0 0 0-.708l-4-4a.5.5 0 0 0-.708.708L13.293 11H1.5a.5.5 0 0 0-.5.5m14-7a.5.5 0 0 1-.5.5H2.707l3.147 3.146a.5.5 0 1 1-.708.708l-4-4a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 4H14.5a.5.5 0 0 1 .5.5"
-            />
+            <path fill-rule="evenodd"
+              d="M1 11.5a.5.5 0 0 0 .5.5h11.793l-3.147 3.146a.5.5 0 0 0 .708.708l4-4a.5.5 0 0 0 0-.708l-4-4a.5.5 0 0 0-.708.708L13.293 11H1.5a.5.5 0 0 0-.5.5m14-7a.5.5 0 0 1-.5.5H2.707l3.147 3.146a.5.5 0 1 1-.708.708l-4-4a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 4H14.5a.5.5 0 0 1 .5.5" />
           </svg>
         </a>
       </div>
@@ -30,13 +22,13 @@
         <button type="button" class="nav-link" :class="{ active: isActive('/times') }" @click="navegar('/times')">
           Times
         </button>
-        <button
-          type="button"
-          class="nav-link"
-          :class="{ active: isActive('/visualizarplacarhome') }"
-          @click="navegar('/visualizarplacarhome')"
-        >
+        <button type="button" class="nav-link" :class="{ active: isActive('/visualizarplacarhome') }"
+          @click="navegar('/visualizarplacarhome')">
           Placar e Resultados
+        </button>
+        <button type="button" class="nav-link" :class="{ active: isActive('/horarios-publico') }"
+          @click="navegar('/horarios-publico')">
+          Horarios
         </button>
         <button type="button" class="nav-link" :class="{ active: isActive('/') }" @click="navegar('/')">
           Tela Inicial
@@ -45,11 +37,23 @@
 
       <div class="nav-actions">
         <a href="#" class="login desktop-only" @click.prevent="loginComGoogle">
-          Login
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-circle"
+            viewBox="0 0 16 16">
+            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
+            <path
+              d="m10.97 4.97-.02.022-3.473 4.425-2.093-2.094a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05" />
+          </svg>
+          <span>Login</span>
         </a>
 
         <a href="#" class="mobile-login" @click.prevent="loginComGoogle">
-          Login
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-circle"
+            viewBox="0 0 16 16">
+            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
+            <path
+              d="m10.97 4.97-.02.022-3.473 4.425-2.093-2.094a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05" />
+          </svg>
+          <span>Login</span>
         </a>
       </div>
     </div>
@@ -74,34 +78,26 @@
       </div>
 
       <div class="drawer-links">
-        <button
-          type="button"
-          class="drawer-link"
-          :class="{ active: isActive('/') }"
-          @click="navegar('/')"
-        >
-          <span class="drawer-link-title">Tela Inicial</span>
-          <span class="drawer-link-subtitle">Voltar para a pagina principal.</span>
-        </button>
-
-        <button
-          type="button"
-          class="drawer-link"
-          :class="{ active: isActive('/times') }"
-          @click="navegar('/times')"
-        >
+        <button type="button" class="drawer-link" :class="{ active: isActive('/times') }" @click="navegar('/times')">
           <span class="drawer-link-title">Times</span>
           <span class="drawer-link-subtitle">Veja as equipes cadastradas.</span>
         </button>
 
-        <button
-          type="button"
-          class="drawer-link"
-          :class="{ active: isActive('/visualizarplacarhome') }"
-          @click="navegar('/visualizarplacarhome')"
-        >
+        <button type="button" class="drawer-link" :class="{ active: isActive('/visualizarplacarhome') }"
+          @click="navegar('/visualizarplacarhome')">
           <span class="drawer-link-title">Placar e Resultados</span>
           <span class="drawer-link-subtitle">Acompanhe fases, rodadas e placares.</span>
+        </button>
+
+        <button type="button" class="drawer-link" :class="{ active: isActive('/horarios-publico') }"
+          @click="navegar('/horarios-publico')">
+          <span class="drawer-link-title">Horarios</span>
+          <span class="drawer-link-subtitle">Consulte a grade semanal das quadras.</span>
+        </button>
+
+        <button type="button" class="drawer-link" :class="{ active: isActive('/') }" @click="navegar('/')">
+          <span class="drawer-link-title">Tela Inicial</span>
+          <span class="drawer-link-subtitle">Voltar para a pagina principal.</span>
         </button>
       </div>
 
@@ -109,10 +105,8 @@
         <button type="button" class="drawer-action secondary" @click="loginQuadraPlayComGoogle">
           <span>Campeonatos</span>
           <svg viewBox="0 0 16 16" aria-hidden="true">
-            <path
-              fill-rule="evenodd"
-              d="M1 11.5a.5.5 0 0 0 .5.5h11.793l-3.147 3.146a.5.5 0 0 0 .708.708l4-4a.5.5 0 0 0 0-.708l-4-4a.5.5 0 0 0-.708.708L13.293 11H1.5a.5.5 0 0 0-.5.5m14-7a.5.5 0 0 1-.5.5H2.707l3.147 3.146a.5.5 0 1 1-.708.708l-4-4a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 4H14.5a.5.5 0 0 1 .5.5"
-            />
+            <path fill-rule="evenodd"
+              d="M1 11.5a.5.5 0 0 0 .5.5h11.793l-3.147 3.146a.5.5 0 0 0 .708.708l4-4a.5.5 0 0 0 0-.708l-4-4a.5.5 0 0 0-.708.708L13.293 11H1.5a.5.5 0 0 0-.5.5m14-7a.5.5 0 0 1-.5.5H2.707l3.147 3.146a.5.5 0 1 1-.708.708l-4-4a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 4H14.5a.5.5 0 0 1 .5.5" />
           </svg>
         </button>
       </div>
@@ -125,6 +119,7 @@ import router from '@/router'
 import Swal from 'sweetalert2'
 import { useAuthStore } from '@/store'
 import { redirecionarMesarioPosLogin } from '@/utils/quadraPlayMesarioRedirect'
+import api from '@/axios'
 
 const QUADRA_PLAY_LOGIN_KEY = 'quadraPlayLoginAtivo'
 
@@ -184,9 +179,12 @@ export default {
 
     navegar(path) {
       this.closeMenu()
-      if (this.$route.path !== path) {
-        router.push(path)
+      if (this.$route.path === path) {
+        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' })
+        return
       }
+
+      router.push(path)
     },
 
     irParaLogin() {
@@ -199,15 +197,32 @@ export default {
       const height = 600
       const left = window.screenX + (window.outerWidth - width) / 2
       const top = window.screenY + (window.outerHeight - height) / 2.5
+      const backendBaseUrl = String(api?.defaults?.baseURL || 'https://quadra-livre-backend.onrender.com')
+        .trim()
+        .replace(/\/+$/, '')
 
       const popup = window.open(
-        'https://quadra-livre-backend.onrender.com/auth/google',
+        `${backendBaseUrl}/auth/google`,
         'Login com Google',
         `width=${width},height=${height},left=${left},top=${top}`
       )
 
       const listener = async event => {
-        if (event.origin !== 'https://www.quadraplaysv.com.br') return
+        const frontendEnv = String(process.env.VUE_APP_FRONTEND_URL || '').trim()
+        const vercelEnvBruto = String(process.env.VUE_APP_VERCEL_URL || process.env.VERCEL_URL || '').trim()
+        const vercelEnv = vercelEnvBruto
+          ? (vercelEnvBruto.startsWith('http') ? vercelEnvBruto : `https://${vercelEnvBruto}`)
+          : ''
+        const origensPermitidas = [
+          window.location.origin,
+          'https://www.quadraplaysv.com.br',
+          'https://quadraplaysv.com.br',
+          frontendEnv,
+          vercelEnv
+        ]
+          .map(origem => String(origem || '').trim().replace(/\/+$/, ''))
+          .filter(Boolean)
+        if (!origensPermitidas.includes(event.origin) && event.origin !== window.location.origin) return
 
         const { token, erro, email, usuario } = event.data
 
@@ -276,15 +291,32 @@ export default {
       const height = 600
       const left = window.screenX + (window.outerWidth - width) / 2
       const top = window.screenY + (window.outerHeight - height) / 2.5
+      const backendBaseUrl = String(api?.defaults?.baseURL || 'https://quadra-livre-backend.onrender.com')
+        .trim()
+        .replace(/\/+$/, '')
 
       const popup = window.open(
-        'https://quadra-livre-backend.onrender.com/auth/google',
+        `${backendBaseUrl}/auth/google`,
         'Login QuadraPlay',
         `width=${width},height=${height},left=${left},top=${top}`
       )
 
       const listener = async event => {
-        if (event.origin !== 'https://www.quadraplaysv.com.br') return
+        const frontendEnv = String(process.env.VUE_APP_FRONTEND_URL || '').trim()
+        const vercelEnvBruto = String(process.env.VUE_APP_VERCEL_URL || process.env.VERCEL_URL || '').trim()
+        const vercelEnv = vercelEnvBruto
+          ? (vercelEnvBruto.startsWith('http') ? vercelEnvBruto : `https://${vercelEnvBruto}`)
+          : ''
+        const origensPermitidas = [
+          window.location.origin,
+          'https://www.quadraplaysv.com.br',
+          'https://quadraplaysv.com.br',
+          frontendEnv,
+          vercelEnv
+        ]
+          .map(origem => String(origem || '').trim().replace(/\/+$/, ''))
+          .filter(Boolean)
+        if (!origensPermitidas.includes(event.origin) && event.origin !== window.location.origin) return
 
         const { token, erro, email, usuario } = event.data
 
@@ -468,12 +500,43 @@ export default {
   fill: currentColor;
 }
 
+.login-icon {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
 .desktop-only {
   display: inline-flex;
 }
 
 .mobile-login {
   display: none;
+}
+
+.mobile-brand-pill {
+  display: none;
+  min-height: 42px;
+  padding: 0 10px 0 8px;
+  align-items: center;
+  gap: 7px;
+  border-radius: 15px;
+  border: 1px solid rgba(96, 165, 250, 0.42);
+  background: rgba(255, 255, 255, 0.04);
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.mobile-brand-logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 1px solid rgba(191, 219, 254, 0.55);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .hamburger {
@@ -715,6 +778,10 @@ export default {
   }
 
   .hamburger {
+    display: inline-flex;
+  }
+
+  .mobile-brand-pill {
     display: inline-flex;
   }
 

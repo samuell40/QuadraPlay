@@ -7,6 +7,7 @@ const {
   listarAgendamentosAdminController,
   listarAgendamentosPorQuadraController,
   listarAgendamentosConfirmadosController,
+  listarAgendamentosOcupadosController,
   listarAgendamentosConfirmadosSemana,
   cancelarAgendamentoController,
   aceitarAgendamentoController,
@@ -35,9 +36,11 @@ router.get('/agendamentos/quadra/:quadraId', [validarJWT], listarAgendamentosPor
 
 // Listar agendamentos confirmados por quadra
 router.get( "/agendamentos/quadra/:quadraId/confirmados", [validarJWT], listarAgendamentosConfirmadosController );
+router.get('/agendamentos/quadra/:quadraId/ocupados', [validarJWT], listarAgendamentosOcupadosController);
 
 // Listar agendamentos confirmados na semana por quadra
 router.get('/agendamentos/quadra/:quadraId/confirmados/semana', [validarJWT], listarAgendamentosConfirmadosSemana);
+router.get('/public/agendamentos/quadra/:quadraId/confirmados/semana', listarAgendamentosConfirmadosSemana);
 
 // Listar modalidades por quadra (para o modal)
 router.get('/quadra/:quadraId/modalidades', [validarJWT], listarModalidadesPorQuadraController);

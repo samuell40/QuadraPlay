@@ -1,18 +1,23 @@
   <template>
     <div class="layout">
       <NavBarHome />
-      
+    
       <section class="texto-centro">
-        <div class="conteudo-centralizado">
-          <h1 class="texto">
-            <div>
-              <span class="primeira-linha">Agende sua Quadra em <span class="destaque_sublinhado">São Vicente</span></span>
+        <div class="conteudo-centralizado hero-grid">
+          <div class="hero-copy">
+            <h1 class="texto">
+              <span class="primeira-linha">Agende sua Quadra</span>
+              <span class="primeira-linha">em <span class="destaque_sublinhado">São Vicente</span></span>
+              <span class="segunda-linha destaque">de forma Rapida e Fácil.</span>
+            </h1>
+            <p class="hero-subtitle">Com o Quadra Play SV, voce reserva em poucos cliques.</p>
+          </div>
+
+          <div class="hero-visual" aria-hidden="true">
+            <div class="hero-ring">
+              <img :src="heroLogo" alt="" class="hero-logo" />
             </div>
-            <div>
-              <span class="segunda-linha destaque">De forma Rápida e olline.</span>
-            </div>
-          </h1>
-          <p class="hero-subtitle">Com o Quadra Play SV, você reserva em poucos cliques.</p>
+          </div>
         </div>
       </section>
 
@@ -112,14 +117,30 @@
               </div>
             </div>
 
-            <TabelaClassificacao v-if="!faseAtualEhEliminatoria && (isLoadingPlacar || (Array.isArray(placar) && placar.length > 0))" :times="placar"
-              :loading="isLoadingPlacar" :modalidade="modalidadeNormalizada"
-              :colunas-visiveis="colunasClassificacaoVisiveis"
+            <TabelaClassificacao
+              v-if="!faseAtualEhEliminatoria"
+              :times="placarHomeTop5"
+              :loading="isLoadingPlacar"
+              :modalidade="modalidadeNormalizada"
+              :show-glossary="false"
+              :colunas-visiveis="colunasClassificacaoHome"
               :grupos-config="gruposClassificacao"
-              @time-click="abrirModalPartidasTime" />
+              theme="navegacao"
+              compact-mobile-no-scroll
+              @time-click="abrirModalPartidasTime"
+            />
+
+            <button
+              v-if="!faseAtualEhEliminatoria && !isLoadingPlacar"
+              type="button"
+              class="btn-ver-completo"
+              @click="irParaVisualizarPlacar"
+            >
+              Ver tabela completa
+            </button>
 
             <ListaPartidas
-              v-else-if="faseAtualEhEliminatoria"
+              v-if="faseAtualEhEliminatoria"
               :partidas="partidas"
               :loading="isLoadingPartidas"
               loading-title="Carregando confrontos eliminatorios"
@@ -130,10 +151,6 @@
               empty-align="left"
               @time-click="abrirModalPartidasTime"
             />
-
-            <div v-else class="sem-dados-centralizado sem-dados-alinhado">
-              Nenhuma tabela de classificação disponível no momento.
-            </div>
           </div>
 
           <div v-if="!faseAtualEhEliminatoria" class="painel-card partidas-wrapper">
@@ -160,9 +177,23 @@
               </select>
             </div>
 
-            <ListaPartidas :partidas="partidas" :loading="isLoadingPartidas"
-              empty-title="Nenhuma partida disponível no momento." quadra-class="nome-quadra-home" empty-align="left"
-              @time-click="abrirModalPartidasTime" />
+            <ListaPartidas
+              :partidas="partidasHomeTop5"
+              :loading="isLoadingPartidas"
+              empty-title="Nenhuma partida disponivel no momento."
+              quadra-class="nome-quadra-home"
+              empty-align="left"
+              @time-click="abrirModalPartidasTime"
+            />
+
+            <button
+              v-if="!isLoadingPartidas && partidasHomeTop5.length > 0"
+              type="button"
+              class="btn-ver-completo"
+              @click="irParaVisualizarPlacar"
+            >
+              Ver todas as partidas
+            </button>
           </div>
         </div>
       </section>
@@ -195,6 +226,8 @@ import {
   inscreverCampeonatoSocket,
   desinscreverCampeonatoSocket
 } from '@/services/socket'
+import { ordenarPartidasPorStatusEDataDesc } from '@/utils/partidaOrdenacao'
+import heroLogo from '@/assets/logo.png'
 import 'vue3-carousel/dist/carousel.css'
 
 export default {
@@ -203,6 +236,7 @@ export default {
 
   data() {
     return {
+      heroLogo,
       quadras: [],
       isLoadingQuadras: true,
       campeonatoAtual: null,
@@ -237,11 +271,6 @@ export default {
         .toLowerCase()
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
-    },
-    colunasClassificacaoVisiveis() {
-      return Array.isArray(this.campeonatoAtual?.regras?.colunasClassificacao)
-        ? this.campeonatoAtual.regras.colunasClassificacao
-        : []
     },
     nomeFaseSelecionada() {
       return this.fases.find(f => Number(f.id) === Number(this.faseSelecionada))?.nome || ''
@@ -281,7 +310,11 @@ export default {
           : 'Confrontos eliminatorios'
       }
 
-      return `Tabela do ${this.nomeCampeonato}`
+      if (this.nomeCampeonato) {
+        return `Tabela do ${this.nomeCampeonato}`
+      }
+
+      return 'Tabela do campeonato'
     },
     subtituloPainelClassificacao() {
       if (this.faseAtualEhEliminatoria) {
@@ -293,6 +326,15 @@ export default {
       }
 
       return 'Toque em um time para abrir o historico completo de partidas.'
+    },
+    colunasClassificacaoHome() {
+      return ['pontuacao', 'jogos', 'vitorias', 'derrotas']
+    },
+    placarHomeTop5() {
+      return Array.isArray(this.placar) ? this.placar.slice(0, 5) : []
+    },
+    partidasHomeTop5() {
+      return Array.isArray(this.partidas) ? this.partidas.slice(0, 5) : []
     }
   },
 
@@ -323,6 +365,9 @@ export default {
     abrirModalPartidasTime(time) {
       this.timeSelecionadoPartidas = time
       this.mostrarModalPartidasTime = true
+    },
+    irParaVisualizarPlacar() {
+      router.push({ name: 'visualizar_placarhome' })
     },
     normalizarTexto(valor) {
       return String(valor || '')
@@ -630,11 +675,7 @@ export default {
 
         const lista = Array.isArray(data) ? data : []
 
-        this.partidas = lista.sort((a, b) => {
-          const da = new Date(a?.data || a?.createdAt || 0).getTime()
-          const db = new Date(b?.data || b?.createdAt || 0).getTime()
-          return db - da
-        })
+        this.partidas = ordenarPartidasPorStatusEDataDesc(lista)
       } catch (err) {
         console.error('Erro ao carregar partidas por rodada:', err)
         this.partidas = []
@@ -659,15 +700,31 @@ export default {
       const height = 600
       const left = window.screenX + (window.outerWidth - width) / 2
       const top = window.screenY + (window.outerHeight - height) / 2.5
+      const backendBaseUrl = String(api?.defaults?.baseURL || 'https://quadra-livre-backend.onrender.com')
+        .trim()
+        .replace(/\/+$/, '')
 
       const popup = window.open(
-        'https://quadra-livre-backend.onrender.com/auth/google',
+        `${backendBaseUrl}/auth/google`,
         'Login com Google',
         `width=${width},height=${height},left=${left},top=${top}`
       )
 
       const listener = event => {
-        const origensPermitidas = ['https://www.quadraplaysv.com.br']
+        const frontendEnv = String(process.env.VUE_APP_FRONTEND_URL || '').trim()
+        const vercelEnvBruto = String(process.env.VUE_APP_VERCEL_URL || process.env.VERCEL_URL || '').trim()
+        const vercelEnv = vercelEnvBruto
+          ? (vercelEnvBruto.startsWith('http') ? vercelEnvBruto : `https://${vercelEnvBruto}`)
+          : ''
+        const origensPermitidas = [
+          window.location.origin,
+          'https://www.quadraplaysv.com.br',
+          'https://quadraplaysv.com.br',
+          frontendEnv,
+          vercelEnv
+        ]
+          .map(origem => String(origem || '').trim().replace(/\/+$/, ''))
+          .filter(Boolean)
         if (!origensPermitidas.includes(event.origin) && event.origin !== window.location.origin) return
 
         const { token, erro, email, usuario } = event.data
@@ -765,7 +822,7 @@ a {
 
 .texto-centro {
   color: white;
-  padding: 42px 60px;
+  padding: 16px 60px 62px;
   margin-top: 70px;
   display: flex;
   justify-content: center;
@@ -773,23 +830,29 @@ a {
   max-width: 100vw;
   overflow-x: hidden;
   background:
-    radial-gradient(circle at 14% 18%, rgba(96, 165, 250, 0.24), transparent 28%),
-    radial-gradient(circle at 86% 22%, rgba(59, 130, 246, 0.18), transparent 32%),
-    linear-gradient(180deg, #050b2c 0%, #08153d 58%, #08153d 100%);
+    radial-gradient(circle at 24% 26%, rgba(96, 165, 250, 0.34), transparent 42%),
+    radial-gradient(circle at 84% 22%, rgba(96, 165, 250, 0.28), transparent 36%),
+    linear-gradient(120deg, rgba(4, 15, 48, 0.96), rgba(10, 41, 116, 0.94)),
+    url('@/assets/backgroundLogin.png');
+  background-size: cover;
+  background-position: center;
   position: relative;
+  box-shadow: inset 0 -80px 100px rgba(0, 8, 30, 0.3);
 }
 
 .conteudo-centralizado {
-  width: min(1100px, 100%);
+  width: calc(100% - 120px);
+  max-width: 1280px;
   margin: 0 auto;
   box-sizing: border-box;
 }
 
 .hero-grid {
   display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(380px, 1fr);
-  gap: 22px;
-  align-items: start;
+  grid-template-columns: minmax(520px, 760px) clamp(220px, 22vw, 300px);
+  gap: clamp(16px, 2.2vw, 32px);
+  justify-content: center;
+  align-items: center;
 }
 
 .hero-coay {
@@ -810,13 +873,16 @@ a {
 
 .texto {
   font-family: "Montserrat";
-  font-size: 52px;
+  font-size: clamp(37px, 4.25vw, 62px);
   font-weight: 900;
-  line-height: 1.12;
-  letter-spacing: -0.6px;
+  line-height: 0.98;
+  letter-spacing: 0.015em;
   text-align: left;
   display: inline-block;
   margin: 0;
+  text-shadow: 0 10px 34px rgba(2, 6, 23, 0.55);
+  transform: scaleX(1.08);
+  transform-origin: left top;
 }
 
 .primeira-linha,
@@ -824,18 +890,60 @@ a {
   display: block;
 }
 
+.primeira-linha:first-child {
+  white-space: nowrap;
+}
+
 .segunda-linha {
   padding-left: 0;
-  color: #3B82F6;
+  background: linear-gradient(120deg, #93c5fd, #60a5fa 42%, #38bdf8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .hero-subtitle {
-  margin: 12px 0 0;
-  color: rgba(255, 255, 255, 0.76);
+  margin: 10px 0 0;
+  color: rgba(226, 232, 240, 0.92);
   font-size: 16px;
   line-height: 1.5;
-  max-width: none;
-  white-space: nowrap;
+  max-width: 540px;
+}
+
+.hero-copy {
+  position: relative;
+  z-index: 2;
+  padding-left: 0;
+}
+
+.hero-visual {
+  position: relative;
+  min-height: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-ring {
+  width: clamp(190px, 19vw, 270px);
+  aspect-ratio: 1 / 1;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 38% 34%, rgba(219, 234, 254, 0.92), rgba(96, 165, 250, 0.25) 58%, rgba(29, 78, 216, 0.45)),
+    linear-gradient(135deg, rgba(15, 23, 42, 0.55), rgba(37, 99, 235, 0.35));
+  border: 4px solid rgba(191, 219, 254, 0.85);
+  box-shadow:
+    0 18px 38px rgba(8, 47, 122, 0.42),
+    0 0 0 11px rgba(147, 197, 253, 0.1);
+}
+
+.hero-logo {
+  width: 98%;
+  height: 98%;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 16px rgba(15, 23, 42, 0.32));
 }
 
 .hero-actions {
@@ -963,46 +1071,53 @@ a {
 }
 
 .destaque_sublinhado {
-  text-decoration: none;
-  color: #60a5fa;
-  border-bottom: 3px solid rgba(96, 165, 250, 0.55);
+  background: linear-gradient(120deg, #93c5fd, #60a5fa 38%, #38bdf8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  display: inline-block;
+  border-bottom: 2px solid rgba(147, 197, 253, 0.92);
   padding-bottom: 2px;
 }
 
 .quadras-section {
-  margin-top: 10px;
-  padding: 0 0 8px;
+  margin-top: -34px;
+  padding: 0 0 16px;
+  position: relative;
+  z-index: 3;
 }
 
 .quadras-shell {
   width: calc(100% - 120px);
   margin: 0 auto;
-  padding: 22px 22px 20px;
-  border-radius: 26px;
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.1);
+  padding: 14px 14px 14px;
+  border-radius: 24px;
+  background: linear-gradient(145deg, rgba(248, 251, 255, 0.98), rgba(241, 245, 255, 0.96));
+  border: 6px solid rgba(191, 219, 254, 0.55);
+  box-shadow:
+    0 16px 28px rgba(15, 23, 42, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .quadras-head {
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 
 .tit_horario {
   margin: 6px 0 8px;
   text-align: left;
-  font-size: 28px;
+  font-size: clamp(20px, 1.8vw, 28px);
   color: #0f172a;
   font-weight: 900;
-  letter-spacing: -0.6px;
+  letter-spacing: -0.03em;
 }
 
 .quadras-subtitle {
   margin: 0;
-  color: #64748b;
-  font-size: 14px;
+  color: #475569;
+  font-size: 13px;
   line-height: 1.55;
-  max-width: 60ch;
+  max-width: 64ch;
 }
 
 .agendamento {
@@ -1012,8 +1127,8 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  padding: 0;
+  gap: 12px;
+  padding: 0 10px;
 }
 
 .carousel {
@@ -1029,24 +1144,38 @@ a {
 
 .btn-prev,
 .btn-next {
-  background: #f8fafc;
-  color: #334155;
-  border: 1px solid rgba(148, 163, 184, 0.26);
-  width: 48px;
-  height: 48px;
+  position: static;
+  background: rgba(241, 245, 249, 0.96);
+  color: #475569;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  width: 40px;
+  height: 40px;
   border-radius: 999px;
   font-size: 20px;
+  font-weight: 300;
+  line-height: 1;
   cursor: pointer;
   transition: 0.18s ease;
-  flex: 0 0 auto;
+  flex: 0 0 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 6;
+}
+
+.btn-prev {
+  margin-right: 2px;
+}
+
+.btn-next {
+  margin-left: 2px;
 }
 
 .btn-prev:hover,
 .btn-next:hover {
-  background: #eff6ff;
+  background: #e2e8f0;
   border-color: rgba(59, 130, 246, 0.35);
   color: #1d4ed8;
-  transform: translateY(-1px);
 }
 
 .btn-topo {
@@ -1072,12 +1201,14 @@ a {
 .card {
   position: relative;
   overflow: hidden;
-  width: 100%;
-  height: 360px;
+  width: calc(100% - 18px);
+  max-width: 360px;
+  margin: 0 auto;
+  height: 272px;
   background: #08153d;
-  border: 1px solid rgba(59, 130, 246, 0.18);
-  border-radius: 24px;
-  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.14);
+  border: 1px solid rgba(191, 219, 254, 0.34);
+  border-radius: 26px;
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.2);
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
 
@@ -1123,8 +1254,8 @@ a {
   z-index: 2;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 18px 18px 18px;
+  gap: 10px;
+  padding: 13px 12px 12px;
   color: #ffffff;
 }
 
@@ -1137,10 +1268,10 @@ a {
 
 .nome-quadra {
   color: #ffffff;
-  font-size: 24px;
+  font-size: clamp(18px, 1.4vw, 22px);
   font-weight: 900;
   margin: 0;
-  line-height: 1.12;
+  line-height: 1.05;
   letter-spacing: -0.03em;
   text-shadow: 0 10px 22px rgba(0, 0, 0, 0.5);
 }
@@ -1175,22 +1306,25 @@ a {
 }
 
 .btn-agendar {
-  background-color: #3b82f6;
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
   color: #ffffff;
-  border: none;
-  padding: 0 16px;
+  border: 1px solid rgba(191, 219, 254, 0.4);
+  padding: 0 22px;
   cursor: pointer;
-  min-width: 118px;
-  height: 42px;
+  min-width: 148px;
+  height: 38px;
   border-radius: 999px;
   font-size: 13px;
   font-weight: 800;
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  line-height: 1;
+  transition: filter 0.2s ease, transform 0.2s ease;
   align-self: flex-start;
+  margin-top: 4px;
+  box-shadow: 0 9px 16px rgba(30, 64, 175, 0.32);
 }
 
 .btn-agendar:hover:not(:disabled) {
-  background-color: #2563eb;
+  filter: brightness(1.08);
   transform: translateY(-1px);
 }
 
@@ -1202,18 +1336,24 @@ a {
 
 .painel-home {
   width: calc(100% - 120px);
-  margin: 24px auto 46px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+  margin: 22px auto 44px;
+  display: grid;
+  grid-template-columns: minmax(210px, 0.46fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: stretch;
+  padding: 10px;
+  border-radius: 30px;
+  background: linear-gradient(145deg, rgba(243, 246, 255, 0.95), rgba(233, 239, 255, 0.92));
+  border: 5px solid rgba(191, 219, 254, 0.55);
+  box-shadow: 0 18px 34px rgba(15, 23, 42, 0.12);
 }
 
 .painel-card {
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  border-radius: 26px;
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
-  padding: 24px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+  padding: 20px;
 }
 
 .section-head {
@@ -1249,7 +1389,10 @@ a {
 }
 
 .filtros-card {
-  padding: 18px 20px;
+  padding: 20px 18px;
+  background: linear-gradient(165deg, #14327a, #1a438f 64%, #1b4479);
+  border: 1px solid rgba(191, 219, 254, 0.42);
+  color: #e2e8f0;
 }
 
 .filtros-card .section-head {
@@ -1258,19 +1401,37 @@ a {
 
 .filtros-card .section-head h2 {
   margin: 4px 0 6px;
-  font-size: 24px;
+  font-size: 36px;
+  color: #f8fafc;
 }
 
 .filtros-card .section-head a {
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.45;
+  color: rgba(226, 232, 240, 0.9);
+}
+
+.filtros-card .section-kicker {
+  color: #60a5fa;
+}
+
+.filtros-card .filtro-titulo {
+  color: #dbeafe;
+  letter-spacing: 0.08em;
+  font-size: 11px;
+}
+
+.filtros-card .filtro-select {
+  background: rgba(59, 130, 246, 0.24);
+  border-color: rgba(147, 197, 253, 0.36);
+  color: #f8fafc;
 }
 
 /* filtros */
 .filtros-topo {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
+  grid-template-columns: 1fr;
+  gap: 10px;
 }
 
 .filtro-item {
@@ -1327,9 +1488,9 @@ a {
 /* grid tabela + partidas */
 .placar-e-partidas {
   display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(320px, 0.95fr);
-  gap: 20px;
-  align-items: start;
+  grid-template-columns: minmax(0, 1.45fr) minmax(260px, 0.78fr);
+  gap: 14px;
+  align-items: stretch;
 }
 
 .placar-e-partidas.placar-e-partidas-simples {
@@ -1337,7 +1498,19 @@ a {
 }
 
 .placar-wrapper,
-.partidas-wrapper { min-width: 0; }
+.partidas-wrapper {
+  min-width: 0;
+  height: 100%;
+}
+
+.partidas-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.partidas-wrapper .btn-ver-completo {
+  margin-top: auto;
+}
 
 /* vazio */
 .sem-dados-centralizado {
@@ -1349,6 +1522,25 @@ a {
 .sem-dados-centralizado.sem-dados-alinhado { text-align: left; }
 
 .filtro-rodada-mobile { margin-bottom: 12px; }
+
+.btn-ver-completo {
+  width: 100%;
+  margin-top: 12px;
+  min-height: 42px;
+  border: 1px solid rgba(37, 99, 235, 0.28);
+  border-radius: 14px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.btn-ver-completo:hover {
+  background: #dbeafe;
+  border-color: rgba(37, 99, 235, 0.45);
+}
 
 .time-image {
   width: 32px;
@@ -1387,7 +1579,17 @@ a {
 @media (max-width: 900px) {
   .hero-grid {
     grid-template-columns: 1fr;
-    gap: 14px;
+    gap: 6px;
+  }
+
+  .hero-copy {
+    padding-left: 0;
+  }
+
+  .hero-visual {
+    width: 100%;
+    min-height: 200px;
+    justify-content: center;
   }
 
   .placar-e-partidas {
@@ -1397,66 +1599,60 @@ a {
 
 @media (max-width: 768px) {
   .texto-centro {
-    padding: 30px 14px;
+    padding: 22px 14px 36px;
   }
 
   .texto {
-    font-size: 38px;
-    line-height: 1.15;
+    font-size: clamp(22px, 7.2vw, 29px);
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+    transform: none;
+  }
+
+  .primeira-linha:first-child {
+    white-space: normal;
   }
 
   .conteudo-centralizado {
-    width: 100%;
+    width: calc(100% - 28px);
+    max-width: none;
     padding-left: 0;
   }
 
-  .hero-kicker {
-    margin-bottom: 10px;
+  .hero-grid {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 12px;
+  }
+
+  .hero-copy {
+    min-width: 0;
   }
 
   .hero-subtitle {
-    margin-top: 10px;
-    font-size: 14px;
+    margin-top: 8px;
+    font-size: 13px;
     line-height: 1.45;
     max-width: 100%;
     white-space: normal;
   }
 
-  .hero-actions {
-    gap: 10px;
-    margin-top: 14px;
+  .hero-visual {
+    display: flex;
+    width: auto;
+    min-height: 0;
+    justify-content: flex-end;
+    align-items: flex-start;
   }
 
-  .btn-hero {
-    min-height: 38px;
-    padding: 0 14px;
-    font-size: 13px;
+  .hero-ring {
+    width: min(42vw, 180px);
+    flex-shrink: 0;
   }
 
-  .hero-inline-note {
-    font-size: 13px;
-  }
-
-  .hero-highlight {
-    padding: 14px 14px;
-    border-radius: 18px;
-  }
-
-  .hero-highlight h2 {
-    font-size: 18px;
-  }
-
-  .hero-highlight a {
-    font-size: 13px;
-  }
-
-  .hero-aoint {
-    padding: 10px 12px;
-    border-radius: 14px;
-  }
-
-  a {
-    font-size: 17px;
+  .quadras-section {
+    margin-top: -10px;
+    padding-bottom: 2px;
   }
 
   .btn-topo {
@@ -1467,32 +1663,29 @@ a {
     font-size: 20px;
   }
 
-  .quadras-section {
-    margin-top: 8px;
-    padding-bottom: 2px;
-  }
-
   .quadras-shell {
     width: calc(100% - 28px);
-    padding: 16px 12px 14px;
-    border-radius: 20px;
+    padding: 12px 9px 10px;
+    border-radius: 18px;
+    border-width: 4px;
   }
 
   .tit_horario {
-    font-size: 22px;
+    font-size: 20px;
     margin: 6px 0 8px;
   }
 
   .quadras-subtitle {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .agendamento {
     gap: 8px;
+    padding: 0 4px;
   }
 
   .carousel .carousel__slide {
-    padding: 0 6px;
+    padding: 0 4px;
   }
 
   .btn-prev,
@@ -1521,8 +1714,11 @@ a {
   }
 
   .card {
-    height: 320px;
-    border-radius: 20px;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    height: 248px;
+    border-radius: 18px;
   }
 
   .overlay {
@@ -1531,7 +1727,7 @@ a {
   }
 
   .nome-quadra {
-    font-size: 20px;
+    font-size: 19px;
   }
 
   .card-copy {
@@ -1543,12 +1739,17 @@ a {
   }
 
   .btn-agendar {
-    width: 100%;
+    width: auto;
+    min-width: 136px;
+    height: 36px;
+    font-size: 12px;
   }
 
   .painel-home {
     width: calc(100% - 28px);
     margin: 18px auto 36px;
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
 
   .painel-card {
@@ -1594,9 +1795,14 @@ a {
     border-radius: 12px;
   }
 
+  .btn-ver-completo {
+    min-height: 40px;
+    font-size: 12px;
+  }
+
   .placar-wrapper {
     min-width: 0;
-    overflow-x: auto;
+    overflow-x: hidden;
   }
 
   .partidas-wrapper {
@@ -1605,6 +1811,8 @@ a {
   }
 }
 </style>
+
+
 
 
 

@@ -37,20 +37,66 @@ iniciarSocket(server);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const allowedOrigins = [
+const allowedOrigins = new Set([
   'https://www.quadraplaysv.com.br',
   'https://quadraplaysv.com.br',
-  'http://localhost:5173',
-  'http://localhost:3000',
-];
+]);
+
+function normalizarOrigem(valor) {
+  const bruto = String(valor || '').trim();
+  if (!bruto) return '';
+
+  try {
+    return new URL(bruto).origin;
+  } catch (_) {
+    try {
+      return new URL(`https://${bruto}`).origin;
+    } catch {
+      return '';
+    }
+  }
+}
+
+function adicionarOrigemPermitida(valor) {
+  const origem = normalizarOrigem(valor);
+  if (origem) {
+    allowedOrigins.add(origem);
+  }
+}
+
+[
+  process.env.FRONTEND_URL,
+  process.env.APP_URL,
+  process.env.QUADRAPLAY_URL,
+  process.env.VERCEL_URL,
+  process.env.VERCEL_PROJECT_PRODUCTION_URL,
+].forEach(adicionarOrigemPermitida);
+
+String(process.env.CORS_ALLOWED_ORIGINS || '')
+  .split(',')
+  .map((item) => item.trim())
+  .filter(Boolean)
+  .forEach(adicionarOrigemPermitida);
+
+function ehOrigemVercel(origin) {
+  try {
+    const hostname = String(new URL(origin).hostname || '').toLowerCase();
+    return hostname.endsWith('.vercel.app');
+  } catch (_) {
+    return false;
+  }
+}
 
 app.use(cors({
   origin: (origin, cb) => {
     if (!origin) return cb(null, true);
 
-    if (allowedOrigins.includes(origin)) return cb(null, true);
+    const originNormalizada = normalizarOrigem(origin) || String(origin || '').trim();
+    if (allowedOrigins.has(originNormalizada) || ehOrigemVercel(originNormalizada)) {
+      return cb(null, true);
+    }
 
-    return cb(new Error(`Not allowed by CORS: ${origin}`));
+    return cb(new Error(`Not allowed by CORS: ${originNormalizada}`));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

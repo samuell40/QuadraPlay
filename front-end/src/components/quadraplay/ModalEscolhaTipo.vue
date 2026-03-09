@@ -98,15 +98,23 @@
       <div class="filtros-topo">
         <label>Time 1:</label>
 
-        <div class="dropdown-custom">
-          <div class="dropdown-selected" @click="abrirDropdownTimeA = !abrirDropdownTimeA">
+        <div ref="dropdownTimeAAnchor" class="dropdown-custom">
+          <div class="dropdown-selected" @click.stop="toggleDropdownTimeA">
             <img v-if="timeASelecionadoObj" :src="obterFotoTimeCard(timeASelecionadoObj.foto)" class="avatar" />
             <span>
               {{ timeASelecionadoObj?.nome || 'Selecione o time' }}
             </span>
           </div>
+        </div>
 
-          <div v-if="abrirDropdownTimeA" class="dropdown-list">
+        <teleport to="body">
+          <div
+            v-if="abrirDropdownTimeA"
+            ref="dropdownTimeALista"
+            class="dropdown-list dropdown-list-solto"
+            :style="dropdownTimeAStyle"
+            @click.stop
+          >
             <input type="text" v-model="buscaTimeA" placeholder="Buscar time..." class="input-busca-jogador"
               @click.stop />
 
@@ -121,22 +129,30 @@
               </li>
             </ul>
           </div>
-        </div>
+        </teleport>
       </div>
 
       <!-- TIME B -->
       <div class="filtros-topo">
         <label>Time 2:</label>
 
-        <div class="dropdown-custom">
-          <div class="dropdown-selected" @click="abrirDropdownTimeB = !abrirDropdownTimeB">
+        <div ref="dropdownTimeBAnchor" class="dropdown-custom">
+          <div class="dropdown-selected" @click.stop="toggleDropdownTimeB">
             <img v-if="timeBSelecionadoObj" :src="obterFotoTimeCard(timeBSelecionadoObj.foto)" class="avatar" />
             <span>
               {{ timeBSelecionadoObj?.nome || 'Selecione o time' }}
             </span>
           </div>
+        </div>
 
-          <div v-if="abrirDropdownTimeB" class="dropdown-list">
+        <teleport to="body">
+          <div
+            v-if="abrirDropdownTimeB"
+            ref="dropdownTimeBLista"
+            class="dropdown-list dropdown-list-solto"
+            :style="dropdownTimeBStyle"
+            @click.stop
+          >
             <input type="text" v-model="buscaTimeB" placeholder="Buscar time..." class="input-busca-jogador"
               @click.stop />
 
@@ -151,7 +167,7 @@
               </li>
             </ul>
           </div>
-        </div>
+        </teleport>
       </div>
 
       <div v-if="modoCriacaoPartida === 'AGENDAR'" class="agenda-partida-wrapper">
@@ -294,7 +310,9 @@ export default {
       criandoPartida: false,
       criandoRodada: false,
       carregandoAcaoEscolha: false,
-      acaoSelecionada: ''
+      acaoSelecionada: '',
+      dropdownTimeAStyle: {},
+      dropdownTimeBStyle: {}
     }
   },
 
@@ -302,6 +320,34 @@ export default {
 
   mounted() {
     this.usuario = JSON.parse(localStorage.getItem('usuario'))
+    window.addEventListener('resize', this.atualizarPosicaoDropdownTimes)
+    window.addEventListener('scroll', this.atualizarPosicaoDropdownTimes, true)
+    document.addEventListener('click', this.handleClickForaDropdownTimes, true)
+  },
+
+  beforeUnmount() {
+    window.removeEventListener('resize', this.atualizarPosicaoDropdownTimes)
+    window.removeEventListener('scroll', this.atualizarPosicaoDropdownTimes, true)
+    document.removeEventListener('click', this.handleClickForaDropdownTimes, true)
+  },
+
+  watch: {
+    abrirDropdownTimeA(aberto) {
+      if (!aberto) return
+      this.abrirDropdownTimeB = false
+      this.$nextTick(() => this.atualizarPosicaoDropdownTime('A'))
+    },
+    abrirDropdownTimeB(aberto) {
+      if (!aberto) return
+      this.abrirDropdownTimeA = false
+      this.$nextTick(() => this.atualizarPosicaoDropdownTime('B'))
+    },
+    mostrarModalPartida(aberto) {
+      if (!aberto) this.fecharDropdownsTimes()
+    },
+    modelValue(aberto) {
+      if (!aberto) this.fecharDropdownsTimes()
+    }
   },
 
   computed: {
@@ -403,6 +449,67 @@ export default {
     obterFotoTimeCard(foto) {
       return obterFotoTime(foto)
     },
+    toggleDropdownTimeA() {
+      this.abrirDropdownTimeA = !this.abrirDropdownTimeA
+      if (!this.abrirDropdownTimeA) this.dropdownTimeAStyle = {}
+    },
+    toggleDropdownTimeB() {
+      this.abrirDropdownTimeB = !this.abrirDropdownTimeB
+      if (!this.abrirDropdownTimeB) this.dropdownTimeBStyle = {}
+    },
+    fecharDropdownsTimes() {
+      this.abrirDropdownTimeA = false
+      this.abrirDropdownTimeB = false
+      this.dropdownTimeAStyle = {}
+      this.dropdownTimeBStyle = {}
+    },
+    atualizarPosicaoDropdownTimes() {
+      if (this.abrirDropdownTimeA) this.atualizarPosicaoDropdownTime('A')
+      if (this.abrirDropdownTimeB) this.atualizarPosicaoDropdownTime('B')
+    },
+    atualizarPosicaoDropdownTime(tipo) {
+      const anchor = tipo === 'A' ? this.$refs.dropdownTimeAAnchor : this.$refs.dropdownTimeBAnchor
+      if (!anchor?.getBoundingClientRect) return
+
+      const rect = anchor.getBoundingClientRect()
+      const margemViewport = 8
+      const gap = 6
+      const alturaDesejada = 260
+      const espacoAbaixo = Math.max(0, window.innerHeight - rect.bottom - margemViewport)
+      const espacoAcima = Math.max(0, rect.top - margemViewport)
+      const abreAcima = espacoAbaixo < 180 && espacoAcima > espacoAbaixo
+      const alturaMax = Math.max(120, Math.min(alturaDesejada, abreAcima ? espacoAcima - gap : espacoAbaixo - gap))
+      const top = abreAcima ? Math.max(margemViewport, rect.top - alturaMax - gap) : rect.bottom + gap
+
+      const estilo = {
+        left: `${Math.max(margemViewport, rect.left)}px`,
+        top: `${Math.max(margemViewport, top)}px`,
+        width: `${rect.width}px`,
+        maxHeight: `${alturaMax}px`
+      }
+
+      if (tipo === 'A') {
+        this.dropdownTimeAStyle = estilo
+      } else {
+        this.dropdownTimeBStyle = estilo
+      }
+    },
+    handleClickForaDropdownTimes(evento) {
+      const target = evento?.target
+      if (!target) return
+
+      const anchorA = this.$refs.dropdownTimeAAnchor
+      const listaA = this.$refs.dropdownTimeALista
+      if (this.abrirDropdownTimeA && !anchorA?.contains(target) && !listaA?.contains(target)) {
+        this.abrirDropdownTimeA = false
+      }
+
+      const anchorB = this.$refs.dropdownTimeBAnchor
+      const listaB = this.$refs.dropdownTimeBLista
+      if (this.abrirDropdownTimeB && !anchorB?.contains(target) && !listaB?.contains(target)) {
+        this.abrirDropdownTimeB = false
+      }
+    },
     obterDataValida(valor) {
       if (!valor) return null
       const data = valor instanceof Date ? new Date(valor.getTime()) : new Date(valor)
@@ -472,7 +579,7 @@ export default {
       }
 
       if (MODALIDADES_GRUPO_VOLEI.has(nomeNormalizado)) {
-        return { livre: true, minPorTime: 1 }
+        return { livre: true, minPorTime: 0, opcional: true }
       }
 
       const GRUPO_FUTEBOL = new Set([1, 2, 7])
@@ -480,7 +587,7 @@ export default {
       const BEACH_TENIS = new Set([4])
 
       if (GRUPO_FUTEBOL.has(id)) return { livre: true, minPorTime: 0, opcional: true }
-      if (VOLEI.has(id) || BEACH_TENIS.has(id)) return { livre: true, minPorTime: 1 }
+      if (VOLEI.has(id) || BEACH_TENIS.has(id)) return { livre: true, minPorTime: 0, opcional: true }
 
       return { porTime: 11, total: 22 }
     },
@@ -517,16 +624,19 @@ export default {
     selecionarTimeA(time) {
       this.partida.timeAId = time.id
       this.abrirDropdownTimeA = false
+      this.dropdownTimeAStyle = {}
       this.buscaTimeA = ''
     },
 
     selecionarTimeB(time) {
       this.partida.timeBId = time.id
       this.abrirDropdownTimeB = false
+      this.dropdownTimeBStyle = {}
       this.buscaTimeB = ''
     },
 
     async abrirModalPartida(modo = 'ADICIONAR') {
+      this.fecharDropdownsTimes()
       await this.carregarModalidadeCampeonato()
       await this.listarFases()
       await this.listarTimes()
@@ -1200,6 +1310,16 @@ export default {
   overflow-y: auto;
   z-index: 10;
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.14);
+}
+
+.dropdown-list-solto {
+  position: fixed;
+  margin-top: 0;
+  z-index: 1300;
+}
+
+.dropdown-list-solto ul {
+  max-height: calc(100% - 46px);
 }
 
 .dropdown-list ul {

@@ -1,15 +1,23 @@
 <template>
-  <div class="layout">
-    <SideBar />
+  <div class="layout" :class="{ 'layout-publico': publico }">
+    <template v-if="publico">
+      <NavBarHome />
+    </template>
+    <template v-else>
+      <SideBar />
+    </template>
 
-    <div class="conteudo">
-      <NavBarUse class="page-nav" />
+    <div class="conteudo" :class="{ 'conteudo-publico': publico }">
+      <NavBarUse v-if="!publico" class="page-nav" />
 
       <section class="page-header">
         <div class="header-copy">
           <div class="header-topline">
-            <h1 class="title">Grade Semanal</h1>
+            <h1 class="title">{{ publico ? 'Horarios' : 'Grade Semanal' }}</h1>
           </div>
+          <p v-if="publico" class="page-subtitle">
+            Consulte a grade semanal das quadras, acompanhe reservas e veja os horarios disponiveis.
+          </p>
         </div>
       </section>
 
@@ -62,7 +70,7 @@
                     Proxima semana
                   </button>
                 </div>
-              <button @click="gerarPDF" class="btn-pdf" :disabled="isLoading || !quadraSelecionada" title="Gerar PDF">
+              <button v-if="!publico" @click="gerarPDF" class="btn-pdf" :disabled="isLoading || !quadraSelecionada" title="Gerar PDF">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"></path>
                   <path d="M14 2v6h6"></path>
@@ -140,6 +148,8 @@
       </section>
     </div>
 
+    <Footer v-if="publico" />
+
     <DetalheAgendModal
       v-if="agendamentoSelecionado"
       :agendamento="agendamentoSelecionado"
@@ -158,14 +168,22 @@ import api from '@/axios'
 import { useAuthStore } from '@/store'
 import SideBar from '@/components/SideBar.vue'
 import NavBarUse from '@/components/NavBarUser.vue'
+import NavBarHome from '@/components/NavBarHome.vue'
+import Footer from '@/components/Footer.vue'
 import DetalheAgendModal from '@/components/modals/Agendamentos/DetalharAgendModal.vue'
 import LoadingState from '@/components/loading/LoadingState.vue'
 import logoImg from '@/assets/logo.png'
 
 export default {
   name: 'HorariosView',
-  components: { SideBar, NavBarUse, DetalheAgendModal, LoadingState },
-  setup() {
+  components: { SideBar, NavBarUse, NavBarHome, Footer, DetalheAgendModal, LoadingState },
+  props: {
+    publico: {
+      type: Boolean,
+      default: false
+    }
+  },
+  setup(props) {
     const authStore = useAuthStore()
     const quadras = ref([])
     const quadraSelecionada = ref(null)
@@ -179,7 +197,7 @@ export default {
     const inicioSemanaAtual = startOfWeek(hoje, { weekStartsOn: 1 })
     const formatarHoraIntParaString = (h) => String(h).padStart(2, '0') + ':00'
 
-    const podeTrocarQuadra = computed(() => Number(authStore.usuario?.permissaoId) === 1)
+    const podeTrocarQuadra = computed(() => props.publico || Number(authStore.usuario?.permissaoId) === 1)
 
     const nomeQuadraSelecionada = computed(() => {
       return quadras.value.find((q) => Number(q.id) === Number(quadraSelecionada.value))?.nome || authStore.usuario?.quadra?.nome || 'Quadra'
@@ -264,7 +282,7 @@ export default {
         const usuarioQuadraId = Number(authStore.usuario?.quadraId)
         const quadraDoUsuario = data.find((q) => Number(q.id) === usuarioQuadraId)
 
-        if (Number(authStore.usuario?.permissaoId) === 2) {
+        if (!props.publico && Number(authStore.usuario?.permissaoId) === 2) {
           quadras.value = quadraDoUsuario ? [quadraDoUsuario] : []
           quadraSelecionada.value = quadraDoUsuario?.id || null
         } else {
@@ -292,7 +310,10 @@ export default {
       try {
         let slotsConfig = []
         try {
-          const res = await api.get(`/grade-horarios/${quadraSelecionada.value}`)
+          const rotaGrade = props.publico
+            ? `/public/grade-horarios/${quadraSelecionada.value}`
+            : `/grade-horarios/${quadraSelecionada.value}`
+          const res = await api.get(rotaGrade)
           slotsConfig = res.data
         } catch (e) {
           console.warn('Grade não configurada.')
@@ -311,8 +332,11 @@ export default {
           diasAtivosIndices = [...diasSet].sort()
         }
 
+        const rotaAgendamentosSemana = props.publico
+          ? `/public/agendamentos/quadra/${quadraSelecionada.value}/confirmados/semana`
+          : `/agendamentos/quadra/${quadraSelecionada.value}/confirmados/semana`
         const agendamentosRes = await api.get(
-          `/agendamentos/quadra/${quadraSelecionada.value}/confirmados/semana`,
+          rotaAgendamentosSemana,
           {
             params: {
               inicio: format(inicioSemana.value, 'yyyy-MM-dd'),
@@ -784,12 +808,47 @@ export default {
   background: #f4f7fb;
 }
 
+.layout-publico {
+  display: block;
+}
+
 .conteudo {
   flex: 1;
   margin-left: 250px;
   padding: 20px 32px 32px;
   min-width: 0;
   overflow-x: hidden;
+}
+
+.conteudo-publico {
+  margin-left: 0;
+  margin-top: 64px;
+  padding: 20px 60px;
+}
+
+.conteudo-publico .page-header {
+  margin-bottom: 12px;
+}
+
+.conteudo-publico .header-copy {
+  max-width: 660px;
+}
+
+.conteudo-publico .title {
+  margin: 8px 0 6px;
+  font-size: 34px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-weight: 400;
+}
+
+.conteudo-publico .page-subtitle {
+  margin: 0;
+  color: #475569;
+  font-size: 15px;
+  line-height: 1.45;
+  max-width: none;
+  white-space: nowrap;
 }
 
 .page-nav {
@@ -1231,6 +1290,34 @@ export default {
 
   .page-nav {
     margin-bottom: 12px;
+  }
+
+  .conteudo-publico {
+    margin-top: 42px;
+    padding: 12px 14px 16px;
+  }
+
+  .conteudo-publico .page-header {
+    margin-top: -15px;
+    margin-bottom: 12px;
+  }
+
+  .conteudo-publico .header-copy {
+    max-width: 100%;
+  }
+
+  .conteudo-publico .title {
+    margin: 0 0 8px;
+    font-size: 30px;
+    line-height: 1.04;
+    letter-spacing: -0.04em;
+  }
+
+  .conteudo-publico .page-subtitle {
+    margin-top: 0;
+    font-size: 14px;
+    line-height: 1.55;
+    white-space: normal;
   }
 
   .title {

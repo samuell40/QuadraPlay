@@ -14,6 +14,12 @@ router.get('/todos/campeonatos', controller.listarCampeonatosAnoAtualController)
 router.get('/campeonatos/mesario/andamento', [validarJWT], controller.listarCampeonatosEmAndamentoMesarioController);
 router.get('/campeonato/:id/mesarios', [validarJWT], controller.listarMesariosCampeonatoController);
 router.put('/campeonato/:id/mesarios', [validarJWT], controller.atualizarMesariosCampeonatoController);
+router.get('/campeonato/:id/equipes', [validarJWT], controller.listarEquipesCampeonatoController);
+router.get('/campeonato/:id/equipes/disponiveis', [validarJWT], controller.listarEquipesDisponiveisCampeonatoController);
+router.post('/campeonato/:id/equipes', [validarJWT], controller.adicionarEquipeCampeonatoController);
+router.delete('/campeonato/:id/equipes/:timeId', [validarJWT], controller.removerEquipeCampeonatoController);
+router.get('/campeonato/:id/equipes/:timeId/jogadores', [validarJWT], controller.listarJogadoresEquipeCampeonatoController);
+router.put('/campeonato/:id/equipes/:timeId/jogadores/:jogadorId/suspensao', [validarJWT], controller.atualizarSuspensaoJogadorEquipeCampeonatoController);
 
 router.get('/:campeonatoId/artilharia', controller.artilhariaCampeonatoController );
 

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="layout">
     <SideBar />
 
@@ -37,8 +37,8 @@
                   d="M12 8a1 1 0 0 1 1 1v2.586l1.707 1.707a1 1 0 1 1-1.414 1.414l-2-2A1 1 0 0 1 11 12V9a1 1 0 0 1 1-1Zm0-6a10 10 0 1 1 0 20a10 10 0 0 1 0-20Zm0 2a8 8 0 1 0 0 16a8 8 0 0 0 0-16Z"
                 />
               </svg>
-              <span class="btn-top-action-label-desktop">Visualizar horários</span>
-              <span class="btn-top-action-label-mobile">Horários</span>
+              <span class="btn-top-action-label-desktop">Visualizar Horarios</span>
+              <span class="btn-top-action-label-mobile">Horarios</span>
             </button>
           </div>
         </div>
@@ -121,7 +121,7 @@
                 :disabled="paginasAtuais[abaAtiva] === totalPaginasAbaAtiva"
                 @click="mudarPagina(abaAtiva, 1)"
               >
-                <span>Próxima</span>
+                <span>Proxima</span>
                 <span>&gt;</span>
               </button>
             </div>
@@ -197,6 +197,7 @@ const paginasAtuais = ref({
 })
 
 const normalizarStatus = (status) => String(status || '').trim().toLowerCase()
+const STATUS_CONTA_LIMITE_SEMANAL = new Set(['pendente', 'confirmado'])
 
 const obterDataAgendamento = (agendamento) => {
   if (agendamento?.datahora) {
@@ -222,6 +223,59 @@ const obterDataAgendamento = (agendamento) => {
   }
 
   return null
+}
+
+const obterUsuarioIdAgendamento = (agendamento) => {
+  const usuarioId = Number(agendamento?.usuarioId ?? agendamento?.usuario?.id)
+  return Number.isInteger(usuarioId) && usuarioId > 0 ? usuarioId : null
+}
+
+const obterChaveUsuarioSemana = (agendamento) => {
+  const usuarioId = obterUsuarioIdAgendamento(agendamento)
+  const dataAgendamento = obterDataAgendamento(agendamento)
+  if (!usuarioId || !dataAgendamento) return ''
+
+  const inicioSemana = new Date(dataAgendamento)
+  const diaSemana = inicioSemana.getDay()
+  const deslocamentoParaSegunda = diaSemana === 0 ? -6 : 1 - diaSemana
+  inicioSemana.setDate(inicioSemana.getDate() + deslocamentoParaSegunda)
+  inicioSemana.setHours(0, 0, 0, 0)
+
+  const ano = inicioSemana.getFullYear()
+  const mes = String(inicioSemana.getMonth() + 1).padStart(2, '0')
+  const dia = String(inicioSemana.getDate()).padStart(2, '0')
+
+  return `${usuarioId}|${ano}-${mes}-${dia}`
+}
+
+const limiteSemanalAtingidoPorUsuarioSemana = computed(() => {
+  const contagemPorSemana = new Map()
+
+  agendamentos.value.forEach((agendamento) => {
+    const status = normalizarStatus(agendamento?.status)
+    if (!STATUS_CONTA_LIMITE_SEMANAL.has(status)) return
+
+    const chave = obterChaveUsuarioSemana(agendamento)
+    if (!chave) return
+
+    contagemPorSemana.set(chave, (contagemPorSemana.get(chave) || 0) + 1)
+  })
+
+  const resultado = new Map()
+  contagemPorSemana.forEach((total, chave) => {
+    resultado.set(chave, total >= 2)
+  })
+
+  return resultado
+})
+
+const calcularLimiteSemanalAtingido = (agendamento) => {
+  if (agendamento?.limiteSemanalAtingido) return true
+
+  const chave = obterChaveUsuarioSemana(agendamento)
+  if (!chave) return false
+
+  return Boolean(limiteSemanalAtingidoPorUsuarioSemana.value.get(chave))
 }
 
 const agendamentosFiltrados = computed(() => {
@@ -303,12 +357,12 @@ const tituloAbaAtiva = computed(() => {
 
 const subtituloAbaAtiva = computed(() => {
   const subtitulos = {
-    pendentes: `Revise os pedidos vinculados a ${nomeQuadraOperacao.value} e decida quais horários seguem para confirmação.`,
-    confirmados: 'Acompanhe os agendamentos futuros que já estão liberados para operação normal.',
-    recusados: 'Consulte os pedidos encerrados e mantenha o histórico de justificativas sempre acessível.',
+    pendentes: `Revise os pedidos vinculados a ${nomeQuadraOperacao.value} e decida quais horarios seguem para confirmação.`,
+    confirmados: 'Acompanhe os agendamentos futuros que ja estão liberados para operação normal.',
+    recusados: 'Consulte os pedidos encerrados e mantenha o histÃ³rico de justificativas sempre acessÃ­vel.',
   }
 
-  return subtitulos[abaAtiva.value] || 'Acompanhe os agendamentos vinculados a operação da sua quadra.'
+  return subtitulos[abaAtiva.value] || 'Acompanhe os agendamentos vinculados a operaÃ§Ã£o da sua quadra.'
 })
 
 const resumoAbaAtiva = computed(() => {
@@ -342,10 +396,10 @@ const descricaoEstadoVazio = computed(() => {
   const descricoes = {
     pendentes: 'Quando novos pedidos forem enviados para a quadra, eles aparecerão aqui para análise.',
     confirmados: 'Os agendamentos aprovados para datas futuras ficarão organizados nesta aba.',
-    recusados: 'Os pedidos recusados aparecerão aqui com o motivo informado ao solicitante.',
+    recusados: 'Os pedidos recusados aparecerÃ£o aqui com o motivo informado ao solicitante.',
   }
 
-  return descricoes[abaAtiva.value] || 'Não há itens para exibir nesta etapa.'
+  return descricoes[abaAtiva.value] || 'NÃo há itens para exibir nesta etapa.'
 })
 
 const mudarPagina = (tipo, delta) => {
@@ -360,7 +414,9 @@ const mudarPagina = (tipo, delta) => {
 const normalizarAgendamento = (agendamento) => ({
   ...agendamento,
   solicitanteNome: agendamento.usuario?.nome || 'Sem usuario',
-  timeNome: agendamento.time?.nome || 'Não especificado',
+  solicitantePermissaoId: Number(agendamento.usuario?.permissaoId ?? 0),
+  limiteSemanalAtingido: calcularLimiteSemanalAtingido(agendamento),
+  timeNome: agendamento.time?.nome || 'NÃo especificado',
   quadraNome: agendamento.quadra?.nome || authStore.usuario?.quadra?.nome || 'Quadra',
   codigoVerificacao: agendamento.codigoVerificacao || 'N/A',
   motivoRecusa: agendamento.motivoRecusa || '',
@@ -439,7 +495,7 @@ const aceitarAgendamento = async (id) => {
     Swal.fire('Sucesso', 'Agendamento aceito!', 'success')
   } catch (error) {
     console.error(error)
-    Swal.fire('Erro', 'Não foi possível aceitar o agendamento.', 'error')
+    Swal.fire('Erro', 'NÃ£o foi possivel aceitar o agendamento.', 'error')
   } finally {
     loadingCards.value = loadingCards.value.filter((item) => item !== id)
   }
@@ -1095,3 +1151,4 @@ onMounted(async () => {
   }
 }
 </style>
+

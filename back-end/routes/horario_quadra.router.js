@@ -10,5 +10,6 @@ const router = express.Router();
 router.post("/grade-horarios", [validarJWT], criarGradeHorariosController);
 
 router.get("/grade-horarios/:quadraId", [validarJWT], listarGradeController);
+router.get("/public/grade-horarios/:quadraId", listarGradeController);
 
 module.exports = router;

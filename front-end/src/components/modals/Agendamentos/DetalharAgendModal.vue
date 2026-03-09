@@ -1,9 +1,9 @@
-﻿<template>
+<template>
   <div class="modal-overlay" @click.self="$emit('fechar')">
     <div class="modal-content">
       <div class="modal-header">
         <h2 class="titulo_h2">Detalhes do Agendamento</h2>
-        <span class="badge-tipo">{{ agendamento.tipo }}</span>
+        <span class="badge-tipo">{{ tipoExibicao }}</span>
       </div>
 
       <div class="detalhes-box">
@@ -13,10 +13,25 @@
           <strong>Data:</strong> {{ formatarDataHora(agendamento) }}
         </p>
 
-        <p><strong>Duração:</strong> {{ agendamento.duracao }} hora(s)</p>
+        <p><strong>Duracao:</strong> {{ agendamento.duracao }} hora(s)</p>
 
-        <p><strong>Time:</strong> {{ obterNomeTime(agendamento) }}</p>
-        <p><strong>Código de Verificação:</strong> {{ agendamento.codigoVerificacao || 'N/A' }}</p>
+        <template v-if="ehPartida && confrontoPartida">
+          <p>
+            <strong>Confronto:</strong>
+            {{ confrontoPartida.timeA.nome }} x {{ confrontoPartida.timeB.nome }}
+          </p>
+
+          <p v-if="nomeCampeonato" class="campeonato-apoio">
+            <strong>Campeonato:</strong> {{ nomeCampeonato }}
+          </p>
+        </template>
+
+        <template v-else-if="ehCampeonato">
+          <p><strong>Campeonato:</strong> {{ nomeCampeonato || 'Campeonato vinculado' }}</p>
+          <p v-if="resumoCampeonato"><strong>Detalhe:</strong> {{ resumoCampeonato }}</p>
+        </template>
+
+        <p v-else><strong>Time:</strong> {{ obterNomeTime(agendamento) }}</p>
 
         <div v-if="agendamento.motivoRecusa" class="alerta-recusa">
           <strong>Motivo da Recusa:</strong> {{ agendamento.motivoRecusa }}
@@ -34,27 +49,141 @@ export default {
   props: {
     agendamento: { type: Object, required: true }
   },
+  computed: {
+    ehCampeonato() {
+      return this.ehAgendamentoCampeonato(this.agendamento)
+    },
+    confrontoPartida() {
+      return this.obterConfrontoPartida(this.agendamento)
+    },
+    ehPartida() {
+      return Boolean(this.ehCampeonato && this.confrontoPartida)
+    },
+    tipoExibicao() {
+      return this.obterTipoExibicao(this.agendamento)
+    },
+    nomeCampeonato() {
+      return this.obterNomeCampeonato(this.agendamento)
+    },
+    resumoCampeonato() {
+      return this.obterResumoCampeonato(this.agendamento)
+    }
+  },
   methods: {
     normalizarTextoExibicao(texto) {
       if (typeof texto !== 'string') return texto
       return texto
-        .replace(/NÃ£o/g, 'Não')
-        .replace(/N�o/g, 'Não')
-        .replace(/UsuÃ¡rio/g, 'Usuário')
     },
 
     obterNomeUsuario(ag) {
       if (ag?.usuario?.nome) return this.normalizarTextoExibicao(ag.usuario.nome)
       if (typeof ag?.usuario === 'string' && ag.usuario.trim()) return this.normalizarTextoExibicao(ag.usuario)
       if (typeof ag?.usuarioNome === 'string' && ag.usuarioNome.trim()) return this.normalizarTextoExibicao(ag.usuarioNome)
-      return 'Usuário desconhecido'
+      return 'Usuario desconhecido'
     },
 
     obterNomeTime(ag) {
       if (ag?.time?.nome) return this.normalizarTextoExibicao(ag.time.nome)
       if (typeof ag?.time === 'string' && ag.time.trim()) return this.normalizarTextoExibicao(ag.time)
       if (typeof ag?.timeNome === 'string' && ag.timeNome.trim()) return this.normalizarTextoExibicao(ag.timeNome)
-      return 'Não vinculado'
+      return 'Nao vinculado'
+    },
+
+    ehAgendamentoCampeonato(ag) {
+      const tipoNormalizado = String(ag?.tipo || '').trim().toUpperCase()
+      return (
+        tipoNormalizado === 'CAMPEONATO' ||
+        Number(ag?.campeonatoId) > 0 ||
+        Boolean(ag?.campeonato?.nome)
+      )
+    },
+
+    extrairConfrontoDoResumo(resumoEvento, nomeCampeonato = '') {
+      const resumo = String(resumoEvento || '').trim()
+      if (!resumo) return null
+
+      const nomeCampeonatoNormalizado = String(nomeCampeonato || '').trim().toLowerCase()
+      if (nomeCampeonatoNormalizado && resumo.toLowerCase() === nomeCampeonatoNormalizado) {
+        return null
+      }
+
+      const partes = resumo
+        .split(/\s+x\s+/i)
+        .map((parte) => this.normalizarTextoExibicao(parte.trim()))
+        .filter(Boolean)
+
+      if (partes.length !== 2) return null
+
+      return {
+        timeA: { nome: partes[0], foto: '' },
+        timeB: { nome: partes[1], foto: '' }
+      }
+    },
+
+    obterConfrontoPartida(ag) {
+      const nomeCampeonato = this.obterNomeCampeonato(ag)
+      const partidaResumo = ag?.partidaResumo
+      const nomeTimeA = this.normalizarTextoExibicao(String(partidaResumo?.timeA?.nome || '').trim())
+      const nomeTimeB = this.normalizarTextoExibicao(String(partidaResumo?.timeB?.nome || '').trim())
+
+      if (nomeTimeA && nomeTimeB) {
+        return {
+          timeA: {
+            nome: nomeTimeA,
+            foto: String(partidaResumo?.timeA?.foto || '').trim()
+          },
+          timeB: {
+            nome: nomeTimeB,
+            foto: String(partidaResumo?.timeB?.foto || '').trim()
+          }
+        }
+      }
+
+      return this.extrairConfrontoDoResumo(ag?.resumoEvento, nomeCampeonato)
+    },
+
+    obterNomeCampeonato(ag) {
+      if (ag?.campeonato?.nome) {
+        return this.normalizarTextoExibicao(ag.campeonato.nome)
+      }
+
+      if (this.ehAgendamentoCampeonato(ag)) {
+        const resumo = String(ag?.resumoEvento || '').trim()
+        const confronto = this.extrairConfrontoDoResumo(resumo)
+        if (!confronto && resumo) {
+          return this.normalizarTextoExibicao(resumo)
+        }
+      }
+
+      return ''
+    },
+
+    obterResumoCampeonato(ag) {
+      if (!this.ehAgendamentoCampeonato(ag)) return ''
+
+      const resumo = String(ag?.resumoEvento || '').trim()
+      if (!resumo) return ''
+
+      const confronto = this.extrairConfrontoDoResumo(resumo, this.obterNomeCampeonato(ag))
+      if (confronto) return ''
+
+      const nomeCampeonato = String(this.obterNomeCampeonato(ag) || '').trim().toLowerCase()
+      if (nomeCampeonato && resumo.toLowerCase() === nomeCampeonato) return ''
+
+      return this.normalizarTextoExibicao(resumo)
+    },
+
+    obterTipoExibicao(ag) {
+      if (this.ehAgendamentoCampeonato(ag) && this.obterConfrontoPartida(ag)) {
+        return 'PARTIDA'
+      }
+
+      if (this.ehAgendamentoCampeonato(ag)) {
+        return 'CAMPEONATO'
+      }
+
+      const tipoNormalizado = String(ag?.tipo || '').trim().toUpperCase()
+      return tipoNormalizado || 'AGENDAMENTO'
     },
 
     formatarDataHora(ag) {
@@ -66,7 +195,7 @@ export default {
             month: '2-digit',
             year: 'numeric'
           }) +
-          ' às ' +
+          ' as ' +
           dataObj.toLocaleTimeString('pt-BR', {
             hour: '2-digit',
             minute: '2-digit'
@@ -79,7 +208,7 @@ export default {
       const ano = ag.ano
       const hora = String(ag.hora).padStart(2, '0')
 
-      return `${dia}/${mes}/${ano} às ${hora}:00`
+      return `${dia}/${mes}/${ano} as ${hora}:00`
     }
   }
 }
@@ -169,6 +298,10 @@ export default {
 .detalhes-box p strong {
   color: #0f172a;
   font-weight: 900;
+}
+
+.campeonato-apoio {
+  margin-top: 0;
 }
 
 .alerta-recusa {

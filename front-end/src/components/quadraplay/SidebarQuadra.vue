@@ -78,10 +78,32 @@
           </span>
           <span v-if="!isDesktopCollapsed" class="nav-text">Times e Funcoes</span>
         </router-link>
+
+        <router-link
+          v-if="!isPermissao4"
+          :to="{ name: 'historico_campeonatos' }"
+          class="menu-link"
+          :class="{ active: isRouteName('historico_campeonatos') }"
+          @click="handleNavClick"
+        >
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 8v5l3 2" />
+              <path d="M21 12a9 9 0 1 1-3.22-6.91" />
+            </svg>
+          </span>
+          <span v-if="!isDesktopCollapsed" class="nav-text">Historico</span>
+        </router-link>
       </nav>
 
       <div class="sidebar-footer">
-        <div class="sidebar-user" :class="{ compact: isDesktopCollapsed }">
+        <button
+          type="button"
+          class="sidebar-user sidebar-user-button"
+          :class="{ compact: isDesktopCollapsed }"
+          aria-label="Editar perfil"
+          @click="abrirModalPerfil"
+        >
           <div class="user-avatar">
             <img v-if="usuario?.foto" :src="usuario.foto" :alt="`Foto de ${usuario?.nome || 'usuario'}`" />
             <span v-else>{{ userInitial }}</span>
@@ -91,7 +113,7 @@
             <div class="user-name">{{ usuario?.nome || 'Usuario QuadraPlay' }}</div>
             <div class="user-role">{{ usuario?.permissao?.descricao || 'Equipe da quadra' }}</div>
           </div>
-        </div>
+        </button>
 
         <button type="button" class="logout-button" @click="logout">
           <span class="nav-icon" aria-hidden="true">
@@ -105,11 +127,20 @@
         </button>
       </div>
     </aside>
+
+    <PerfilUsuarioModal
+      v-model="isPerfilModalOpen"
+      :usuario="usuario || {}"
+      role-fallback="Equipe da quadra"
+      @perfil-atualizado="atualizarUsuarioLocal"
+      @conta-excluida="aoExcluirConta"
+    />
   </div>
 </template>
 
 <script>
 import router from "@/router";
+import PerfilUsuarioModal from "@/components/shared/PerfilUsuarioModal.vue";
 
 const SIDEBAR_COLLAPSED_KEY = "sidebar_collapsed";
 const SIDEBAR_TOGGLE_EVENT = "quadraplay:toggle-sidebar";
@@ -117,6 +148,9 @@ const SIDEBAR_STATE_EVENT = "quadraplay:sidebar-state";
 
 export default {
   name: "SidebarQuadra",
+  components: {
+    PerfilUsuarioModal,
+  },
   emits: ["sidebar-toggle"],
   props: {
     partidaStatus: {
@@ -132,6 +166,7 @@ export default {
       isMobile,
       collapsed: false,
       sidebarVisible: !isMobile,
+      isPerfilModalOpen: false,
     };
   },
   computed: {
@@ -229,7 +264,18 @@ export default {
     handleNavClick() {
       if (this.isMobile) this.closeSidebar();
     },
+    abrirModalPerfil() {
+      this.isPerfilModalOpen = true;
+    },
+    atualizarUsuarioLocal(usuarioAtualizado) {
+      this.usuario = usuarioAtualizado || this.usuario;
+    },
+    aoExcluirConta() {
+      this.isPerfilModalOpen = false;
+      if (this.isMobile) this.closeSidebar();
+    },
     logout() {
+      this.isPerfilModalOpen = false;
       localStorage.removeItem("token");
       localStorage.removeItem("usuario");
       localStorage.removeItem("quadraPlayLoginAtivo");
@@ -475,11 +521,26 @@ export default {
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
 .sidebar-user.compact {
   justify-content: center;
   padding-inline: 0;
+}
+
+.sidebar-user-button {
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.sidebar-user-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.16);
+  transform: translateY(-1px);
 }
 
 .user-avatar {
@@ -528,7 +589,8 @@ export default {
 
 .logout-button:focus-visible,
 .menu-link:focus-visible,
-.icon-button:focus-visible {
+.icon-button:focus-visible,
+.sidebar-user-button:focus-visible {
   outline: 2px solid rgba(255, 255, 255, 0.7);
   outline-offset: 2px;
 }

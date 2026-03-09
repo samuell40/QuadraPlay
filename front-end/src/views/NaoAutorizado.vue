@@ -20,6 +20,7 @@
 import router from '@/router';
 import Swal from 'sweetalert2';
 import { useAuthStore } from '@/store';
+import api from '@/axios';
 
 const QUADRA_PLAY_LOGIN_KEY = 'quadraPlayLoginAtivo'
 
@@ -30,15 +31,31 @@ export default {
             const width = 500, height = 600
             const left = window.screenX + (window.outerWidth - width) / 2
             const top = window.screenY + (window.outerHeight - height) / 2.5
+            const backendBaseUrl = String(api?.defaults?.baseURL || 'https://quadra-livre-backend.onrender.com')
+                .trim()
+                .replace(/\/+$/, '')
 
             const popup = window.open(
-                'https://quadra-livre-backend.onrender.com/auth/google',
+                `${backendBaseUrl}/auth/google`,
                 'Login com Google',
                 `width=${width},height=${height},left=${left},top=${top}`
             )
 
             const listener = async event => {
-                const origensPermitidas = ['https://www.quadraplaysv.com.br']
+                const frontendEnv = String(process.env.VUE_APP_FRONTEND_URL || '').trim()
+                const vercelEnvBruto = String(process.env.VUE_APP_VERCEL_URL || process.env.VERCEL_URL || '').trim()
+                const vercelEnv = vercelEnvBruto
+                    ? (vercelEnvBruto.startsWith('http') ? vercelEnvBruto : `https://${vercelEnvBruto}`)
+                    : ''
+                const origensPermitidas = [
+                    window.location.origin,
+                    'https://www.quadraplaysv.com.br',
+                    'https://quadraplaysv.com.br',
+                    frontendEnv,
+                    vercelEnv
+                ]
+                    .map(origem => String(origem || '').trim().replace(/\/+$/, ''))
+                    .filter(Boolean)
                 if (!origensPermitidas.includes(event.origin) && event.origin !== window.location.origin) return
 
                 const { token, erro, email, usuario } = event.data
