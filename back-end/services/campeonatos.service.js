@@ -498,10 +498,6 @@ async function criarCampeonato(data) {
     throw new Error('Quadra e obrigatoria.');
   }
 
-  if (timesArray.length < 2) {
-    throw new Error('Selecione ao menos 2 times para o campeonato.');
-  }
-
   if (!listaDatasReais.length) {
     throw new Error('Selecione ao menos uma data e horario para o campeonato.');
   }
