@@ -1597,6 +1597,11 @@ a {
   min-width: 0;
 }
 
+/* Mantem os dois lados espelhados em volta do placar central no desktop. */
+.time.lado:first-child {
+  justify-content: flex-end;
+}
+
 .time-foto {
   width: 34px;
   height: 34px;
@@ -1658,6 +1663,10 @@ a {
   line-height: 1.2;
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+
+.time.lado:first-child .time-nome {
+  text-align: right;
 }
 
 .nome-quadra {
@@ -2226,6 +2235,10 @@ a {
     justify-content: flex-end;
   }
 
+  .time.lado:first-child {
+    justify-content: flex-start;
+  }
+
   .time-foto {
     width: 28px;
     height: 28px;
@@ -2247,6 +2260,10 @@ a {
 
   .time.lado:last-child .time-nome {
     text-align: right;
+  }
+
+  .time.lado:first-child .time-nome {
+    text-align: left;
   }
 
   .meta-partida {

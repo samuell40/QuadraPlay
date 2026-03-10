@@ -34,13 +34,13 @@
           <div class="header-copy">
             <div class="header-topline">
               <h1 class="titulo-agendamento">Meus agendamentos</h1>
-              <button class="btn-acao-topo" @click="irParaAgendarQuadra(null)" aria-label="Novo agendamento">
+              <button class="btn-acao-topo" @click="irParaAgendarQuadra(null)" aria-label="Agendar quadra">
                 <svg class="btn-acao-icone" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
                   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <line x1="12" y1="5" x2="12" y2="19"></line>
                   <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
-                <span class="btn-acao-texto">Novo agendamento</span>
+                <span class="btn-acao-texto">Agendar quadra</span>
               </button>
             </div>
             <p class="subtitulo-agendamento">Acompanhe e gerencie suas reservas em um só lugar.</p>
@@ -1058,7 +1058,7 @@ onBeforeUnmount(() => {
 
 @media (max-width: 768px) {
   .header-topline {
-    align-items: flex-start;
+    align-items: center;
     gap: 10px;
   }
 
@@ -1074,15 +1074,24 @@ onBeforeUnmount(() => {
   }
 
   .btn-acao-topo {
-    width: 40px;
-    min-width: 40px;
+    width: auto;
+    min-width: fit-content;
     height: 40px;
-    padding: 0;
-    border-radius: 12px;
+    padding: 0 12px;
+    border-radius: 999px;
+    gap: 6px;
   }
 
   .btn-acao-texto {
-    display: none;
+    display: inline;
+    white-space: nowrap;
+    font-size: 11px;
+    letter-spacing: 0.01em;
+  }
+
+  .btn-acao-icone {
+    width: 14px;
+    height: 14px;
   }
 
   .tabs-card {

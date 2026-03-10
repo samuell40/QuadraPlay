@@ -202,7 +202,7 @@ const routes = [
     path: '/detalharcampeonatos',
     name: 'Detalhar_Campeonatos',
     component: DetalharCampeonatosView,
-    meta: { requiresAuth: true, roles: [1, 2, 4], requiresQuadraPlayLogin: true },
+    meta: { requiresAuth: true, roles: [1, 2], requiresQuadraPlayLogin: true },
   },
   {
     path: '/classificacao',
@@ -312,6 +312,9 @@ router.beforeEach((to, from, next) => {
   if (to.meta.roles) {
     const permissaoId = Number(usuario?.permissaoId);
     if (!Number.isInteger(permissaoId) || !to.meta.roles.includes(permissaoId)) {
+      if (String(to.name || '') === 'Detalhar_Campeonatos' && permissaoId === 4) {
+        return next({ name: 'gerenciar_partida', query: { ...to.query } });
+      }
       return next({ name: 'Home' });
     }
   }

@@ -361,6 +361,27 @@ export default {
       return this.normalizarTexto(this.campeonato?.tipo)
     },
 
+    faseEliminatoriaConfiguradaId() {
+      const faseEliminatoria = (Array.isArray(this.fases) ? this.fases : []).find((fase) => {
+        const nome = this.normalizarTexto(fase?.nome)
+        return /(eliminat|mata ?mata|playoff)/.test(nome)
+      })
+
+      return Number(faseEliminatoria?.id || 0)
+    },
+
+    mataMataJaGerado() {
+      const faseEliminatoriaId = this.faseEliminatoriaConfiguradaId
+      if (!faseEliminatoriaId) return false
+
+      const partidasCampeonato = Array.isArray(this.campeonato?.partidas) ? this.campeonato.partidas : []
+      return partidasCampeonato.some((partida) => {
+        const status = this.normalizarTexto(partida?.status)
+        if (['cancelada', 'deletada'].includes(status)) return false
+        return Number(partida?.faseId) === faseEliminatoriaId
+      })
+    },
+
     isGestorCampeonato() {
       const permissaoId = Number(this.usuario?.permissaoId)
       return [1, 2].includes(permissaoId)
@@ -373,6 +394,7 @@ export default {
       if (this.gerandoMataMata) return false
       if (this.tipoCampeonatoNormalizado !== 'pontos_corridos_eliminatorias') return false
       if (this.faseAtualEhEliminatoria) return false
+      if (this.mataMataJaGerado) return false
       return Number(this.faseSelecionada) > 0
     },
 
@@ -532,6 +554,15 @@ export default {
         }
 
         const { data } = await api.post(`/campeonato/${this.campeonato.id}/gerar-mata-mata`, payload)
+        const partidasGeradas = Array.isArray(data?.partidasGeradas) ? data.partidasGeradas : []
+
+        if (partidasGeradas.length) {
+          const partidasAtuais = Array.isArray(this.campeonato?.partidas) ? this.campeonato.partidas : []
+          this.campeonato = {
+            ...(this.campeonato || {}),
+            partidas: [...partidasAtuais, ...partidasGeradas]
+          }
+        }
 
         await this.carregarFases()
 
@@ -550,7 +581,7 @@ export default {
         }
 
         const quantidadeClassificados = Number(data?.quantidadeClassificados || 0)
-        const quantidadeConfrontos = Array.isArray(data?.partidasGeradas) ? data.partidasGeradas.length : 0
+        const quantidadeConfrontos = partidasGeradas.length
 
         await Swal.fire(
           'Sucesso',

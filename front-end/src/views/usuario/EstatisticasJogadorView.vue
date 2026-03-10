@@ -20,6 +20,9 @@
             <p class="subtitulo">
               Acompanhe os números do jogador vinculado ao seu usuário em partidas finalizadas.
             </p>
+            <p class="header-contexto">
+              Dados do ano atual ({{ anoAtual }}) em partidas com status FINALIZADA.
+            </p>
           </div>
         </section>
 
@@ -64,7 +67,7 @@
                       <h2>{{ jogador?.nome || "Jogador" }}</h2>
                       <span class="jogador-numero-inline">{{ numeroJogadorExibicao }}</span>
                     </div>
-                    <p class="jogador-funcao">{{ jogador?.funcao?.nome}}</p>
+                    <p class="jogador-funcao">{{ jogador?.funcao?.nome || "Sem funcao cadastrada" }}</p>
                   </div>
                 </div>
 
@@ -97,6 +100,12 @@
 
               <div class="jogador-meta">
                 <span class="meta-pill">
+                  {{ jogadorVinculadoTexto }}
+                </span>
+                <span class="meta-pill">
+                  {{ filtroAnoTexto }}
+                </span>
+                <span class="meta-pill meta-pill-wrap">
                   {{ resumoLinhaJogador }}
                 </span>
               </div>
@@ -108,12 +117,36 @@
                 :key="item.label"
                 class="resumo-item"
               >
-                <p class="resumo-label">{{ item.label }}</p>
+                <p class="resumo-label">
+                  <span>{{ item.label }}</span>
+                  <span
+                    v-if="item.ajuda"
+                    class="resumo-info"
+                    :title="item.ajuda"
+                    aria-hidden="true"
+                  >
+                    i
+                  </span>
+                </p>
                 <p class="resumo-valor">{{ item.valor }}</p>
               </article>
             </section>
 
-            <section class="painel">
+            <section v-if="resumo.partidas === 0" class="feedback-card feedback-card-neutral">
+              <h2>Nenhuma estatistica registrada em {{ anoAtual }}</h2>
+              <p>Para os numeros aparecerem, confira os pontos abaixo:</p>
+              <ul class="checklist-vazio">
+                <li>O usuario precisa estar vinculado ao jogador correto.</li>
+                <li>A partida precisa estar com status FINALIZADA.</li>
+                <li>O jogador deve estar registrado na partida com o mesmo ID vinculado ao usuario.</li>
+                <li>Somente partidas de {{ anoAtual }} entram no calculo.</li>
+              </ul>
+              <button type="button" class="btn-tentar" @click="carregarEstatisticas">
+                Atualizar estatisticas
+              </button>
+            </section>
+
+            <section v-if="exibirPainelCampanhas" class="painel">
               <div class="painel-head">
                 <div>
                   <p class="section-kicker">CAMPANHAS</p>
@@ -121,8 +154,16 @@
                 </div>
               </div>
 
-              <div v-if="campanhas.length === 0" class="estado-vazio">
-                Nenhuma partida finalizada em campeonato foi encontrada para este jogador.
+              <div v-if="campanhas.length === 0" class="estado-vazio estado-vazio-detalhado">
+                <p>Nenhuma partida finalizada em campeonato foi encontrada para este jogador.</p>
+                <ul class="checklist-vazio checklist-vazio-inline">
+                  <li>Confirme o vinculo do jogador no usuario.</li>
+                  <li>Verifique se a partida foi finalizada.</li>
+                  <li>Confira se a partida pertence ao ano de {{ anoAtual }}.</li>
+                </ul>
+                <button type="button" class="btn-atualizar-inline" @click="carregarEstatisticas">
+                  Atualizar agora
+                </button>
               </div>
 
               <div v-else class="campanhas-lista">
@@ -139,7 +180,7 @@
                   </div>
 
                   <p class="campanha-subtitulo">
-                    {{ campanha.modalidadeNome || "Modalidade não informada" }}
+                    {{ campanha.modalidadeNome || "Modalidade nao informada" }}
                     <span v-if="campanha.timeNome">| {{ campanha.timeNome }}</span>
                   </p>
 
@@ -153,17 +194,34 @@
                       <strong>{{ formatarInteiro(campanha.gols) }}</strong>
                     </div>
                     <div class="campanha-metrica">
-                      <span>V/E/D</span>
-                      <strong>
-                        {{ formatarInteiro(campanha.vitorias) }}/{{ formatarInteiro(campanha.empates) }}/{{ formatarInteiro(campanha.derrotas) }}
-                      </strong>
+                      <span>Aproveitamento</span>
+                      <strong>{{ formatarInteiro(campanha.aproveitamento) }}%</strong>
                     </div>
-                    <div class="campanha-metrica">
-                      <span>Cartões</span>
-                      <strong>
-                        {{ formatarInteiro(campanha.cartoesAmarelos) }}A / {{ formatarInteiro(campanha.cartoesVermelhos) }}V
-                      </strong>
-                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="btn-campanha-detalhe"
+                    @click="alternarDetalhesCampanha(obterChaveCampanha(campanha))"
+                  >
+                    {{ campanhaDetalhesVisivel(obterChaveCampanha(campanha)) ? "Ocultar detalhes" : "Ver detalhes" }}
+                  </button>
+
+                  <div
+                    v-if="campanhaDetalhesVisivel(obterChaveCampanha(campanha))"
+                    class="campanha-detalhes"
+                  >
+                    <span>
+                      V/E/D:
+                      {{ formatarInteiro(campanha.vitorias) }}/{{ formatarInteiro(campanha.empates) }}/{{ formatarInteiro(campanha.derrotas) }}
+                    </span>
+                    <span>
+                      Cartoes:
+                      {{ formatarInteiro(campanha.cartoesAmarelos) }}A / {{ formatarInteiro(campanha.cartoesVermelhos) }}V
+                    </span>
+                    <span v-if="campanha.statusCampeonato">
+                      Status: {{ campanha.statusCampeonato }}
+                    </span>
                   </div>
                 </article>
               </div>
@@ -172,13 +230,23 @@
             <section class="painel">
               <div class="painel-head">
                 <div>
-                  <p class="section-kicker">HISTÓRICO</p>
-                  <h2 class="section-title">Últimas partidas</h2>
+                  <p class="section-kicker">HISTORICO</p>
+                  <h2 class="section-title">Ultimas partidas</h2>
                 </div>
+                <p v-if="resumoCampanhasOcultoPorCampeonatoUnico" class="painel-nota">
+                  Somente 1 campeonato no ano atual. Resumo por campeonato ocultado para evitar repeticao.
+                </p>
               </div>
 
-              <div v-if="ultimasPartidas.length === 0" class="estado-vazio">
-                Nenhuma partida finalizada encontrada para exibição.
+              <div v-if="ultimasPartidas.length === 0" class="estado-vazio estado-vazio-detalhado">
+                <p>Nenhuma partida finalizada encontrada para exibicao.</p>
+                <ul class="checklist-vazio checklist-vazio-inline">
+                  <li>Finalize ao menos uma partida no ano atual.</li>
+                  <li>Verifique se o jogador correto foi lancado na sumula.</li>
+                </ul>
+                <button type="button" class="btn-atualizar-inline" @click="carregarEstatisticas">
+                  Atualizar agora
+                </button>
               </div>
 
               <div v-else class="partidas-lista">
@@ -228,6 +296,8 @@ const erroCarregamento = ref("");
 const possuiJogador = ref(true);
 const estatisticas = ref(null);
 const compartilhandoImagem = ref(false);
+const campanhasExpandidas = ref([]);
+const anoAtual = new Date().getFullYear();
 
 const resumoBase = {
   partidas: 0,
@@ -246,6 +316,8 @@ const jogador = computed(() => estatisticas.value?.jogador || null);
 const campanhas = computed(() => (Array.isArray(estatisticas.value?.campanhas) ? estatisticas.value.campanhas : []));
 const ultimasPartidas = computed(() => (Array.isArray(estatisticas.value?.ultimasPartidas) ? estatisticas.value.ultimasPartidas : []));
 const timesJogador = computed(() => (Array.isArray(jogador.value?.times) ? jogador.value.times : []));
+const exibirPainelCampanhas = computed(() => campanhas.value.length !== 1);
+const resumoCampanhasOcultoPorCampeonatoUnico = computed(() => campanhas.value.length === 1);
 
 const inicialJogador = computed(() =>
   String(jogador.value?.nome || "J")
@@ -263,12 +335,57 @@ const numeroJogadorExibicao = computed(() => {
 });
 
 const resumoLinhaJogador = computed(() => {
-  const nomesTimes = timesJogador.value
-    .map((item) => String(item?.timeNome || "").trim())
+  const vinculos = timesJogador.value
+    .map((item) => {
+      const nomeTime = String(item?.timeNome || "").trim();
+      const modalidade = String(item?.modalidadeNome || "").trim();
+      if (!nomeTime && !modalidade) return "";
+      if (!modalidade) return nomeTime;
+      if (!nomeTime) return modalidade;
+      return `${nomeTime} (${modalidade})`;
+    })
     .filter(Boolean);
-  const timeTexto = nomesTimes.length ? nomesTimes.join(", ") : "Time não vinculado";
-  return timeTexto;
+
+  if (!vinculos.length) {
+    return "Times/modalidades considerados: nenhum vinculo ativo";
+  }
+
+  return `Times/modalidades considerados: ${vinculos.join(" | ")}`;
 });
+
+const jogadorVinculadoTexto = computed(() => {
+  const idJogador = Number(jogador.value?.id);
+  if (Number.isInteger(idJogador) && idJogador > 0) {
+    return `Jogador vinculado: ID ${formatarInteiro(idJogador)}`;
+  }
+  return "Jogador vinculado: nao identificado";
+});
+
+const filtroAnoTexto = computed(() => `Filtro aplicado: partidas finalizadas de ${anoAtual}`);
+
+function obterChaveCampanha(campanha = {}) {
+  const campeonatoId = Number(campanha?.campeonatoId);
+  if (Number.isInteger(campeonatoId) && campeonatoId > 0) {
+    return `campeonato-${campeonatoId}`;
+  }
+  return `campanha-${String(campanha?.campeonatoNome || "avulso")}`;
+}
+
+function campanhaDetalhesVisivel(chave) {
+  return campanhasExpandidas.value.includes(String(chave || ""));
+}
+
+function alternarDetalhesCampanha(chave) {
+  const chaveNormalizada = String(chave || "");
+  if (!chaveNormalizada) return;
+
+  if (campanhasExpandidas.value.includes(chaveNormalizada)) {
+    campanhasExpandidas.value = campanhasExpandidas.value.filter((item) => item !== chaveNormalizada);
+    return;
+  }
+
+  campanhasExpandidas.value = [...campanhasExpandidas.value, chaveNormalizada];
+}
 
 const metricasResumo = computed(() => [
   { label: "Partidas", valor: formatarInteiro(resumo.value.partidas) },
@@ -276,10 +393,20 @@ const metricasResumo = computed(() => [
   { label: "Empates", valor: formatarInteiro(resumo.value.empates) },
   { label: "Derrotas", valor: formatarInteiro(resumo.value.derrotas) },
   { label: "Gols", valor: formatarInteiro(resumo.value.gols) },
-  { label: "Cartoes amarelos", valor: formatarInteiro(resumo.value.cartoesAmarelos) },
-  { label: "Cartoes vermelhos", valor: formatarInteiro(resumo.value.cartoesVermelhos) },
-  { label: "Media de gols", valor: formatarDecimal(resumo.value.mediaGols) },
-  { label: "Aproveitamento", valor: `${formatarInteiro(resumo.value.aproveitamento)}%` },
+  {
+    label: "Cartoes (A/V)",
+    valor: `${formatarInteiro(resumo.value.cartoesAmarelos)} / ${formatarInteiro(resumo.value.cartoesVermelhos)}`,
+  },
+  {
+    label: "Media de gols",
+    valor: formatarDecimal(resumo.value.mediaGols),
+    ajuda: "Formula: gols marcados divididos pelo total de partidas finalizadas do ano atual.",
+  },
+  {
+    label: "Aproveitamento",
+    valor: `${formatarInteiro(resumo.value.aproveitamento)}%`,
+    ajuda: "Formula: (vitorias * 3 + empates) / (partidas * 3) x 100.",
+  },
 ]);
 
 function formatarInteiro(valor) {
@@ -769,6 +896,7 @@ async function carregarEstatisticas() {
     });
 
     estatisticas.value = data || null;
+    campanhasExpandidas.value = [];
     possuiJogador.value = Boolean(data?.jogador?.id);
 
     if (possuiJogador.value) {
@@ -781,11 +909,13 @@ async function carregarEstatisticas() {
     if (status === 404) {
       possuiJogador.value = false;
       estatisticas.value = null;
+      campanhasExpandidas.value = [];
       limparJogadorDoUsuarioLocal();
       return;
     }
 
     estatisticas.value = null;
+    campanhasExpandidas.value = [];
     possuiJogador.value = false;
     erroCarregamento.value =
       error?.response?.data?.error ||
@@ -854,9 +984,16 @@ onMounted(() => {
 
 .subtitulo {
   margin: 10px 0 0;
-  color: #64748b;
+  color: #475569;
   font-size: 1.04rem;
   max-width: 760px;
+}
+
+.header-contexto {
+  margin: 10px 0 0;
+  color: #1e3a8a;
+  font-size: 0.92rem;
+  font-weight: 700;
 }
 
 .header-chip {
@@ -951,13 +1088,50 @@ onMounted(() => {
 
 .feedback-card p {
   margin: 0;
-  color: #64748b;
+  color: #475569;
   font-size: 1rem;
 }
 
 .feedback-card-error {
   border-color: rgba(239, 68, 68, 0.4);
   background: rgba(254, 242, 242, 0.84);
+}
+
+.feedback-card-neutral {
+  border-color: rgba(37, 99, 235, 0.24);
+  background: rgba(239, 246, 255, 0.62);
+}
+
+.checklist-vazio {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: #334155;
+  display: grid;
+  gap: 6px;
+  text-align: left;
+}
+
+.checklist-vazio-inline {
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+
+.btn-atualizar-inline {
+  min-height: 38px;
+  border-radius: 999px;
+  border: 1px solid rgba(37, 99, 235, 0.36);
+  background: #ffffff;
+  color: #1d4ed8;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+  padding: 0 14px;
+  cursor: pointer;
+  justify-self: center;
+}
+
+.btn-atualizar-inline:hover {
+  background: #eff6ff;
 }
 
 .btn-tentar {
@@ -1059,7 +1233,7 @@ onMounted(() => {
 
 .jogador-funcao {
   margin: 6px 0 0;
-  color: #64748b;
+  color: #475569;
 }
 
 .jogador-meta {
@@ -1080,6 +1254,11 @@ onMounted(() => {
   font-size: 0.9rem;
   font-weight: 700;
   white-space: nowrap;
+}
+
+.meta-pill-wrap {
+  white-space: normal;
+  line-height: 1.2;
 }
 
 .times-wrap {
@@ -1109,7 +1288,7 @@ onMounted(() => {
 
 .resumo-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -1124,10 +1303,28 @@ onMounted(() => {
 
 .resumo-label {
   margin: 0;
-  color: #64748b;
+  color: #475569;
   font-size: 0.84rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.resumo-info {
+  min-width: 18px;
+  min-height: 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(37, 99, 235, 0.35);
+  color: #1d4ed8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  cursor: help;
 }
 
 .resumo-valor {
@@ -1168,12 +1365,30 @@ onMounted(() => {
   font-size: 1.72rem;
 }
 
+.painel-nota {
+  margin: 0;
+  max-width: 420px;
+  color: #475569;
+  font-size: 0.85rem;
+  line-height: 1.35;
+  text-align: right;
+}
+
 .estado-vazio {
   border: 1px dashed rgba(148, 163, 184, 0.5);
   border-radius: 16px;
   padding: 18px;
-  color: #64748b;
+  color: #475569;
   text-align: center;
+}
+
+.estado-vazio-detalhado {
+  display: grid;
+  gap: 10px;
+}
+
+.estado-vazio-detalhado p {
+  margin: 0;
 }
 
 .campanhas-lista {
@@ -1219,13 +1434,13 @@ onMounted(() => {
 
 .campanha-subtitulo {
   margin: 0;
-  color: #64748b;
+  color: #475569;
   font-size: 0.9rem;
 }
 
 .campanha-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -1239,7 +1454,7 @@ onMounted(() => {
 }
 
 .campanha-metrica span {
-  color: #64748b;
+  color: #475569;
   font-size: 0.78rem;
 }
 
@@ -1247,6 +1462,35 @@ onMounted(() => {
   color: #0f172a;
   font-size: 1rem;
   line-height: 1;
+}
+
+.btn-campanha-detalhe {
+  width: fit-content;
+  min-height: 34px;
+  border-radius: 999px;
+  border: 1px solid rgba(37, 99, 235, 0.32);
+  background: #ffffff;
+  color: #1d4ed8;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0 12px;
+  cursor: pointer;
+}
+
+.btn-campanha-detalhe:hover {
+  background: #eff6ff;
+}
+
+.campanha-detalhes {
+  border: 1px dashed rgba(147, 197, 253, 0.8);
+  border-radius: 12px;
+  background: rgba(239, 246, 255, 0.72);
+  padding: 8px 10px;
+  color: #1e293b;
+  font-size: 0.8rem;
+  display: grid;
+  gap: 4px;
 }
 
 .partidas-lista {
@@ -1272,7 +1516,7 @@ onMounted(() => {
 }
 
 .partida-data {
-  color: #64748b;
+  color: #475569;
   font-size: 0.88rem;
 }
 
@@ -1311,7 +1555,7 @@ onMounted(() => {
 
 .partida-campeonato {
   margin: 0;
-  color: #64748b;
+  color: #475569;
   font-size: 0.86rem;
 }
 
@@ -1347,6 +1591,10 @@ onMounted(() => {
     gap: 10px;
   }
 
+  .header-contexto {
+    font-size: 0.86rem;
+  }
+
   .titulo-principal {
     font-size: clamp(1.8rem, 7vw, 2.4rem);
     line-height: 1.05;
@@ -1373,6 +1621,15 @@ onMounted(() => {
   .painel,
   .feedback-card {
     border-radius: 20px;
+  }
+
+  .resumo-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .painel-nota {
+    text-align: left;
+    max-width: none;
   }
 
   .jogador-topo {
@@ -1419,15 +1676,7 @@ onMounted(() => {
     letter-spacing: 0.05em;
   }
 
-  .resumo-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .campanhas-lista {
-    grid-template-columns: 1fr;
-  }
-
-  .campanha-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1439,6 +1688,14 @@ onMounted(() => {
 
   .btn-compartilhar-estatisticas-card {
     align-self: stretch;
+  }
+
+  .btn-atualizar-inline {
+    width: 100%;
+  }
+
+  .campanha-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

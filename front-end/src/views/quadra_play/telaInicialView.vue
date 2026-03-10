@@ -230,16 +230,19 @@ export default {
         const { data } = await api.get(`/campeonato/${campeonatoId}`, { silent: true })
         const campeonatoCompleto = data && typeof data === 'object' ? data : campeonato
         const possuiPartidas = Array.isArray(campeonatoCompleto?.partidas) && campeonatoCompleto.partidas.length > 0
+        const rotaDestino = this.isMesario
+          ? 'gerenciar_partida'
+          : (possuiPartidas ? 'gerenciar_partida' : 'Detalhar_Campeonatos')
 
         store.setCampeonato(campeonatoCompleto);
         router.push({
-          name: possuiPartidas ? 'gerenciar_partida' : 'Detalhar_Campeonatos',
+          name: rotaDestino,
           query: { id: campeonatoId }
         });
       } catch (error) {
         console.error('Erro ao verificar partidas do campeonato:', error)
         store.setCampeonato(campeonato);
-        router.push({ name: 'Detalhar_Campeonatos', query: { id: campeonatoId } });
+        router.push({ name: this.isMesario ? 'gerenciar_partida' : 'Detalhar_Campeonatos', query: { id: campeonatoId } });
       } finally {
         this.campeonatoAcessandoId = null
       }

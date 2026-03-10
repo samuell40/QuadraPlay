@@ -593,6 +593,7 @@ export default {
         : dataPartidaRef.toLocaleDateString('pt-BR')
       const statusPartidaTexto = String(this.statusLabel(partida) || '').trim().toUpperCase()
       const statusExibicaoPartida = obterStatusExibicaoPartida(partida)
+      const isPartidaEmAndamentoCanvas = String(statusExibicaoPartida || '').toUpperCase() === 'EM_ANDAMENTO'
       const topoInfoQuadraData = quadraNome
       const timeANome = String(partida.timeA?.nome || 'Time A').trim() || 'Time A'
       const timeBNome = String(partida.timeB?.nome || 'Time B').trim() || 'Time B'
@@ -871,7 +872,7 @@ export default {
         ctx.fillStyle = statusCores.texto
         ctx.fillText(statusPartidaTexto, centroX, yStatus + 1)
 
-        if (dataPartidaTexto && dataPartidaTexto !== '-') {
+        if (!isPartidaEmAndamentoCanvas && dataPartidaTexto && dataPartidaTexto !== '-') {
           ctx.font = '900 52px Montserrat, Arial, sans-serif'
           ctx.fillStyle = '#38bdf8'
           ctx.fillText(dataPartidaTexto, centroX, yDataCentro)

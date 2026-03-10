@@ -97,6 +97,7 @@
 
         <template v-else>
           <router-link
+            v-if="!isPermissao4"
             :to="campeonatoRoute('Detalhar_Campeonatos')"
             class="menu-link"
             :class="{ active: isRouteName('Detalhar_Campeonatos') }"
@@ -176,7 +177,7 @@
         </router-link>
 
         <router-link
-          v-if="campeonatoPossuiPartidas"
+          v-if="campeonatoPossuiPartidas && !isPermissao4"
           :to="campeonatoRoute('Detalhar_Campeonatos')"
           class="menu-link"
           :class="{ active: isRouteName('Detalhar_Campeonatos') }"
