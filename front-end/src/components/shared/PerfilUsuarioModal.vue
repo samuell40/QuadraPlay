@@ -113,7 +113,7 @@ export default {
     },
     roleFallback: {
       type: String,
-      default: "Area do usuario",
+      default: "Área do usuário",
     },
   },
   emits: ["update:modelValue", "perfil-atualizado", "conta-excluida"],
@@ -139,7 +139,7 @@ export default {
         .toUpperCase();
     },
     roleLabel() {
-      return String(this.usuario?.permissao?.descricao || this.roleFallback || "Area do usuario").trim();
+      return String(this.usuario?.permissao?.descricao || this.roleFallback || "Área do usuário").trim();
     },
   },
   watch: {
@@ -230,12 +230,12 @@ export default {
       const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
       if (!nome || !email) {
-        await Swal.fire("Atencao", "Preencha nome e e-mail para continuar.", "warning");
+        await Swal.fire("Atenção", "Preencha nome e e-mail para continuar.", "warning");
         return;
       }
 
       if (!emailValido) {
-        await Swal.fire("Atencao", "Informe um e-mail valido.", "warning");
+        await Swal.fire("Atenção", "Informe um e-mail válido.", "warning");
         return;
       }
 
@@ -265,7 +265,7 @@ export default {
         const mensagem =
           err?.response?.data?.error ||
           err?.response?.data?.message ||
-          "Nao foi possivel atualizar o perfil.";
+          "Não foi possível atualizar o perfil.";
         await Swal.fire("Erro", mensagem, "error");
       } finally {
         this.isSalvandoPerfil = false;
@@ -276,7 +276,7 @@ export default {
 
       const confirmacao = await Swal.fire({
         title: "Excluir conta?",
-        text: "Voce tem certeza que deseja excluir sua conta?",
+        text: "Você tem certeza que deseja excluir sua conta?",
         icon: "warning",
         showCancelButton: true,
         confirmButtonText: "Sim, excluir",
@@ -301,13 +301,13 @@ export default {
         localStorage.removeItem("usuario");
         localStorage.removeItem("quadraPlayLoginAtivo");
 
-        await Swal.fire("Conta excluida", "Sua conta foi excluida com sucesso.", "success");
+        await Swal.fire("Conta excluída", "Sua conta foi excluída com sucesso.", "success");
         router.push("/");
       } catch (err) {
         const mensagem =
           err?.response?.data?.error ||
           err?.response?.data?.message ||
-          "Nao foi possivel excluir sua conta.";
+          "Não foi possível excluir sua conta.";
         await Swal.fire("Erro", mensagem, "error");
       } finally {
         this.isExcluindoConta = false;

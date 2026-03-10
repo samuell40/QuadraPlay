@@ -92,7 +92,7 @@
                       {{ obterQtdJogadores(time) }}
                       jogador{{ obterQtdJogadores(time) === 1 ? '' : 'es' }}
                     </a>
-                    <a>Treinador: {{ time.treinador || 'Nao informado' }}</a>
+                    <a>Treinador: {{ time.treinador || 'Não informado' }}</a>
                   </div>
                 </div>
 
@@ -283,7 +283,7 @@ export default {
         Swal.fire('Sucesso', 'Imagem do time alterada com sucesso!', 'success');
       } catch (err) {
         console.error(err);
-        Swal.fire('Erro', 'Nao foi possivel alterar a imagem do time.', 'error');
+        Swal.fire('Erro', 'Não foi possível alterar a imagem do time.', 'error');
       } finally {
         event.target.value = '';
         this.timeImagemAtual = null;

@@ -97,7 +97,7 @@
               <div class="card-copy">
                 <p class="card-label">QUADRA</p>
                 <h3 class="nome-quadra">{{ quadra.nome }}</h3>
-                <p class="endereco">{{ quadra.endereco || 'Endereco nao informado' }}</p>
+                <p class="endereco">{{ quadra.endereco || 'Endereço não informado' }}</p>
 
                 <div class="card-tags">
                   <span
@@ -406,8 +406,8 @@ export default {
     },
     descricaoEstadoVazio() {
       return this.isAdministrador
-        ? 'Quando houver uma unidade disponível para voce, ela aparecerá aqui.'
-        : 'Quando houver unidades disponíveis para voce, elas aparecerão aqui.'
+        ? 'Quando houver uma unidade disponível para você, ela aparecerá aqui.'
+        : 'Quando houver unidades disponíveis para você, elas aparecerão aqui.'
     },
     podeCadastrar() {
       return this.isDesenvolvedor
@@ -450,7 +450,7 @@ export default {
         const usuario = this.usuarioAutenticado
 
         if (!usuario) {
-          throw new Error('Usuario autenticado nao encontrado.')
+          throw new Error('Usuário autenticado não encontrado.')
         }
 
         if (Number(usuario.permissaoId) === 2 && Number(usuario.quadraId)) {
@@ -565,7 +565,7 @@ export default {
 
     async salvarEdicao() {
       if (this.formEdicao.modalidadesSelecionadas.length === 0) {
-        Swal.fire('Aviso', 'E obrigatorio selecionar ao menos uma modalidade para a unidade.', 'warning')
+        Swal.fire('Aviso', 'É obrigatório selecionar ao menos uma modalidade para a unidade.', 'warning')
         return
       }
 

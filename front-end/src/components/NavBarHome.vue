@@ -28,7 +28,7 @@
         </button>
         <button type="button" class="nav-link" :class="{ active: isActive('/horarios-publico') }"
           @click="navegar('/horarios-publico')">
-          Horarios
+          Horários
         </button>
         <button type="button" class="nav-link" :class="{ active: isActive('/') }" @click="navegar('/')">
           Tela Inicial
@@ -66,8 +66,8 @@
       <div class="drawer-header">
         <div class="drawer-brand">
           <span class="drawer-kicker">Quadra Play SV</span>
-          <strong class="drawer-title">Navegacao</strong>
-          <span class="drawer-subtitle">Acesse as areas publicas e entre na sua conta.</span>
+          <strong class="drawer-title">Navegação</strong>
+          <span class="drawer-subtitle">Acesse as áreas públicas e entre na sua conta.</span>
         </div>
 
         <button type="button" class="drawer-close" aria-label="Fechar menu" @click="closeMenu">
@@ -91,13 +91,13 @@
 
         <button type="button" class="drawer-link" :class="{ active: isActive('/horarios-publico') }"
           @click="navegar('/horarios-publico')">
-          <span class="drawer-link-title">Horarios</span>
+          <span class="drawer-link-title">Horários</span>
           <span class="drawer-link-subtitle">Consulte a grade semanal das quadras.</span>
         </button>
 
         <button type="button" class="drawer-link" :class="{ active: isActive('/') }" @click="navegar('/')">
           <span class="drawer-link-title">Tela Inicial</span>
-          <span class="drawer-link-subtitle">Voltar para a pagina principal.</span>
+          <span class="drawer-link-subtitle">Voltar para a página principal.</span>
         </button>
       </div>
 
@@ -229,7 +229,7 @@ export default {
         if (erro === 'usuario_nao_cadastrado') {
           Swal.fire({
             icon: 'error',
-            title: 'Conta nao encontrada!',
+            title: 'Conta não encontrada!',
             text: 'Redirecionando para cadastro...',
             timer: 3000,
             timerProgressBar: true,
@@ -245,7 +245,7 @@ export default {
           Swal.fire({
             icon: 'warning',
             title: 'Login expirado',
-            text: 'Nao foi possivel concluir o login com Google. Tente novamente.'
+            text: 'Não foi possível concluir o login com Google. Tente novamente.'
           })
           window.removeEventListener('message', listener)
           if (popup) popup.close()
@@ -323,7 +323,7 @@ export default {
         if (erro === 'usuario_nao_cadastrado') {
           Swal.fire({
             icon: 'error',
-            title: 'Conta nao encontrada!',
+            title: 'Conta não encontrada!',
             text: 'Redirecionando para cadastro...',
             timer: 3000,
             showConfirmButton: false
@@ -337,7 +337,7 @@ export default {
           Swal.fire({
             icon: 'warning',
             title: 'Login expirado',
-            text: 'Nao foi possivel concluir o login com Google. Tente novamente.'
+            text: 'Não foi possível concluir o login com Google. Tente novamente.'
           })
           window.removeEventListener('message', listener)
           if (popup) popup.close()
@@ -359,14 +359,14 @@ export default {
             Swal.fire({
               icon: 'warning',
               title: 'Acesso negado',
-              text: 'Voce nao tem permissao para acessar o QuadraPlay.'
+              text: 'Você não tem permissão para acessar o QuadraPlay.'
             })
           } else {
             localStorage.removeItem(QUADRA_PLAY_LOGIN_KEY)
             Swal.fire({
               icon: 'info',
-              title: 'Acesso nao permitido',
-              text: 'Seu perfil nao possui acesso ao QuadraPlay.'
+              title: 'Acesso não permitido',
+              text: 'Seu perfil não possui acesso ao QuadraPlay.'
             })
           }
         }

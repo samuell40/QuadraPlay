@@ -99,7 +99,7 @@ const ehEncaixe = computed(() => Boolean(props.agendamento?.encaixe))
 const limiteSemanalAtingido = computed(() => Boolean(props.agendamento?.limiteSemanalAtingido))
 
 const quadraNome = computed(() => props.agendamento?.quadraNome || props.agendamento?.quadra?.nome || 'Quadra')
-const solicitanteNome = computed(() => props.agendamento?.solicitanteNome || props.agendamento?.usuario || props.agendamento?.usuario?.nome || 'Sem usuario')
+const solicitanteNome = computed(() => props.agendamento?.solicitanteNome || props.agendamento?.usuario || props.agendamento?.usuario?.nome || 'Sem usuário')
 const timeNome = computed(() => props.agendamento?.timeNome || props.agendamento?.time || props.agendamento?.time?.nome || 'Não especificado')
 const codigoVerificacao = computed(() => props.agendamento?.codigoVerificacao || 'N/A')
 const motivoRecusa = computed(() => props.agendamento?.motivoRecusa || '')

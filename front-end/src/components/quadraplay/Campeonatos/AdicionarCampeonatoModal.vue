@@ -177,8 +177,8 @@
     <div class="modal-content modal-agenda-campeonato">
       <div class="modal-header">
         <div class="agenda-header-copy">
-          <h2>Datas e horarios do campeonato</h2>
-          <p class="agenda-subtitle">Configure os horarios base da quadra para esta competicao.</p>
+          <h2>Datas e horários do campeonato</h2>
+          <p class="agenda-subtitle">Configure os horários base da quadra para esta competição.</p>
         </div>
         <button type="button" class="btn-close-x" :disabled="salvandoCadastro" @click="voltarParaTimes">x</button>
       </div>
@@ -279,7 +279,7 @@ import { obterFotoTime } from '@/utils/timeImagem'
         {
           value: 'PONTOS_CORRIDOS',
           titulo: 'Pontos Corridos',
-          descricao: 'Tabela unica com classificacao geral'
+          descricao: 'Tabela única com classificação geral'
         },
         {
           value: 'PONTOS_CORRIDOS_ELIMINATORIAS',
@@ -389,12 +389,12 @@ import { obterFotoTime } from '@/utils/timeImagem'
       if (this.carregandoTimes || this.salvandoCadastro) return
 
       if (!this.tipoSelecionado) {
-        Swal.fire('Atencao', 'Selecione o tipo do campeonato.', 'warning')
+        Swal.fire('Atenção', 'Selecione o tipo do campeonato.', 'warning')
         return
       }
 
       if (!this.modalidadeSelecionada || !this.quadraSelecionada || !this.nomeCampeonato.trim()) {
-        Swal.fire('Atencao', 'Preencha nome, modalidade e quadra.', 'warning')
+        Swal.fire('Atenção', 'Preencha nome, modalidade e quadra.', 'warning')
         return
       }
 
@@ -428,7 +428,7 @@ import { obterFotoTime } from '@/utils/timeImagem'
 
     abrirModalAgenda() {
       if (this.timesSelecionados.length < 2) {
-        Swal.fire('Atencao', 'Selecione pelo menos 2 times.', 'warning')
+        Swal.fire('Atenção', 'Selecione pelo menos 2 times.', 'warning')
         return
       }
 
@@ -456,12 +456,12 @@ import { obterFotoTime } from '@/utils/timeImagem'
 
     adicionarDataAgenda() {
       if (!this.novaDataAgenda) {
-        Swal.fire('Atencao', 'Selecione uma data.', 'warning')
+        Swal.fire('Atenção', 'Selecione uma data.', 'warning')
         return
       }
 
       if (this.novaDataAgenda < this.dataMinimaAgenda) {
-        Swal.fire('Atencao', 'Selecione uma data a partir de amanha.', 'warning')
+        Swal.fire('Atenção', 'Selecione uma data a partir de amanhã.', 'warning')
         return
       }
 
@@ -543,7 +543,7 @@ import { obterFotoTime } from '@/utils/timeImagem'
       const duracao = Number(this.geradorAgenda.duracao)
 
       if (!Number.isFinite(duracao) || duracao <= 0 || inicio >= fim) {
-        Swal.fire('Atencao', 'Preencha um intervalo valido para gerar os horarios.', 'warning')
+        Swal.fire('Atenção', 'Preencha um intervalo válido para gerar os horários.', 'warning')
         return
       }
 
@@ -619,7 +619,7 @@ import { obterFotoTime } from '@/utils/timeImagem'
       const datasJogos = this.montarDatasJogos()
 
       if (!datasJogos.length) {
-        Swal.fire('Atencao', 'Adicione ao menos um horario para o campeonato.', 'warning')
+        Swal.fire('Atenção', 'Adicione ao menos um horário para o campeonato.', 'warning')
         return
       }
 

@@ -29,7 +29,7 @@
               class="btn-top-action"
               @click="abrirModalHojeEAmanha"
               :disabled="!quadraId || isLoading"
-              aria-label="Visualizar horarios"
+              aria-label="Visualizar horários"
             >
               <svg class="btn-top-action-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
                 <path
@@ -37,8 +37,8 @@
                   d="M12 8a1 1 0 0 1 1 1v2.586l1.707 1.707a1 1 0 1 1-1.414 1.414l-2-2A1 1 0 0 1 11 12V9a1 1 0 0 1 1-1Zm0-6a10 10 0 1 1 0 20a10 10 0 0 1 0-20Zm0 2a8 8 0 1 0 0 16a8 8 0 0 0 0-16Z"
                 />
               </svg>
-              <span class="btn-top-action-label-desktop">Visualizar Horarios</span>
-              <span class="btn-top-action-label-mobile">Horarios</span>
+              <span class="btn-top-action-label-desktop">Visualizar Horários</span>
+              <span class="btn-top-action-label-mobile">Horários</span>
             </button>
           </div>
         </div>
@@ -52,7 +52,7 @@
               class="input-filter input-filter-select"
               @change="carregarAgendamentos"
             >
-              <option v-if="!quadras.length" :value="null">Nenhuma quadra disponivel</option>
+              <option v-if="!quadras.length" :value="null">Nenhuma quadra disponível</option>
               <option v-for="quadra in quadras" :key="quadra.id" :value="quadra.id">
                 {{ quadra.nome }}
               </option>
@@ -121,7 +121,7 @@
                 :disabled="paginasAtuais[abaAtiva] === totalPaginasAbaAtiva"
                 @click="mudarPagina(abaAtiva, 1)"
               >
-                <span>Proxima</span>
+                <span>Próxima</span>
                 <span>&gt;</span>
               </button>
             </div>
@@ -347,9 +347,9 @@ const nomeQuadraOperacao = computed(() => {
 
 const tituloAbaAtiva = computed(() => {
   const titulos = {
-    pendentes: 'Fila de aprovacao das reservas',
+    pendentes: 'Fila de aprovação das reservas',
     confirmados: 'Agenda validada da quadra',
-    recusados: 'Historico de recusas recentes',
+    recusados: 'Histórico de recusas recentes',
   }
 
   return titulos[abaAtiva.value] || 'Controle operacional das reservas'
@@ -357,12 +357,12 @@ const tituloAbaAtiva = computed(() => {
 
 const subtituloAbaAtiva = computed(() => {
   const subtitulos = {
-    pendentes: `Revise os pedidos vinculados a ${nomeQuadraOperacao.value} e decida quais horarios seguem para confirmação.`,
-    confirmados: 'Acompanhe os agendamentos futuros que ja estão liberados para operação normal.',
-    recusados: 'Consulte os pedidos encerrados e mantenha o histÃ³rico de justificativas sempre acessÃ­vel.',
+    pendentes: `Revise os pedidos vinculados a ${nomeQuadraOperacao.value} e decida quais horários seguem para confirmação.`,
+    confirmados: 'Acompanhe os agendamentos futuros que já estão liberados para operação normal.',
+    recusados: 'Consulte os pedidos encerrados e mantenha o histórico de justificativas sempre acessível.',
   }
 
-  return subtitulos[abaAtiva.value] || 'Acompanhe os agendamentos vinculados a operaÃ§Ã£o da sua quadra.'
+  return subtitulos[abaAtiva.value] || 'Acompanhe os agendamentos vinculados à operação da sua quadra.'
 })
 
 const resumoAbaAtiva = computed(() => {
@@ -390,16 +390,16 @@ const tituloEstadoVazio = computed(() => {
 
 const descricaoEstadoVazio = computed(() => {
   if (podeTrocarQuadra.value && !quadraId.value) {
-    return 'Escolha uma unidade no seletor acima para iniciar a operacao.'
+    return 'Escolha uma unidade no seletor acima para iniciar a operação.'
   }
 
   const descricoes = {
     pendentes: 'Quando novos pedidos forem enviados para a quadra, eles aparecerão aqui para análise.',
     confirmados: 'Os agendamentos aprovados para datas futuras ficarão organizados nesta aba.',
-    recusados: 'Os pedidos recusados aparecerÃ£o aqui com o motivo informado ao solicitante.',
+    recusados: 'Os pedidos recusados aparecerão aqui com o motivo informado ao solicitante.',
   }
 
-  return descricoes[abaAtiva.value] || 'NÃo há itens para exibir nesta etapa.'
+  return descricoes[abaAtiva.value] || 'Não há itens para exibir nesta etapa.'
 })
 
 const mudarPagina = (tipo, delta) => {
@@ -413,10 +413,10 @@ const mudarPagina = (tipo, delta) => {
 
 const normalizarAgendamento = (agendamento) => ({
   ...agendamento,
-  solicitanteNome: agendamento.usuario?.nome || 'Sem usuario',
+  solicitanteNome: agendamento.usuario?.nome || 'Sem usuário',
   solicitantePermissaoId: Number(agendamento.usuario?.permissaoId ?? 0),
   limiteSemanalAtingido: calcularLimiteSemanalAtingido(agendamento),
-  timeNome: agendamento.time?.nome || 'NÃo especificado',
+  timeNome: agendamento.time?.nome || 'Não especificado',
   quadraNome: agendamento.quadra?.nome || authStore.usuario?.quadra?.nome || 'Quadra',
   codigoVerificacao: agendamento.codigoVerificacao || 'N/A',
   motivoRecusa: agendamento.motivoRecusa || '',
@@ -442,7 +442,7 @@ const carregarQuadrasDisponiveis = async () => {
     quadras.value = quadraDoUsuario ? [quadraDoUsuario] : []
     quadraId.value = resolverQuadraId(quadraDoUsuario?.id ?? quadraId.value)
   } catch (error) {
-    console.error('Erro ao carregar quadras disponiveis:', error)
+    console.error('Erro ao carregar quadras disponíveis:', error)
     quadras.value = []
     quadraId.value = resolverQuadraId(authStore.usuario?.quadraId)
   }
@@ -495,7 +495,7 @@ const aceitarAgendamento = async (id) => {
     Swal.fire('Sucesso', 'Agendamento aceito!', 'success')
   } catch (error) {
     console.error(error)
-    Swal.fire('Erro', 'NÃ£o foi possivel aceitar o agendamento.', 'error')
+    Swal.fire('Erro', 'Não foi possível aceitar o agendamento.', 'error')
   } finally {
     loadingCards.value = loadingCards.value.filter((item) => item !== id)
   }

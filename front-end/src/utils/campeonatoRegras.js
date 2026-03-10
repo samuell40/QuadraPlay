@@ -44,7 +44,7 @@ function regrasPadrao(grupo) {
 }
 
 function opcoesSuspensao(inicio = 1, fim = 10) {
-  const opcoes = [{ label: 'Nao', value: null }]
+  const opcoes = [{ label: 'Não', value: null }]
   for (let i = inicio; i <= fim; i += 1) {
     const singular = inicio === 1 ? 'vermelho' : 'amarelo'
     const plural = inicio === 1 ? 'vermelhos' : 'amarelos'

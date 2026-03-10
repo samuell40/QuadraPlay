@@ -243,7 +243,7 @@ export default {
           text: 'Volte para a tela inicial para entrar novamente.',
           icon: 'warning',
           showCancelButton: true,
-          confirmButtonText: 'Ir para inicio',
+          confirmButtonText: 'Ir para início',
           cancelButtonText: 'Cancelar',
           confirmButtonColor: '#1E3A8A',
         }).then((result) => {
@@ -349,7 +349,7 @@ export default {
         Swal.fire({
           icon: 'warning',
           title: 'Não foi possível agendar',
-          text: msgErro || 'Verifique se o horário   esta disponível.',
+          text: msgErro || 'Verifique se o horário está disponível.',
           confirmButtonColor: '#1E3A8A'
         })
       }

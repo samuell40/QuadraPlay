@@ -194,7 +194,7 @@ export default {
       if (campo === 'gamesSet') return removendo ? 'Ajustando games do set...' : 'Registrando game do set...'
       if (campo === 'pontosTieBreak') return removendo ? 'Ajustando tie-break...' : 'Registrando ponto no tie-break...'
       if (campo === 'wo') return removendo ? 'Removendo W.O...' : 'Registrando W.O...'
-      return 'Registrando alteracao...'
+      return 'Registrando alteração...'
     },
 
     valorAtualPorCampo(campo) {
@@ -205,7 +205,7 @@ export default {
       return null
     },
 
-    iniciarFeedbackLocal(campo, mensagem = 'Registrando alteracao...') {
+    iniciarFeedbackLocal(campo, mensagem = 'Registrando alteração...') {
       this.feedbackCampoPendente = campo
       this.feedbackValorBase = this.valorAtualPorCampo(campo)
       this.feedbackLocalTipo = campo

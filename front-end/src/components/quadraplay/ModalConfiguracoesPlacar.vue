@@ -863,7 +863,7 @@ export default {
           await navigator.clipboard.writeText(payload.texto)
         }
       } catch (error) {
-        console.warn("Nao foi possivel copiar o texto automaticamente:", error)
+        console.warn("Não foi possível copiar o texto automaticamente:", error)
       }
 
       await Swal.fire({
@@ -878,7 +878,7 @@ export default {
       const blocos = this.obterBlocosClassificacaoCompartilhamento(26)
       const colunasBase = this.obterColunasCompartilhamento()
       if (!blocos.length) {
-        throw new Error("Sem dados de classificacao para compartilhar.")
+        throw new Error("Sem dados de classificação para compartilhar.")
       }
 
       const compartilhandoPorGrupo = this.compartilhamentoPorGruposAtivo()
@@ -929,7 +929,7 @@ export default {
       const ctx = canvas.getContext("2d")
 
       if (!ctx) {
-        throw new Error("Nao foi possivel iniciar o canvas para compartilhar placar.")
+        throw new Error("Não foi possível iniciar o canvas para compartilhar placar.")
       }
 
       const gradienteFundo = ctx.createLinearGradient(0, 0, 0, altura)
@@ -1148,7 +1148,7 @@ export default {
     async gerarPdfPlacar() {
       const blocos = this.obterBlocosClassificacaoCompartilhamento()
       if (!blocos.length) {
-        throw new Error("Sem dados de classificacao para gerar PDF.")
+        throw new Error("Sem dados de classificação para gerar PDF.")
       }
 
       const compartilhandoPorGrupo = this.compartilhamentoPorGruposAtivo()
@@ -1209,7 +1209,7 @@ export default {
           doc.setFont("helvetica", "normal")
           doc.setFontSize(7.6)
           doc.setTextColor(191, 219, 254)
-          doc.text("Relatorio de classificacao", pageWidth - margemX, 8.8, { align: "right" })
+          doc.text("Relatório de classificação", pageWidth - margemX, 8.8, { align: "right" })
           cursorY = 18
           return
         }
@@ -1222,7 +1222,7 @@ export default {
         doc.setFont("helvetica", "normal")
         doc.setFontSize(9)
         doc.setTextColor(191, 219, 254)
-        doc.text("Relatorio de classificacao", xTextoCabecalho, 15.5)
+        doc.text("Relatório de classificação", xTextoCabecalho, 15.5)
 
         doc.setFont("helvetica", "bold")
         doc.setFontSize(15.5)
@@ -1245,13 +1245,13 @@ export default {
         doc.setFont("helvetica", "bold")
         doc.setFontSize(7.6)
         doc.setTextColor(...cores.primary)
-        doc.text("Leitura da classificacao", margemX + 4, yBloco + 4.3)
+        doc.text("Leitura da classificação", margemX + 4, yBloco + 4.3)
 
         doc.setFont("helvetica", "normal")
         doc.setFontSize(7.2)
         doc.setTextColor(...cores.muted)
         doc.text(
-          "Tabela da fase e rodada selecionadas com posicao, desempenho e escudos dos times.",
+          "Tabela da fase e rodada selecionadas com posição, desempenho e escudos dos times.",
           margemX + 4,
           yBloco + 7.8
         )
@@ -1266,7 +1266,7 @@ export default {
         doc.setFont("helvetica", "normal")
         doc.setFontSize(7.4)
         doc.setTextColor(...cores.muted)
-        doc.text("Relatorio exportado pela tela de classificacao.", margemX, pageHeight - 4.4)
+        doc.text("Relatório exportado pela tela de classificação.", margemX, pageHeight - 4.4)
         doc.text(`Pagina ${paginaAtual}/${totalPaginas}`, pageWidth - margemX, pageHeight - 4.4, { align: "right" })
       }
 
@@ -1438,7 +1438,7 @@ export default {
         doc.setFont("helvetica", "bold")
         doc.setFontSize(10.2)
         doc.setTextColor(...cores.primary)
-        doc.text("Glossario da classificacao", margemX + 5, yGlossario + 6.2)
+        doc.text("Glossário da classificação", margemX + 5, yGlossario + 6.2)
 
         const larguraUtilGloss = larguraCard - 10
         const larguraColunaGloss = larguraUtilGloss / qtdColunasGlossario
@@ -1499,7 +1499,7 @@ export default {
       if (!this.obterBlocosClassificacaoCompartilhamento().length) {
         await Swal.fire({
           title: "Atenção",
-          text: "Nao ha dados de classificacao para compartilhar.",
+          text: "Não há dados de classificação para compartilhar.",
           icon: "warning",
           target: ".modal-escolha-config"
         })
@@ -1545,7 +1545,7 @@ export default {
         console.error("Erro ao compartilhar placar:", error)
         await Swal.fire({
           title: "Erro",
-          text: "Nao foi possivel compartilhar o placar.",
+          text: "Não foi possível compartilhar o placar.",
           icon: "error",
           target: ".modal-escolha-config"
         })

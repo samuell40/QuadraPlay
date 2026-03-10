@@ -14,7 +14,7 @@
 
         <button v-if="!isCampeonatoEncerrado" class="btn-add" @click="abrirConfiguracoes">
           <span class="btn-add-icon" aria-hidden="true">⚙</span>
-          <span class="btn-add-label">Configuracoes</span>
+          <span class="btn-add-label">Configurações</span>
         </button>
       </div>
 
@@ -23,7 +23,7 @@
           <LoadingState
             :theme="isCampeonatoEncerrado ? 'danger' : 'default'"
             title="Carregando campeonato"
-            description="Buscando fases, rodadas, classificacao e partidas."
+            description="Buscando fases, rodadas, classificação e partidas."
           />
         </div>
       </template>
@@ -72,7 +72,7 @@
                 :aria-pressed="exibirClassificacaoPorGrupo ? 'true' : 'false'"
                 @click="alternarExibicaoGrupos"
               >
-                <span class="grupo-toggle-label grupo-toggle-label-desktop">Classificacao por Grupo</span>
+                <span class="grupo-toggle-label grupo-toggle-label-desktop">Classificação por Grupo</span>
                 <span class="grupo-toggle-label grupo-toggle-label-mobile">Grupos</span>
                 <span class="grupo-toggle-track">
                   <span class="grupo-toggle-thumb"></span>
@@ -90,7 +90,7 @@
             :aria-pressed="exibirClassificacaoPorGrupo ? 'true' : 'false'"
             @click="alternarExibicaoGrupos"
           >
-            <span class="grupo-toggle-label grupo-toggle-label-desktop">Classificacao por Grupo</span>
+            <span class="grupo-toggle-label grupo-toggle-label-desktop">Classificação por Grupo</span>
             <span class="grupo-toggle-track">
               <span class="grupo-toggle-thumb"></span>
             </span>
@@ -546,7 +546,7 @@ export default {
         this.atualizarColunasClassificacao(colunas)
         this.atualizarGruposClassificacao(grupos)
       } catch (err) {
-        console.error('Erro ao carregar configuracoes da classificacao:', err)
+        console.error('Erro ao carregar configurações da classificação:', err)
       }
     },
 

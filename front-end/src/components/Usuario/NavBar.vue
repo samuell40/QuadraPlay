@@ -58,7 +58,7 @@
           :class="{ active: isActive('/minhasestatisticas') }"
           @click="navegar('/minhasestatisticas')"
         >
-          Minhas Estatisticas
+          Minhas Estatísticas
         </button>
       </div>
 
@@ -77,7 +77,7 @@
             />
             <span v-else>{{ userInitial }}</span>
           </span>
-          <span class="desktop-profile-name">{{ usuarioLogado?.nome || 'Usuario' }}</span>
+          <span class="desktop-profile-name">{{ usuarioLogado?.nome || 'Usuário' }}</span>
         </button>
 
         <button type="button" class="desktop-logout" @click="logout">
@@ -100,7 +100,7 @@
         <div class="drawer-brand">
           <div class="drawer-brand-top">
             <div class="drawer-brand-copy">
-              <span class="drawer-kicker">Area do usuario</span>
+              <span class="drawer-kicker">Área do usuário</span>
             </div>
           </div>
 
@@ -121,7 +121,7 @@
           @click="navegar('/agendarquadra')"
         >
           <span class="drawer-link-title">Agendar Quadra</span>
-          <span class="drawer-link-subtitle">Escolha a quadra e faca uma nova reserva.</span>
+          <span class="drawer-link-subtitle">Escolha a quadra e faça uma nova reserva.</span>
         </button>
 
         <button
@@ -131,7 +131,7 @@
           @click="navegar('/meusagendamentos')"
         >
           <span class="drawer-link-title">Meus Agendamentos</span>
-          <span class="drawer-link-subtitle">Consulte reservas atuais e historico.</span>
+          <span class="drawer-link-subtitle">Consulte reservas atuais e histórico.</span>
         </button>
 
         <button
@@ -142,7 +142,7 @@
         >
           <span class="drawer-link-main">
             <span class="drawer-link-title">Meus Avisos</span>
-            <span class="drawer-link-subtitle">Acompanhe mensagens e atualizacoes.</span>
+            <span class="drawer-link-subtitle">Acompanhe mensagens e atualizações.</span>
           </span>
 
           <span v-if="totalNotificacoes > 0" class="badge-avisos large">
@@ -157,8 +157,8 @@
           :class="{ active: isActive('/minhasestatisticas') }"
           @click="navegar('/minhasestatisticas')"
         >
-          <span class="drawer-link-title">Minhas Estatisticas</span>
-          <span class="drawer-link-subtitle">Veja gols, cartoes e desempenho do jogador vinculado.</span>
+          <span class="drawer-link-title">Minhas Estatísticas</span>
+          <span class="drawer-link-subtitle">Veja gols, cartões e desempenho do jogador vinculado.</span>
         </button>
       </div>
 
@@ -179,7 +179,7 @@
           </div>
 
           <div class="drawer-user-copy">
-            <strong>{{ usuarioLogado?.nome || 'Usuario' }}</strong>
+            <strong>{{ usuarioLogado?.nome || 'Usuário' }}</strong>
             <span>{{ userResumo }}</span>
           </div>
         </button>
@@ -337,7 +337,7 @@ export default {
       if (this.totalNotificacoes > 0) {
         return `${this.totalNotificacoes} aviso(s) pendente(s)`
       }
-      return 'Area do usuario'
+      return 'Área do usuário'
     },
 
     possuiJogadorVinculado() {
@@ -498,12 +498,12 @@ export default {
       const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 
       if (!nome || !email) {
-        await Swal.fire('Atencao', 'Preencha nome e e-mail para continuar.', 'warning')
+        await Swal.fire('Atenção', 'Preencha nome e e-mail para continuar.', 'warning')
         return
       }
 
       if (!emailValido) {
-        await Swal.fire('Atencao', 'Informe um e-mail valido.', 'warning')
+        await Swal.fire('Atenção', 'Informe um e-mail válido.', 'warning')
         return
       }
 
@@ -535,7 +535,7 @@ export default {
         const mensagem =
           err?.response?.data?.error ||
           err?.response?.data?.message ||
-          'Nao foi possivel atualizar o perfil.'
+          'Não foi possível atualizar o perfil.'
         await Swal.fire('Erro', mensagem, 'error')
       } finally {
         this.isSalvandoPerfil = false
@@ -547,7 +547,7 @@ export default {
 
       const confirmacao = await Swal.fire({
         title: 'Excluir conta?',
-        text: 'Voce tem certeza que deseja excluir sua conta?',
+        text: 'Você tem certeza que deseja excluir sua conta?',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'Sim, excluir',
@@ -573,13 +573,13 @@ export default {
         localStorage.removeItem('usuario')
         localStorage.removeItem('quadraPlayLoginAtivo')
 
-        await Swal.fire('Conta excluida', 'Sua conta foi excluida com sucesso.', 'success')
+        await Swal.fire('Conta excluída', 'Sua conta foi excluída com sucesso.', 'success')
         router.push('/')
       } catch (err) {
         const mensagem =
           err?.response?.data?.error ||
           err?.response?.data?.message ||
-          'Nao foi possivel excluir sua conta.'
+          'Não foi possível excluir sua conta.'
         await Swal.fire('Erro', mensagem, 'error')
       } finally {
         this.isExcluindoConta = false

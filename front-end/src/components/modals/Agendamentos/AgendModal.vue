@@ -96,11 +96,11 @@
           </div>
 
           <div v-else>
-            <label v-if="data && horariosDisponiveis.length === 0"><strong>Horarios Disponiveis:</strong></label>
+            <label v-if="data && horariosDisponiveis.length === 0"><strong>Horários Disponíveis:</strong></label>
             <label v-if="horariosDisponiveis.length > 0"><strong>Horários Disponíveis:</strong></label>
             <div v-if="isLoadingHorarios" class="horarios-loading">
               <span class="loader-horarios" aria-hidden="true"></span>
-              <span>Carregando horarios...</span>
+              <span>Carregando horários...</span>
             </div>
             <div v-else class="horarios-grid">
               <button v-for="h in horariosDisponiveis" :key="h" :class="{ selecionado: h === hora }"

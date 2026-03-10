@@ -6,7 +6,7 @@
             </div>
             <div class="body">
                 <p>
-                    Voc√™ n√£o tem permiss√£o para acessar esta p√°gina.
+                    VocÍ n„o tem permiss„o para acessar esta p·gina.
                 </p>
                 <div class="botoes">
                     <button class="login" @click="loginComGoogle">Login com Google</button>
@@ -63,7 +63,7 @@ export default {
                 if (erro === 'usuario_nao_cadastrado') {
                     Swal.fire({
                         icon: 'error',
-                        title: 'Conta n√£o encontrada!',
+                        title: 'Conta n„o encontrada!',
                         text: 'Redirecionando para cadastro...',
                         timer: 3000,
                         timerProgressBar: true,
@@ -79,7 +79,7 @@ export default {
                     Swal.fire({
                         icon: 'warning',
                         title: 'Login expirado',
-                        text: 'Nao foi possivel concluir o login com Google. Tente novamente.'
+                        text: 'N„o foi possÌvel concluir o login com Google. Tente novamente.'
                     })
                     window.removeEventListener('message', listener)
                     if (popup) popup.close()
@@ -219,3 +219,4 @@ button:focus {
     }
 }
 </style>
+

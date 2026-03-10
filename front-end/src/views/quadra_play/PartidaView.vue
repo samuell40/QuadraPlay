@@ -235,7 +235,7 @@ export default {
       }
 
       if (this.isSalvandoParcial || this.registroOperacoesAtivas > 0) {
-        return 'Registrando alteracao...'
+        return 'Registrando alteração...'
       }
 
       return ''
@@ -403,12 +403,12 @@ export default {
       this.aplicarDadosPartida(res.data)
     },
 
-    iniciarFeedbackRegistro(mensagem = 'Registrando alteracao...') {
+    iniciarFeedbackRegistro(mensagem = 'Registrando alteração...') {
       this.registroOperacoesAtivas += 1
       this.registroMensagemAtual = mensagem
     },
 
-    sinalizarFeedbackRegistro(mensagem = 'Registrando alteracao...') {
+    sinalizarFeedbackRegistro(mensagem = 'Registrando alteração...') {
       this.registroMensagemAtual = mensagem
       this.feedbackAguardandoSalvar = true
     },
@@ -428,15 +428,15 @@ export default {
 
       if (campo === 'golspro') return removendo ? 'Removendo gol...' : 'Registrando gol...'
       if (campo === 'faltas') return removendo ? 'Removendo falta...' : 'Registrando falta...'
-      if (campo === 'substituicoes') return removendo ? 'Removendo substituicao...' : 'Registrando substituicao...'
-      if (campo === 'cartaoamarelo') return removendo ? 'Removendo cartao amarelo...' : 'Registrando cartao amarelo...'
-      if (campo === 'cartaovermelho') return removendo ? 'Removendo cartao vermelho...' : 'Registrando cartao vermelho...'
+      if (campo === 'substituicoes') return removendo ? 'Removendo substituição...' : 'Registrando substituição...'
+      if (campo === 'cartaoamarelo') return removendo ? 'Removendo cartão amarelo...' : 'Registrando cartão amarelo...'
+      if (campo === 'cartaovermelho') return removendo ? 'Removendo cartão vermelho...' : 'Registrando cartão vermelho...'
       if (campo === 'setsVencidos') return removendo ? 'Ajustando sets vencidos...' : 'Registrando set vencido...'
       if (campo === 'pontosSet') return removendo ? 'Ajustando pontos do set...' : 'Registrando ponto do set...'
       if (campo === 'gamesSet') return removendo ? 'Ajustando games do set...' : 'Registrando game do set...'
       if (campo === 'pontosTieBreak') return removendo ? 'Ajustando tie-break...' : 'Registrando ponto no tie-break...'
       if (campo === 'wo') return removendo ? 'Removendo W.O...' : 'Registrando W.O...'
-      return 'Registrando alteracao...'
+      return 'Registrando alteração...'
     },
 
     async atualizarParcial(payload) {
@@ -449,7 +449,7 @@ export default {
         this.atualizarFlagAlteracao()
       } catch (error) {
         console.error('[atualizarParcial] erro:', error)
-        const msg = error.response?.data?.error || 'Nao foi possivel atualizar a partida.'
+        const msg = error.response?.data?.error || 'Não foi possível atualizar a partida.'
         Swal.fire('Erro', msg, 'error')
       } finally {
         this.isSalvandoParcial = false

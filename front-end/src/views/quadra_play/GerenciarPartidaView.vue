@@ -954,7 +954,7 @@ export default {
       } catch (error) {
         this.partidaAcessandoId = null
         console.error(error)
-        const mensagem = error.response?.data?.erro || error.response?.data?.message || 'Nao foi possivel iniciar a partida.'
+        const mensagem = error.response?.data?.erro || error.response?.data?.message || 'Não foi possível iniciar a partida.'
         Swal.fire('Erro', mensagem, 'error')
       } finally {
         this.salvandoEscalacaoInicial = false
@@ -973,7 +973,7 @@ export default {
 
     async irParaTelaPartida(partidaId) {
       try {
-        if (!this.campeonato) throw new Error('Campeonato nao encontrado')
+        if (!this.campeonato) throw new Error('Campeonato não encontrado')
 
         localStorage.setItem('campeonatoSelecionado', JSON.stringify(this.campeonato))
 

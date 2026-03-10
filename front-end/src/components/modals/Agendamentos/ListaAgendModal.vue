@@ -3,7 +3,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <div class="modal-copy">
-          <p class="modal-kicker">CONSULTA RAPIDA</p>
+          <p class="modal-kicker">CONSULTA RÁPIDA</p>
           <h2 class="modal-title">{{ quadraNome }}</h2>
           <p class="modal-subtitle">{{ subtituloPeriodo }}</p>
         </div>
@@ -27,7 +27,7 @@
       </div>
 
       <div v-else-if="erroCarga" class="state-card">
-        <p class="state-title">Nao foi possivel carregar os horarios.</p>
+        <p class="state-title">Não foi possível carregar os horários.</p>
         <p class="state-copy">{{ erroCarga }}</p>
 
         <button type="button" class="btn-reload" @click="carregarTodosHorarios">
@@ -51,7 +51,7 @@
               {{
                 obterEstadoDia(d).fechado
                   ? 'Fechado'
-                  : `${obterEstadoDia(d).slots.length} horarios`
+                  : `${obterEstadoDia(d).slots.length} horários`
               }}
             </span>
           </div>
@@ -81,7 +81,7 @@
             {{
               obterEstadoDia(d).fechado
                 ? 'Quadra fechada neste dia.'
-                : 'Nenhum horario configurado para este dia.'
+                : 'Nenhum horário configurado para este dia.'
             }}
           </div>
         </div>
@@ -116,7 +116,7 @@ export default {
   computed: {
     subtituloPeriodo() {
       if (!this.datas?.length) {
-        return 'Consulte os horarios confirmados da quadra.';
+        return 'Consulte os horários confirmados da quadra.';
       }
 
       const datasOrdenadas = [...this.datas].sort((a, b) => {
@@ -129,10 +129,10 @@ export default {
       const ultimaData = this.formatarData(datasOrdenadas[datasOrdenadas.length - 1]);
 
       if (datasOrdenadas.length === 1) {
-        return `Consulta rapida para ${primeiraData}. Clique em um horario ocupado para abrir os detalhes.`;
+        return `Consulta rápida para ${primeiraData}. Clique em um horário ocupado para abrir os detalhes.`;
       }
 
-      return `Consulta rapida de ${primeiraData} ate ${ultimaData}. Clique em um horario ocupado para abrir os detalhes.`;
+      return `Consulta rápida de ${primeiraData} até ${ultimaData}. Clique em um horário ocupado para abrir os detalhes.`;
     },
   },
   watch: {
@@ -200,7 +200,7 @@ export default {
         const { data } = await api.get(`/grade-horarios/${this.quadraId}`);
         this.gradeConfig = Array.isArray(data) ? data : [];
       } catch (error) {
-        console.warn('Sem grade configurada para consulta rapida.', error);
+        console.warn('Sem grade configurada para consulta rápida.', error);
         this.gradeConfig = [];
       }
     },
@@ -221,7 +221,7 @@ export default {
         .sort((primeiro, segundo) => this.horarioParaMinutos(primeiro) - this.horarioParaMinutos(segundo));
     },
     normalizarAgendamento(agendamento) {
-      const usuarioNome = agendamento.usuario?.nome || agendamento.usuario || 'Usuario';
+      const usuarioNome = agendamento.usuario?.nome || agendamento.usuario || 'Usuário';
       const timeNome = agendamento.time?.nome || '';
       const resumoEvento = agendamento.resumoEvento || '';
 
@@ -369,13 +369,13 @@ export default {
           return acumulador;
         }, {});
       } catch (error) {
-        console.error('Erro ao carregar horarios da consulta rapida:', error);
+        console.error('Erro ao carregar horários da consulta rápida:', error);
         this.erroCarga = 'Verifique a grade da quadra e tente novamente em instantes.';
 
         Swal.fire({
           icon: 'error',
           title: 'Erro',
-          text: 'Nao foi possivel carregar os horarios da consulta rapida.',
+          text: 'Não foi possível carregar os horários da consulta rápida.',
           confirmButtonColor: '#1E3A8A',
         });
       } finally {
@@ -389,11 +389,11 @@ export default {
     },
     obterTooltipHorario(slot) {
       if (!slot.agendamento) {
-        return `Horario livre: ${slot.horario}`;
+        return `Horário livre: ${slot.horario}`;
       }
 
       const linhas = [
-        `Horario: ${slot.horario}`,
+        `Horário: ${slot.horario}`,
         `Reserva: ${slot.resumoPrincipal}`,
       ];
 

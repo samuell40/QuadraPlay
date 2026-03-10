@@ -51,7 +51,7 @@
                       <option v-for="f in funcoes" :key="f.id" :value="f.id">
                         {{ f.nome }}
                       </option>
-                      <option :value="novaFuncaoValue">+ Nova posicao...</option>
+                      <option :value="novaFuncaoValue">+ Nova posição...</option>
                     </select>
 
                     <span class="select-arrow">v</span>
@@ -130,23 +130,23 @@
           <input id="nomeJogadorGerenciar" v-model="gerenciarNomeJogador" type="text" placeholder="Digite o nome"
             class="dropdown-gerenciar" />
 
-          <label for="numeroJogadorGerenciar">NÃºmero do jogador:</label>
+          <label for="numeroJogadorGerenciar">Número do jogador:</label>
           <input id="numeroJogadorGerenciar" v-model.number="gerenciarNumeroJogador" type="number" min="1" step="1"
-            placeholder="Digite o numero da camisa" class="dropdown-gerenciar" />
+            placeholder="Digite o número da camisa" class="dropdown-gerenciar" />
 
-          <label>Vincular usuÃ¡rio</label>
+          <label>Vincular usuário</label>
           <div ref="dropdownUsuariosAnchor" class="dropdown-custom-gerenciar">
             <div class="dropdown-selected-gerenciar"
               @click.stop="toggleDropdownUsuarios">
               <img v-if="gerenciarUsuarioSelecionado?.foto" :src="gerenciarUsuarioSelecionado.foto" class="avatar" />
               <span>
-                {{ gerenciarUsuarioSelecionado?.nome || 'Selecione um usuario (opcional)' }}
+                {{ gerenciarUsuarioSelecionado?.nome || 'Selecione um usuário (opcional)' }}
               </span>
             </div>
 
             <div v-if="gerenciarAbrirDropdownUsuarios" ref="dropdownUsuariosLista"
               class="dropdown-list-gerenciar dropdown-list-gerenciar-solto" :style="dropdownUsuariosStyle" @click.stop>
-              <input v-model="gerenciarBuscaUsuario" type="text" placeholder="Buscar usuario..."
+              <input v-model="gerenciarBuscaUsuario" type="text" placeholder="Buscar usuário..."
                 class="input-busca-jogador-gerenciar" @click.stop />
 
               <ul>
@@ -156,7 +156,7 @@
                 </li>
 
                 <li v-if="gerenciarUsuariosFiltradosComBusca.length === 0" class="sem-jogador-gerenciar">
-                  Nenhum usuario encontrado
+                  Nenhum usuário encontrado
                 </li>
               </ul>
             </div>
@@ -184,12 +184,12 @@
 
             <div v-if="gerenciarAbrirDropdownJogadores" ref="dropdownJogadoresLista"
               class="dropdown-list-gerenciar dropdown-list-gerenciar-solto" :style="dropdownJogadoresStyle" @click.stop>
-              <input v-model="gerenciarBuscaJogador" type="text" placeholder="Buscar por nome ou numero..."
+              <input v-model="gerenciarBuscaJogador" type="text" placeholder="Buscar por nome ou número..."
                 class="input-busca-jogador-gerenciar" @click.stop />
 
               <ul>
                 <li v-if="gerenciarJogadoresExistentesFiltradosComBusca.length === 0" class="sem-jogador-gerenciar">
-                  Nenhum jogador disponi­vel
+                  Nenhum jogador disponível
                 </li>
 
                 <li v-for="j in gerenciarJogadoresExistentesFiltradosComBusca" :key="j.id"
@@ -221,7 +221,7 @@
 
             <div v-if="gerenciarAbrirDropdownRemover" ref="dropdownRemoverLista"
               class="dropdown-list-gerenciar dropdown-list-gerenciar-solto" :style="dropdownRemoverStyle" @click.stop>
-              <input v-model="gerenciarBuscaJogadorRemover" type="text" placeholder="Buscar por nome ou numero..."
+              <input v-model="gerenciarBuscaJogadorRemover" type="text" placeholder="Buscar por nome ou número..."
                 class="input-busca-jogador-gerenciar" @click.stop />
 
               <ul>
@@ -244,9 +244,9 @@
       <div v-if="gerenciarAcaoLocal === 'adicionarMassa'" class="form-group-gerenciar">
         <label>Adicionar jogadores em massa:</label>
         <textarea v-model="gerenciarNomesJogadoresMassa" class="dropdown-gerenciar" rows="4"
-          placeholder="Ex:Tiago 04, Pedro 06, Joao 10"></textarea>
+          placeholder="Ex:Tiago 04, Pedro 06, João 10"></textarea>
         <small style="color:#666">
-          Informe no formato nome, numero, separado por virgula ou quebra de linha
+          Informe no formato nome, número, separado por vírgula ou quebra de linha
         </small>
       </div>
 
@@ -688,13 +688,13 @@ export default {
       }
 
       if (!numeroJogador) {
-        Swal.fire('Atenção', 'Informe um numero valido para o jogador', 'warning');
+        Swal.fire('Atenção', 'Informe um número válido para o jogador', 'warning');
         return;
       }
 
       const conflitoNumero = this.obterJogadorComNumeroNoTime(numeroJogador);
       if (conflitoNumero) {
-        Swal.fire('Atenção', `Ja existe um jogador com o numero ${numeroJogador} neste time`, 'warning');
+        Swal.fire('Atenção', `Já existe um jogador com o número ${numeroJogador} neste time`, 'warning');
         return;
       }
 
@@ -739,10 +739,10 @@ export default {
       if (conflitosNumeroNoTime.length || numerosDuplicadosNaSelecao.size) {
         let mensagem = '';
         if (conflitosNumeroNoTime.length) {
-          mensagem += `Numeros ja usados no time:\n${conflitosNumeroNoTime.join(', ')}`;
+          mensagem += `Números já usados no time:\n${conflitosNumeroNoTime.join(', ')}`;
         }
         if (numerosDuplicadosNaSelecao.size) {
-          mensagem += `${mensagem ? '\n\n' : ''}Numeros repetidos na seleção:\n${Array.from(numerosDuplicadosNaSelecao).join(', ')}`;
+          mensagem += `${mensagem ? '\n\n' : ''}Números repetidos na seleção:\n${Array.from(numerosDuplicadosNaSelecao).join(', ')}`;
         }
         Swal.fire('Atenção', mensagem, 'warning');
         return;
@@ -768,7 +768,7 @@ export default {
         .filter(entrada => entrada.length > 0);
 
       if (entradasDigitadas.length === 0) {
-        Swal.fire('Atenção', 'Informe ao menos um jogador no formato nome numero', 'warning');
+        Swal.fire('Atenção', 'Informe ao menos um jogador no formato nome número', 'warning');
         return;
       }
 
@@ -786,7 +786,7 @@ export default {
       if (invalidas.length > 0) {
         Swal.fire(
           'Atenção',
-          `Formato invalido em ${invalidas.length} item(ns).\nUse: nome numero`,
+          `Formato inválido em ${invalidas.length} item(ns).\nUse: nome número`,
           'warning'
         );
         return;
@@ -821,10 +821,10 @@ export default {
       if (jogadoresParaAdicionar.length === 0) {
         let mensagem = 'Nenhum jogador foi adicionado.';
         if (numerosExistentesNoTime.length > 0) {
-          mensagem += `\n\nNumeros ja usados no time:\n${numerosExistentesNoTime.join(', ')}`;
+          mensagem += `\n\nNúmeros já usados no time:\n${numerosExistentesNoTime.join(', ')}`;
         }
         if (numerosDuplicadosNoLote.size > 0) {
-          mensagem += `\n\nNumeros duplicados no lote:\n${Array.from(numerosDuplicadosNoLote).join(', ')}`;
+          mensagem += `\n\nNúmeros duplicados no lote:\n${Array.from(numerosDuplicadosNoLote).join(', ')}`;
         }
         Swal.fire('Atenção', mensagem, 'warning');
         return;
@@ -842,10 +842,10 @@ export default {
 
       let mensagem = `${jogadoresParaAdicionar.length} jogador(es) adicionados com sucesso!`;
       if (numerosExistentesNoTime.length > 0) {
-        mensagem += `\n\nNumeros ja usados no time:\n${numerosExistentesNoTime.join(', ')}`;
+        mensagem += `\n\nNúmeros já usados no time:\n${numerosExistentesNoTime.join(', ')}`;
       }
       if (numerosDuplicadosNoLote.size > 0) {
-        mensagem += `\n\nNumeros duplicados no lote:\n${Array.from(numerosDuplicadosNoLote).join(', ')}`;
+        mensagem += `\n\nNúmeros duplicados no lote:\n${Array.from(numerosDuplicadosNoLote).join(', ')}`;
       }
       Swal.fire('Sucesso', mensagem, 'success');
     },
@@ -895,7 +895,7 @@ export default {
       }
     },
     async carregarFuncoes() {
-      console.log('Carregando funÃ§Ãµes para modalidadeId:', this.modalidadeSelecionadaId);
+      console.log('Carregando funções para modalidadeId:', this.modalidadeSelecionadaId);
 
       if (!this.modalidadeSelecionadaId) {
         this.funcoes = [];
@@ -955,8 +955,8 @@ export default {
 
       if (String(valorSelecionado) === this.novaFuncaoValue) {
         const { isConfirmed, value } = await Swal.fire({
-          title: 'Nova posicao',
-          text: 'Digite o nome da nova posicao para esta modalidade.',
+          title: 'Nova posição',
+          text: 'Digite o nome da nova posição para esta modalidade.',
           input: 'text',
           inputPlaceholder: 'Ex: Atacante',
           showCancelButton: true,
@@ -985,8 +985,8 @@ export default {
             return;
           }
         } catch (erroCriar) {
-          console.error('Erro ao criar funcao:', erroCriar);
-          await Swal.fire('Erro', erroCriar?.response?.data?.message || 'Nao foi possivel criar a funcao.', 'error');
+          console.error('Erro ao criar função:', erroCriar);
+          await Swal.fire('Erro', erroCriar?.response?.data?.message || 'Não foi possível criar a função.', 'error');
         }
 
         jogador.funcaoId = funcaoAnterior;
@@ -1009,12 +1009,12 @@ export default {
           jogadorLista.funcao = jogadorAtualizado?.funcao || this.funcoes.find(f => Number(f.id) === Number(valorNormalizado)) || null;
         }
       } catch (err) {
-        console.error('Erro ao atualizar funcao:', err);
+        console.error('Erro ao atualizar função:', err);
         const jogadorLista = this.jogadores.find(j => Number(j.id) === Number(jogadorId));
         if (jogadorLista) {
           jogadorLista.funcaoId = this.funcaoAnteriorPorJogador[jogadorId] ?? jogadorLista.funcaoId;
         }
-        await Swal.fire('Erro', err?.response?.data?.message || 'Nao foi possivel atualizar a posicao.', 'error');
+        await Swal.fire('Erro', err?.response?.data?.message || 'Não foi possível atualizar a posição.', 'error');
       } finally {
         this.alterandoFuncaoJogadorId = null;
       }
@@ -1022,7 +1022,7 @@ export default {
     gerenciarImagem(jogador) {
       Swal.fire({
         title: 'Imagem do jogador',
-        text: 'O que vocÃª deseja fazer?',
+        text: 'O que você deseja fazer?',
         icon: 'question',
         showDenyButton: true,
         confirmButtonText: 'Trocar imagem',

@@ -8,9 +8,9 @@
             <h1 class="texto">
               <span class="primeira-linha">Agende sua Quadra</span>
               <span class="primeira-linha">em <span class="destaque_sublinhado">São Vicente</span></span>
-              <span class="segunda-linha destaque">de forma Rapida e Fácil.</span>
+              <span class="segunda-linha destaque">de forma Rápida e Fácil.</span>
             </h1>
-            <p class="hero-subtitle">Com o Quadra Play SV, voce reserva em poucos cliques.</p>
+            <p class="hero-subtitle">Com o Quadra Play SV, você reserva em poucos cliques.</p>
           </div>
 
           <div class="hero-visual" aria-hidden="true">
@@ -53,14 +53,14 @@
 
                         <div class="card-tags">
                           <span class="tag-modalidade" :class="{ 'tag-modalidade-muted': !quadra.endereco }">
-                            {{ quadra.endereco || 'Endereco nao informado' }}
+                            {{ quadra.endereco || 'Endereço não informado' }}
                           </span>
                         </div>
                       </div>
 
                       <button class="btn-agendar" :disabled="quadra.interditada"
                         @click="!quadra.interditada && verificarLogin(quadra)">
-                        {{ quadra.interditada ? 'Indisponivel' : 'Agendar agora' }}
+                        {{ quadra.interditada ? 'Indisponível' : 'Agendar agora' }}
                       </button>
                     </div>
                   </div>
@@ -143,10 +143,10 @@
               v-if="faseAtualEhEliminatoria"
               :partidas="partidas"
               :loading="isLoadingPartidas"
-              loading-title="Carregando confrontos eliminatorios"
+              loading-title="Carregando confrontos eliminatórios"
               loading-description="Buscando confrontos da rodada para montar o mata-mata."
-              empty-title="Nenhum confronto disponivel no momento."
-              empty-subtitle="Assim que as partidas forem criadas, os confrontos aparecerao aqui."
+              empty-title="Nenhum confronto disponível no momento."
+              empty-subtitle="Assim que as partidas forem criadas, os confrontos aparecerão aqui."
               quadra-class="nome-quadra-home"
               empty-align="left"
               @time-click="abrirModalPartidasTime"
@@ -180,7 +180,7 @@
             <ListaPartidas
               :partidas="partidasHomeTop5"
               :loading="isLoadingPartidas"
-              empty-title="Nenhuma partida disponivel no momento."
+              empty-title="Nenhuma partida disponível no momento."
               quadra-class="nome-quadra-home"
               empty-align="left"
               @time-click="abrirModalPartidasTime"
@@ -307,7 +307,7 @@ export default {
 
         return this.nomeFaseSelecionada
           ? `Confrontos da ${this.nomeFaseSelecionada}`
-          : 'Confrontos eliminatorios'
+          : 'Confrontos eliminatórios'
       }
 
       if (this.nomeCampeonato) {
@@ -319,13 +319,13 @@ export default {
     subtituloPainelClassificacao() {
       if (this.faseAtualEhEliminatoria) {
         if (this.nomeFaseSelecionada && this.nomeRodadaSelecionada) {
-          return `Fase ${this.nomeFaseSelecionada}  Rodada ${this.nomeRodadaSelecionada}. Toque em um time para abrir o historico completo de partidas.`
+          return `Fase ${this.nomeFaseSelecionada}  Rodada ${this.nomeRodadaSelecionada}. Toque em um time para abrir o histórico completo de partidas.`
         }
 
-        return 'Toque em um time para abrir o historico completo de partidas.'
+        return 'Toque em um time para abrir o histórico completo de partidas.'
       }
 
-      return 'Toque em um time para abrir o historico completo de partidas.'
+      return 'Toque em um time para abrir o histórico completo de partidas.'
     },
     colunasClassificacaoHome() {
       return ['pontuacao', 'jogos', 'vitorias', 'derrotas']
@@ -753,7 +753,7 @@ export default {
           Swal.fire({
             icon: 'warning',
             title: 'Login expirado',
-            text: 'Nao foi possivel concluir o login com Google. Tente novamente.'
+            text: 'Não foi possível concluir o login com Google. Tente novamente.'
           })
           window.removeEventListener('message', listener)
           if (popup) popup.close()

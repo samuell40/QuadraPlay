@@ -161,7 +161,7 @@ export default {
 
           await Swal.fire({
             icon: 'success',
-            title: 'Cadastro concluido!',
+            title: 'Cadastro concluído!',
             text: 'Entrando automaticamente...',
             timer: 1400,
             showConfirmButton: false,
@@ -183,7 +183,7 @@ export default {
           return;
         }
       } catch (error) {
-        console.error('Erro ao cadastrar usuaáio:', error);
+        console.error('Erro ao cadastrar usuário:', error);
 
         Swal.fire({
           icon: 'error',

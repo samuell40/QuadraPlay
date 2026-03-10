@@ -47,7 +47,7 @@
         </button>
       </div>
 
-      <nav class="menu-itens" aria-label="Navegacao do campeonato">
+      <nav class="menu-itens" aria-label="Navegação do campeonato">
         <router-link
           v-if="!isPermissao4"
           :to="{ name: 'TelaInicial' }"
@@ -113,7 +113,7 @@
                 />
               </svg>
             </span>
-            <span v-if="!isDesktopCollapsed" class="nav-text">Configuracoes</span>
+          <span v-if="!isDesktopCollapsed" class="nav-text">Configurações</span>
           </router-link>
 
           <div class="menu-group" :class="{ active: isPartidasGroupActive, compact: isDesktopCollapsed }">
@@ -157,7 +157,7 @@
               <path d="M6 20V10M12 20V4M18 20v-7" />
             </svg>
           </span>
-          <span v-if="!isDesktopCollapsed" class="nav-text">Classificacao</span>
+          <span v-if="!isDesktopCollapsed" class="nav-text">Classificação</span>
         </router-link>
 
         <router-link
@@ -193,7 +193,7 @@
               />
             </svg>
           </span>
-          <span v-if="!isDesktopCollapsed" class="nav-text">Configuracoes</span>
+          <span v-if="!isDesktopCollapsed" class="nav-text">Configurações</span>
         </router-link>
       </nav>
 
@@ -211,7 +211,7 @@
           </div>
 
           <div v-if="!isDesktopCollapsed" class="user-text">
-            <div class="user-name">{{ usuario?.nome || 'Usuario QuadraPlay' }}</div>
+            <div class="user-name">{{ usuario?.nome || 'Usuário QuadraPlay' }}</div>
             <div class="user-role">{{ usuario?.permissao?.descricao || 'Equipe do campeonato' }}</div>
           </div>
         </button>

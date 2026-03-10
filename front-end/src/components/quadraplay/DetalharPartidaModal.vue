@@ -77,13 +77,13 @@
                       ⚽
                       <span class="estat-valor">{{ valorPositivo(jp.gols) }}</span>
                     </span>
-                    <span v-if="temCartaoAmarelo(jp)" class="estat-item cartao amarelo" title="Cartao amarelo">
+                    <span v-if="temCartaoAmarelo(jp)" class="estat-item cartao amarelo" title="Cartão amarelo">
                       <svg class="estat-icon icon-cartao" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
                         <rect x="4" y="2.5" width="12" height="15" rx="2" ry="2" fill="currentColor" />
                       </svg>
                       <span class="estat-valor">{{ valorPositivo(jp.cartoesAmarelos) }}</span>
                     </span>
-                    <span v-if="temCartaoVermelho(jp)" class="estat-item cartao vermelho" title="Cartao vermelho">
+                    <span v-if="temCartaoVermelho(jp)" class="estat-item cartao vermelho" title="Cartão vermelho">
                       <svg class="estat-icon icon-cartao" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
                         <rect x="4" y="2.5" width="12" height="15" rx="2" ry="2" fill="currentColor" />
                       </svg>
@@ -113,13 +113,13 @@
                       ⚽
                       <span class="estat-valor">{{ valorPositivo(jp.gols) }}</span>
                     </span>
-                    <span v-if="temCartaoAmarelo(jp)" class="estat-item cartao amarelo" title="Cartao amarelo">
+                    <span v-if="temCartaoAmarelo(jp)" class="estat-item cartao amarelo" title="Cartão amarelo">
                       <svg class="estat-icon icon-cartao" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
                         <rect x="4" y="2.5" width="12" height="15" rx="2" ry="2" fill="currentColor" />
                       </svg>
                       <span class="estat-valor">{{ valorPositivo(jp.cartoesAmarelos) }}</span>
                     </span>
-                    <span v-if="temCartaoVermelho(jp)" class="estat-item cartao vermelho" title="Cartao vermelho">
+                    <span v-if="temCartaoVermelho(jp)" class="estat-item cartao vermelho" title="Cartão vermelho">
                       <svg class="estat-icon icon-cartao" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
                         <rect x="4" y="2.5" width="12" height="15" rx="2" ry="2" fill="currentColor" />
                       </svg>
@@ -328,7 +328,7 @@ export default {
         console.error('Erro ao salvar imagem da partida:', error)
         this.abrirSwalCompartilhamento({
           title: 'Erro',
-          text: 'Nao foi possivel gerar a imagem para salvar.',
+          text: 'Não foi possível gerar a imagem para salvar.',
           icon: 'error'
         })
       } finally {
@@ -580,7 +580,7 @@ export default {
       const ctx = canvas.getContext('2d')
 
       if (!ctx) {
-        throw new Error('Nao foi possivel iniciar o canvas de compartilhamento')
+        throw new Error('Não foi possível iniciar o canvas de compartilhamento')
       }
 
       const centroX = largura / 2

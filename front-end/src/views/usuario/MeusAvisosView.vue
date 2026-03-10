@@ -146,7 +146,7 @@ const TAB_META = {
     description: "Priorize comunicados fixados e informações com maior urgência.",
   },
   lidos: {
-    kicker: "HISTORICO",
+    kicker: "HISTÓRICO",
     title: "Avisos visualizados",
     description: "Consulte o histórico de comunicados já conferidos anteriormente.",
   },

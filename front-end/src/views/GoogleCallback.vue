@@ -61,7 +61,7 @@ export default {
     const payload = extrairPayloadDaURL();
 
     if (!payload) {
-      this.mensagem = 'Nao foi possivel concluir o login. Redirecionando...';
+      this.mensagem = 'Não foi possível concluir o login. Redirecionando...';
       setTimeout(() => router.replace({ name: 'Home' }), 1500);
       return;
     }
@@ -83,7 +83,7 @@ export default {
     }
 
     if (payload.erro === 'codigo_google_invalido') {
-      this.mensagem = 'Codigo de autenticacao expirado. Tente novamente.';
+      this.mensagem = 'Código de autenticação expirado. Tente novamente.';
       setTimeout(() => router.replace({ name: 'Home' }), 1500);
       return;
     }
@@ -96,7 +96,7 @@ export default {
       return;
     }
 
-    this.mensagem = 'Nao foi possivel concluir o login com Google. Redirecionando...';
+    this.mensagem = 'Não foi possível concluir o login com Google. Redirecionando...';
     setTimeout(() => router.replace({ name: 'Home' }), 1500);
   }
 };
@@ -107,3 +107,4 @@ export default {
   padding: 16px;
 }
 </style>
+

@@ -77,7 +77,7 @@
                   <path d="M12 7v5l3 2M21 12a9 9 0 1 1-18 0a9 9 0 0 1 18 0z" />
                 </svg>
               </span>
-              <span class="nav-text">Horarios</span>
+              <span class="nav-text">Horários</span>
             </router-link>
           </div>
         </section>
@@ -87,7 +87,7 @@
             open: openCategory === 'admin',
             'is-active': isCategoryActive('admin'),
           }" @click="toggleCategory('admin')" :aria-expanded="String(openCategory === 'admin')">
-            <span>Administracao</span>
+            <span>Administração</span>
             <svg class="category-chevron" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M8 10l4 4 4-4" />
             </svg>
@@ -112,7 +112,7 @@
                     d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M9.5 11a4 4 0 1 0 0-8a4 4 0 0 0 0 8zM20 21v-2a4 4 0 0 0-3-3.87M15.5 3.13a4 4 0 0 1 0 7.75" />
                 </svg>
               </span>
-              <span class="nav-text">Gerenciar Usuarios</span>
+              <span class="nav-text">Gerenciar Usuários</span>
             </router-link>
 
           </div>

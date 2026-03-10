@@ -107,7 +107,7 @@
               v-model.trim="buscaJogadorEvento"
               type="text"
               class="input-busca-evento"
-              placeholder="Buscar por nome ou numero..."
+              placeholder="Buscar por nome ou número..."
             />
           </div>
 
@@ -159,7 +159,7 @@
                 v-model.trim="buscaJogadorSai"
                 type="text"
                 class="input-busca-evento"
-                placeholder="Buscar por nome ou numero..."
+                placeholder="Buscar por nome ou número..."
               />
             </div>
             <div v-for="j in jogadoresEmCampoFiltradosSubstituicao" :key="j.id" class="jogador-card"
@@ -182,7 +182,7 @@
                 v-model.trim="buscaJogadorEntra"
                 type="text"
                 class="input-busca-evento"
-                placeholder="Buscar por nome ou numero..."
+                placeholder="Buscar por nome ou número..."
               />
             </div>
             <div v-for="j in jogadoresBancoFiltradosSubstituicao" :key="j.id" class="jogador-card"
@@ -305,8 +305,8 @@ export default {
   computed: {
     tituloEvento() {
       if (this.tipoEvento === 'gol') return 'Gol'
-      if (this.tipoEvento === 'amarelo') return 'Cartao Amarelo'
-      if (this.tipoEvento === 'vermelho') return 'Cartao Vermelho'
+      if (this.tipoEvento === 'amarelo') return 'Cartão Amarelo'
+      if (this.tipoEvento === 'vermelho') return 'Cartão Vermelho'
       return ''
     },
 
@@ -391,11 +391,11 @@ export default {
     mensagemParcial(campo, delta) {
       const removendo = Number(delta) < 0
       if (campo === 'golspro') return removendo ? 'Removendo gol...' : 'Registrando gol...'
-      if (campo === 'cartaoamarelo') return removendo ? 'Removendo cartao amarelo...' : 'Registrando cartao amarelo...'
-      if (campo === 'cartaovermelho') return removendo ? 'Removendo cartao vermelho...' : 'Registrando cartao vermelho...'
+      if (campo === 'cartaoamarelo') return removendo ? 'Removendo cartão amarelo...' : 'Registrando cartão amarelo...'
+      if (campo === 'cartaovermelho') return removendo ? 'Removendo cartão vermelho...' : 'Registrando cartão vermelho...'
       if (campo === 'faltas') return removendo ? 'Removendo falta...' : 'Registrando falta...'
-      if (campo === 'substituicoes') return removendo ? 'Removendo substituicao...' : 'Registrando substituicao...'
-      return 'Registrando alteracao...'
+      if (campo === 'substituicoes') return removendo ? 'Removendo substituição...' : 'Registrando substituição...'
+      return 'Registrando alteração...'
     },
 
     valorAtualPorCampo(campo) {
@@ -407,7 +407,7 @@ export default {
       return null
     },
 
-    iniciarFeedbackLocal(campo, mensagem = 'Registrando alteracao...') {
+    iniciarFeedbackLocal(campo, mensagem = 'Registrando alteração...') {
       const tipo = this.tipoFeedbackPorCampo(campo)
       if (!tipo) return
 
@@ -443,9 +443,9 @@ export default {
       const removendo = acao !== 'increment'
 
       if (this.tipoEvento === 'gol') return removendo ? 'Removendo gol...' : 'Registrando gol...'
-      if (this.tipoEvento === 'amarelo') return removendo ? 'Removendo cartao amarelo...' : 'Registrando cartao amarelo...'
-      if (this.tipoEvento === 'vermelho') return removendo ? 'Removendo cartao vermelho...' : 'Registrando cartao vermelho...'
-      return 'Registrando alteracao...'
+      if (this.tipoEvento === 'amarelo') return removendo ? 'Removendo cartão amarelo...' : 'Registrando cartão amarelo...'
+      if (this.tipoEvento === 'vermelho') return removendo ? 'Removendo cartão vermelho...' : 'Registrando cartão vermelho...'
+      return 'Registrando alteração...'
     },
     normalizarTexto(valor) {
       return String(valor || '')

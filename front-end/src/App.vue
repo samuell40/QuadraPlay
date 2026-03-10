@@ -175,7 +175,7 @@ export default {
       if (!this.onSocketConnectError) {
         this.onSocketConnectError = (error) => {
           if (SOCKET_DEBUG) {
-            console.error('[socket] erro de conexao:', error?.message || error)
+            console.error('[socket] erro de conexão:', error?.message || error)
           }
         }
       }
@@ -244,7 +244,7 @@ export default {
           }
         } catch (error) {
           if (SOCKET_DEBUG) {
-            console.warn('[notificacao] erro ao fechar notificacao nativa:', error)
+            console.warn('[notificacao] erro ao fechar notificação nativa:', error)
           }
         }
       })
@@ -259,7 +259,7 @@ export default {
       try {
         await Notification.requestPermission()
       } catch (error) {
-        console.warn('Nao foi possivel solicitar permissao de notificacao:', error)
+        console.warn('Não foi possível solicitar permissão de notificação:', error)
       }
     },
 
@@ -351,7 +351,7 @@ export default {
         this.notificacoesNativasPorPartida = mapa
       } catch (error) {
         if (SOCKET_DEBUG) {
-          console.warn('Falha ao mostrar notificacao nativa:', error)
+          console.warn('Falha ao mostrar notificação nativa:', error)
         }
       }
     },
@@ -372,7 +372,7 @@ export default {
       if (!partida.partidaId) return
 
       if (SOCKET_DEBUG) {
-        console.log('[socket] notificacao ao vivo recebida:', partida)
+        console.log('[socket] notificação ao vivo recebida:', partida)
       }
 
       if (this.pushNotificacoesAtivas) return

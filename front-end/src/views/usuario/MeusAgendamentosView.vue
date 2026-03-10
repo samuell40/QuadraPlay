@@ -166,7 +166,7 @@ const TAB_META = {
   confirmados: {
     kicker: "CONFIRMADOS",
     title: "Reservas confirmadas",
-    description: "Visualize os horarios já aprovados e gere o comprovante quando precisar.",
+    description: "Visualize os horários já aprovados e gere o comprovante quando precisar.",
     empty: "Nenhum agendamento futuro confirmado.",
   },
   pendentes: {
@@ -260,7 +260,7 @@ const carregarLogoPdf = () => {
 
 const formatarDuracaoPdf = (duracao) => {
   const numero = Number(duracao);
-  if (!Number.isFinite(numero) || numero <= 0) return "Nao informado";
+  if (!Number.isFinite(numero) || numero <= 0) return "Não informado";
   return `${numero} hora${numero === 1 ? "" : "s"}`;
 };
 
@@ -358,7 +358,7 @@ const marcarLido = async () => {
       timer: 2000,
     });
   } catch (error) {
-    console.warn("Nao foi possivel marcar o aviso como lido", error);
+    console.warn("Não foi possível marcar o aviso como lido", error);
   }
 };
 
@@ -442,8 +442,8 @@ const gerarPdfAgendamento = async (agendamento) => {
   };
 
   const codigoFinal = String(agendamento?.codigoVerificacao || `ID-${agendamento?.id || "N-A"}`);
-  const nomeQuadra = String(agendamento?.quadra || "Nao informado");
-  const tipoReserva = String(agendamento?.tipo || "Nao informado");
+  const nomeQuadra = String(agendamento?.quadra || "Não informado");
+  const tipoReserva = String(agendamento?.tipo || "Não informado");
   const dataReserva = String(agendamento?.dataFormatada || "--/--/----");
   const horaReserva = String(agendamento?.hora || "--:--");
   const duracaoReserva = formatarDuracaoPdf(agendamento?.duracao);
@@ -465,7 +465,7 @@ const gerarPdfAgendamento = async (agendamento) => {
     doc.setTextColor(...cores.muted);
     doc.text(label.toUpperCase(), x + 3, y + 4.1);
 
-    const linhas = doc.splitTextToSize(String(valor || "Nao informado"), w - 6);
+    const linhas = doc.splitTextToSize(String(valor || "Não informado"), w - 6);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
     doc.setTextColor(...cores.text);
@@ -492,7 +492,7 @@ const gerarPdfAgendamento = async (agendamento) => {
   doc.setTextColor(191, 219, 254);
   doc.text("Comprovante de agendamento", tituloX, 13.9);
   doc.text(`Gerado em ${dataGeracaoLabel}`, pageWidth - margemX, 9.3, { align: "right" });
-  doc.text(`Codigo ${codigoFinal}`, pageWidth - margemX, 14, { align: "right" });
+  doc.text(`Código ${codigoFinal}`, pageWidth - margemX, 14, { align: "right" });
 
   const painelX = margemX;
   const painelY = 25;
@@ -546,7 +546,7 @@ const gerarPdfAgendamento = async (agendamento) => {
     x: conteudoX + colW + gap,
     y: painelY + 32,
     w: colW,
-    label: "Horario",
+    label: "Horário",
     valor: horaReserva,
   });
 
@@ -554,7 +554,7 @@ const gerarPdfAgendamento = async (agendamento) => {
     x: conteudoX,
     y: painelY + 49,
     w: colW,
-    label: "Duracao",
+    label: "Duração",
     valor: duracaoReserva,
   });
 
@@ -572,7 +572,7 @@ const gerarPdfAgendamento = async (agendamento) => {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(6.8);
   doc.setTextColor(...cores.primary);
-  doc.text("CODIGO DE VERIFICACAO", painelX + painelW / 2, painelY + 72.4, { align: "center" });
+  doc.text("CÓDIGO DE VERIFICAÇÃO", painelX + painelW / 2, painelY + 72.4, { align: "center" });
   doc.setFontSize(12);
   doc.text(codigoFinal, painelX + painelW / 2, painelY + 79.5, { align: "center" });
 

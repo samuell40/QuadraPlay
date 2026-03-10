@@ -8,7 +8,7 @@
       <div class="conteudo" :class="{ collapsed: sidebarCollapsed }">
         <section class="header-card">
           <div class="header-copy">
-            <span class="section-kicker">Historico</span>
+            <span class="section-kicker">Histórico</span>
             <h1 class="title">Campeonatos passados</h1>
             <p class="subtitle">Consulte campeonatos encerrados por ano.</p>
           </div>
@@ -53,10 +53,10 @@
                 <span class="card-title-tipo">({{ rotuloTipoCampeonato(campeonato.tipo) }})</span>
               </h2>
               <p class="card-meta">
-                {{ campeonato.modalidade?.nome || 'Modalidade nao informada' }}
+                {{ campeonato.modalidade?.nome || 'Modalidade não informada' }}
               </p>
               <p class="card-meta">
-                {{ campeonato.quadra?.nome || 'Quadra nao informada' }}
+                {{ campeonato.quadra?.nome || 'Quadra não informada' }}
               </p>
               <p class="card-periodo">
                 {{ formatarPeriodo(campeonato) }}
@@ -157,7 +157,7 @@ export default {
         })
         this.campeonatos = Array.isArray(data) ? data : []
       } catch (error) {
-        console.error('Erro ao carregar historico de campeonatos:', error)
+        console.error('Erro ao carregar histórico de campeonatos:', error)
         this.campeonatos = []
       } finally {
         this.isLoading = false
@@ -232,7 +232,7 @@ export default {
         return 'Eliminatorias'
       }
 
-      return 'Tipo nao informado'
+      return 'Tipo não informado'
     },
     formatarData(valor) {
       const data = this.parseData(valor)
@@ -259,7 +259,7 @@ export default {
         store.setCampeonato(campeonatoCompleto)
         router.push({ name: 'Detalhar_Campeonatos', query: { id: campeonatoId } })
       } catch (error) {
-        console.error('Erro ao abrir campeonato do historico:', error)
+        console.error('Erro ao abrir campeonato do histórico:', error)
         store.setCampeonato(campeonato)
         router.push({ name: 'Detalhar_Campeonatos', query: { id: campeonatoId } })
       } finally {

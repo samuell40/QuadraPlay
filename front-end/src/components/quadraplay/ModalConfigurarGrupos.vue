@@ -38,9 +38,9 @@
 
           <div class="acoes-grid">
             <button class="acao-card acao-card-primary" :disabled="salvando || !times.length" @click="sortearGrupos">
-              <span class="acao-kicker">Automatico</span>
+              <span class="acao-kicker">Automático</span>
               <strong>Sortear grupos</strong>
-              <small>Distribui os times automaticamente e salva na classificacao na hora.</small>
+              <small>Distribui os times automaticamente e salva na classificação na hora.</small>
             </button>
 
             <button class="acao-card" :disabled="salvando || !times.length" @click="abrirModalDistribuicao">
@@ -321,10 +321,10 @@ export default {
         this.times = Array.isArray(timesResponse.data) ? timesResponse.data : []
         this.aplicarConfiguracao(configuracaoResponse.data?.grupos || null)
       } catch (error) {
-        console.error('Erro ao carregar configuracao de grupos:', error)
+        console.error('Erro ao carregar configuração de grupos:', error)
         this.times = []
         this.aplicarConfiguracao(null)
-        await Swal.fire('Erro', 'Nao foi possivel carregar os grupos do campeonato.', 'error')
+        await Swal.fire('Erro', 'Não foi possível carregar os grupos do campeonato.', 'error')
       } finally {
         this.carregando = false
       }
@@ -551,7 +551,7 @@ export default {
         this.fechar()
       } catch (error) {
         console.error('Erro ao sortear grupos:', error)
-        await Swal.fire('Erro', 'Nao foi possivel sortear os grupos.', 'error')
+        await Swal.fire('Erro', 'Não foi possível sortear os grupos.', 'error')
       } finally {
         this.salvando = false
       }
@@ -559,7 +559,7 @@ export default {
     async removerGrupos() {
       const confirmacao = await Swal.fire({
         title: 'Remover agrupamento?',
-        text: 'A classificacao volta a aparecer em uma tabela unica.',
+        text: 'A classificação volta a aparecer em uma tabela única.',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'Remover',
@@ -584,7 +584,7 @@ export default {
         console.error('Erro ao remover grupos:', error)
         await Swal.fire({
           title: 'Erro',
-          text: 'Nao foi possivel remover os grupos.',
+          text: 'Não foi possível remover os grupos.',
           icon: 'error',
           target: this.obterTargetSwal()
         })
@@ -604,7 +604,7 @@ export default {
         console.error('Erro ao salvar grupos:', error)
         await Swal.fire({
           title: 'Erro',
-          text: 'Nao foi possivel salvar os grupos.',
+          text: 'Não foi possível salvar os grupos.',
           icon: 'error',
           target: this.obterTargetSwal()
         })

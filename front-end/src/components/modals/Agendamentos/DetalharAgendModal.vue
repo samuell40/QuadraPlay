@@ -13,7 +13,7 @@
           <strong>Data:</strong> {{ formatarDataHora(agendamento) }}
         </p>
 
-        <p><strong>Duracao:</strong> {{ agendamento.duracao }} hora(s)</p>
+        <p><strong>Duração:</strong> {{ agendamento.duracao }} hora(s)</p>
 
         <template v-if="ehPartida && confrontoPartida">
           <p>
@@ -79,14 +79,14 @@ export default {
       if (ag?.usuario?.nome) return this.normalizarTextoExibicao(ag.usuario.nome)
       if (typeof ag?.usuario === 'string' && ag.usuario.trim()) return this.normalizarTextoExibicao(ag.usuario)
       if (typeof ag?.usuarioNome === 'string' && ag.usuarioNome.trim()) return this.normalizarTextoExibicao(ag.usuarioNome)
-      return 'Usuario desconhecido'
+      return 'Usuário desconhecido'
     },
 
     obterNomeTime(ag) {
       if (ag?.time?.nome) return this.normalizarTextoExibicao(ag.time.nome)
       if (typeof ag?.time === 'string' && ag.time.trim()) return this.normalizarTextoExibicao(ag.time)
       if (typeof ag?.timeNome === 'string' && ag.timeNome.trim()) return this.normalizarTextoExibicao(ag.timeNome)
-      return 'Nao vinculado'
+      return 'Não vinculado'
     },
 
     ehAgendamentoCampeonato(ag) {

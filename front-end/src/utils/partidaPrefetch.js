@@ -11,7 +11,7 @@ export function salvarPrefetchPartida(payload) {
       })
     )
   } catch (error) {
-    console.warn('Nao foi possivel salvar o prefetch da partida.', error)
+    console.warn('Não foi possível salvar o prefetch da partida.', error)
   }
 }
 

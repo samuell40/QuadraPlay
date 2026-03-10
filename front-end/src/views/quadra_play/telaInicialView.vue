@@ -304,7 +304,7 @@ export default {
         return 'Eliminatorias'
       }
 
-      return 'Tipo nao informado'
+      return 'Tipo não informado'
     },
     abrirModalStatus(campeonato) {
       this.campeonatoSelecionadoStatus = campeonato

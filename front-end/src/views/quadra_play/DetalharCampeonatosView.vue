@@ -80,12 +80,12 @@
           <div>
             <span class="section-kicker">Horarios</span>
             <h2>Agenda base do campeonato</h2>
-            <a>Veja, edite e acrescente novos horarios da competicao na quadra vinculada.</a>
+            <a>Veja, edite e acrescente novos horários da competição na quadra vinculada.</a>
           </div>
         </div>
 
         <div v-if="!formEdicao.quadraId" class="vazio-criterios">
-          Selecione uma quadra no cadastro e salve as informacoes antes de ajustar os horarios.
+          Selecione uma quadra no cadastro e salve as informações antes de ajustar os horários.
         </div>
 
         <template v-else>
@@ -93,7 +93,7 @@
 
           <div class="actions">
             <button class="btn-save" :disabled="salvandoAgenda" @click="salvarAgendaCampeonato">
-              {{ salvandoAgenda ? 'Salvando...' : 'Salvar horarios' }}
+              {{ salvandoAgenda ? 'Salvando...' : 'Salvar horários' }}
             </button>
           </div>
         </template>
@@ -200,7 +200,7 @@
 
         <div v-else class="mesarios-wrapper">
           <a class="descricao-criterios">
-            Selecione os usuarios e mesarios que podem atuar neste campeonato. Usuarios (permissao 3) selecionados serao promovidos para mesario (permissao 4).
+            Selecione os usuários e mesários que podem atuar neste campeonato. Usuários (permissão 3) selecionados serão promovidos para mesário (permissão 4).
           </a>
 
           <div class="campo-busca-mesario">
@@ -213,7 +213,7 @@
           </div>
 
           <div v-if="carregandoMesarios" class="vazio-criterios">
-            Carregando usuarios e mesarios...
+            Carregando usuários e mesários...
           </div>
 
           <div v-else-if="!mesariosDisponiveis.length" class="vazio-criterios">
@@ -250,7 +250,7 @@
 
           <div class="actions">
             <button class="btn-save" :disabled="salvandoMesarios" @click="salvarMesariosCampeonato">
-              {{ salvandoMesarios ? 'Salvando...' : 'Salvar mesarios' }}
+              {{ salvandoMesarios ? 'Salvando...' : 'Salvar mesários' }}
             </button>
           </div>
         </div>
@@ -705,13 +705,13 @@ export default {
       if (!this.campeonato?.id) return
 
       if (!this.formEdicao.quadraId) {
-        await Swal.fire('Atencao', 'Selecione uma quadra antes de salvar os horarios.', 'warning')
+        await Swal.fire('Atenção', 'Selecione uma quadra antes de salvar os horários.', 'warning')
         return
       }
 
       const datasJogos = this.montarDatasJogosAgenda()
       if (!datasJogos.length) {
-        await Swal.fire('Atencao', 'Adicione ao menos um horario para o campeonato.', 'warning')
+        await Swal.fire('Atenção', 'Adicione ao menos um horário para o campeonato.', 'warning')
         return
       }
 
@@ -727,10 +727,10 @@ export default {
         this.aplicarCampeonatoAtualizado(data)
         await Swal.fire('Sucesso', 'Horarios atualizados com sucesso.', 'success')
       } catch (err) {
-        console.error('Erro ao salvar horarios do campeonato:', err)
+        console.error('Erro ao salvar horários do campeonato:', err)
         await Swal.fire(
           'Erro',
-          err?.response?.data?.erro || 'Nao foi possivel salvar os horarios.',
+          err?.response?.data?.erro || 'Não foi possível salvar os horários.',
           'error'
         )
       } finally {
@@ -779,12 +779,12 @@ export default {
     },
     nomeMesarioPorId(idMesario) {
       const mesario = this.mesariosDisponiveis.find(item => Number(item.id) === Number(idMesario))
-      return mesario?.nome || `Mesario #${idMesario}`
+      return mesario?.nome || `Mesário #${idMesario}`
     },
     textoPerfilMesario(usuario) {
       const idUsuario = Number(usuario?.id || 0)
       const selecionado = this.mesariosSelecionados.includes(idUsuario)
-      return selecionado || Number(usuario?.permissaoId) === 4 ? 'Mesario' : 'Usuario'
+      return selecionado || Number(usuario?.permissaoId) === 4 ? 'Mesário' : 'Usuário'
     },
     classePerfilMesario(usuario) {
       const idUsuario = Number(usuario?.id || 0)

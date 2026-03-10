@@ -9,7 +9,7 @@
             <p class="header-kicker">DESEMPENHO</p>
 
             <div class="header-mainline">
-              <h1 class="titulo-principal">Minhas estatisticas</h1>
+              <h1 class="titulo-principal">Minhas estatísticas</h1>
 
               <div v-if="!loading && possuiJogador" class="header-chip">
                 <strong>{{ formatarInteiro(resumo.gols) }}</strong>
@@ -18,21 +18,21 @@
             </div>
 
             <p class="subtitulo">
-              Acompanhe os numeros do jogador vinculado ao seu usuario em partidas finalizadas.
+              Acompanhe os números do jogador vinculado ao seu usuário em partidas finalizadas.
             </p>
           </div>
         </section>
 
         <div v-if="loading" class="loader-card">
           <LoadingState
-            title="Carregando estatisticas"
+            title="Carregando estatísticas"
             description="Buscando partidas finalizadas e consolidando o desempenho do jogador."
           />
         </div>
 
         <template v-else>
           <section v-if="erroCarregamento" class="feedback-card feedback-card-error">
-            <h2>Nao foi possivel carregar as estatisticas</h2>
+            <h2>Não foi possível carregar as estatísticas</h2>
             <p>{{ erroCarregamento }}</p>
             <button type="button" class="btn-tentar" @click="carregarEstatisticas">
               Tentar novamente
@@ -42,7 +42,7 @@
           <section v-else-if="!possuiJogador" class="feedback-card">
             <h2>Nenhum jogador vinculado</h2>
             <p>
-              Esta tela sera exibida automaticamente quando seu usuario estiver vinculado a um jogador.
+              Esta tela será exibida automaticamente quando seu usuário estiver vinculado a um jogador.
             </p>
           </section>
 
@@ -72,7 +72,7 @@
                   type="button"
                   class="btn-compartilhar-estatisticas btn-compartilhar-estatisticas-card"
                   :disabled="compartilhandoImagem"
-                  :aria-label="compartilhandoImagem ? 'Gerando imagem para compartilhar' : 'Compartilhar estatisticas do jogador'"
+                  :aria-label="compartilhandoImagem ? 'Gerando imagem para compartilhar' : 'Compartilhar estatísticas do jogador'"
                   @click="compartilharEstatisticasJogador"
                 >
                   <span class="btn-share-content">
@@ -139,7 +139,7 @@
                   </div>
 
                   <p class="campanha-subtitulo">
-                    {{ campanha.modalidadeNome || "Modalidade nao informada" }}
+                    {{ campanha.modalidadeNome || "Modalidade não informada" }}
                     <span v-if="campanha.timeNome">| {{ campanha.timeNome }}</span>
                   </p>
 
@@ -159,7 +159,7 @@
                       </strong>
                     </div>
                     <div class="campanha-metrica">
-                      <span>Cartoes</span>
+                      <span>Cartões</span>
                       <strong>
                         {{ formatarInteiro(campanha.cartoesAmarelos) }}A / {{ formatarInteiro(campanha.cartoesVermelhos) }}V
                       </strong>
@@ -172,13 +172,13 @@
             <section class="painel">
               <div class="painel-head">
                 <div>
-                  <p class="section-kicker">HISTORICO</p>
-                  <h2 class="section-title">Ultimas partidas</h2>
+                  <p class="section-kicker">HISTÓRICO</p>
+                  <h2 class="section-title">Últimas partidas</h2>
                 </div>
               </div>
 
               <div v-if="ultimasPartidas.length === 0" class="estado-vazio">
-                Nenhuma partida finalizada encontrada para exibicao.
+                Nenhuma partida finalizada encontrada para exibição.
               </div>
 
               <div v-else class="partidas-lista">
@@ -266,7 +266,7 @@ const resumoLinhaJogador = computed(() => {
   const nomesTimes = timesJogador.value
     .map((item) => String(item?.timeNome || "").trim())
     .filter(Boolean);
-  const timeTexto = nomesTimes.length ? nomesTimes.join(", ") : "Time nao vinculado";
+  const timeTexto = nomesTimes.length ? nomesTimes.join(", ") : "Time não vinculado";
   return timeTexto;
 });
 
@@ -296,9 +296,9 @@ function formatarDecimal(valor) {
 }
 
 function formatarData(valor) {
-  if (!valor) return "Data nao informada";
+  if (!valor) return "Data não informada";
   const data = new Date(valor);
-  if (Number.isNaN(data.getTime())) return "Data nao informada";
+  if (Number.isNaN(data.getTime())) return "Data não informada";
 
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
@@ -441,7 +441,7 @@ function desenharListaCanvas(ctx, opcoes = {}) {
   if (!itens.length) {
     ctx.fillStyle = "#94a3b8";
     ctx.font = "600 22px Montserrat, Arial, sans-serif";
-    ctx.fillText("Sem informacoes para exibir.", x + 22, y + 100);
+    ctx.fillText("Sem informações para exibir.", x + 22, y + 100);
     return;
   }
 
@@ -472,7 +472,7 @@ function desenharListaCanvas(ctx, opcoes = {}) {
 async function gerarImagemEstatisticasBlob() {
   const jogadorAtual = jogador.value;
   if (!jogadorAtual) {
-    throw new Error("Jogador nao encontrado para gerar imagem.");
+    throw new Error("Jogador não encontrado para gerar imagem.");
   }
 
   const resumoAtual = resumo.value || resumoBase;
@@ -482,7 +482,7 @@ async function gerarImagemEstatisticasBlob() {
 
   const ctx = canvas.getContext("2d");
   if (!ctx) {
-    throw new Error("Nao foi possivel inicializar o canvas.");
+    throw new Error("Não foi possível inicializar o canvas.");
   }
 
   const [logoMarca, fotoJogador] = await Promise.all([
@@ -581,7 +581,7 @@ async function gerarImagemEstatisticasBlob() {
   const numeroJogadorTexto = jogadorAtual?.numero != null ? formatarInteiro(jogadorAtual.numero) : "-";
   const nomeJogadorTexto = String(jogadorAtual?.nome || "Jogador").trim() || "Jogador";
   const numeroNomeJogador = `${numeroJogadorTexto} ${nomeJogadorTexto}`.trim();
-  const funcaoJogadorTexto = String(jogadorAtual?.funcao?.nome || "Sem funcao definida").trim() || "Sem funcao definida";
+  const funcaoJogadorTexto = String(jogadorAtual?.funcao?.nome || "Sem função definida").trim() || "Sem função definida";
 
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
@@ -698,7 +698,7 @@ async function gerarImagemEstatisticasBlob() {
     canvas.toBlob(
       (arquivo) => {
         if (arquivo) resolve(arquivo);
-        else reject(new Error("Falha ao gerar imagem das estatisticas."));
+        else reject(new Error("Falha ao gerar imagem das estatísticas."));
       },
       "image/jpeg",
       0.92
@@ -715,8 +715,8 @@ async function compartilharEstatisticasJogador() {
     const nomeArquivo = `estatisticas-${sanitizarNomeArquivo(jogador.value?.nome)}.jpg`;
     baixarImagemBlob(blob, nomeArquivo);
   } catch (error) {
-    console.error("Erro ao gerar imagem de estatisticas:", error);
-    Swal.fire("Erro", "Nao foi possivel gerar a imagem das estatisticas.", "error");
+    console.error("Erro ao gerar imagem de estatísticas:", error);
+    Swal.fire("Erro", "Não foi possível gerar a imagem das estatísticas.", "error");
   } finally {
     compartilhandoImagem.value = false;
   }
@@ -736,7 +736,7 @@ function atualizarUsuarioLocalComJogador(jogadorAtual) {
     localStorage.setItem("usuario", JSON.stringify(atualizado));
     authStore.usuario = atualizado;
   } catch (error) {
-    console.error("Erro ao atualizar usuario local com jogador:", error);
+    console.error("Erro ao atualizar usuário local com jogador:", error);
   }
 }
 
@@ -754,7 +754,7 @@ function limparJogadorDoUsuarioLocal() {
     localStorage.setItem("usuario", JSON.stringify(atualizado));
     authStore.usuario = atualizado;
   } catch (error) {
-    console.error("Erro ao limpar jogador do usuario local:", error);
+    console.error("Erro ao limpar jogador do usuário local:", error);
   }
 }
 
@@ -1442,3 +1442,4 @@ onMounted(() => {
   }
 }
 </style>
+

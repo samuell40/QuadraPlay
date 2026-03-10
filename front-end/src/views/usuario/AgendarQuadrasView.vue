@@ -38,7 +38,7 @@
               <span class="resumo-texto">Quadras Disponíveis</span>
             </div>
           </div>
-          <p class="subtitulo">Escolha a quadra ideal e faca sua reserva em poucos passos.</p>
+          <p class="subtitulo">Escolha a quadra ideal e faça sua reserva em poucos passos.</p>
         </div>
       </section>
 
@@ -85,7 +85,7 @@
 
                     <div class="card-tags">
                       <span class="tag-modalidade" :class="{ 'tag-modalidade-muted': !quadra.endereco }">
-                        {{ quadra.endereco || "Endereco nao informado" }}
+                        {{ quadra.endereco || "Endereço não informado" }}
                       </span>
                     </div>
                   </div>
@@ -104,7 +104,7 @@
                       <span>
                         {{
                           quadra.interditada
-                            ? "Indisponivel"
+                            ? "Indisponível"
                             : quadraEmAberturaId === quadra.id
                               ? "Carregando..."
                               : "Agendar agora"
@@ -251,7 +251,7 @@ export default {
         console.error("Erro ao preparar agendamento:", error);
         Swal.fire({
           icon: "error",
-          title: "Nao foi possivel abrir o agendamento",
+          title: "Não foi possível abrir o agendamento",
           text: "Tente novamente em alguns segundos.",
           confirmButtonColor: "#1E3A8A",
         });
@@ -368,7 +368,7 @@ export default {
           text: "Volte para a tela inicial para entrar novamente.",
           icon: "warning",
           showCancelButton: true,
-          confirmButtonText: "Ir para inicio",
+          confirmButtonText: "Ir para início",
           cancelButtonText: "Cancelar",
           confirmButtonColor: "#1E3A8A",
         }).then((result) => {

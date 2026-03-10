@@ -79,7 +79,7 @@
             <div class="painel-card placar-wrapper">
               <div class="section-head">
                 <div>
-                  <span class="section-kicker">{{ faseAtualEhEliminatoria ? 'Eliminatorias' : 'Classificacao' }}</span>
+                  <span class="section-kicker">{{ faseAtualEhEliminatoria ? 'Eliminatórias' : 'Classificação' }}</span>
                   <h2>{{ tituloPainelClassificacao }}</h2>
                   <a>{{ subtituloPainelClassificacao }}</a>
                 </div>
@@ -99,10 +99,10 @@
                 v-else-if="campeonatoAtivo && faseAtualEhEliminatoria"
                 :partidas="partidas"
                 :loading="deveMostrarLoadingPartidas"
-                loading-title="Carregando confrontos eliminatorios"
+                loading-title="Carregando confrontos eliminatórios"
                 loading-description="Buscando confrontos da rodada para montar o mata-mata."
                 empty-title="Nenhum confronto cadastrado nesta rodada."
-                empty-subtitle="Assim que as partidas forem criadas, os confrontos aparecerao aqui."
+                empty-subtitle="Assim que as partidas forem criadas, os confrontos aparecerão aqui."
                 :enable-scroll="temScrollPartidas"
                 quadra-class="nome-quadra-visualizar"
                 empty-align="left"
@@ -125,7 +125,7 @@
 
               <ListaPartidas :partidas="partidas" :loading="deveMostrarLoadingPartidas"
                 loading-title="Carregando partidas da rodada"
-                loading-description="Buscando confrontos, horarios e status da rodada selecionada."
+                loading-description="Buscando confrontos, horários e status da rodada selecionada."
                 empty-title="Nenhuma partida cadastrada ainda"
                 empty-subtitle="Assim que as partidas forem criadas ou iniciadas, elas aparecerão aqui."
                 :enable-scroll="temScrollPartidas" quadra-class="nome-quadra-visualizar" empty-align="left"
@@ -299,7 +299,7 @@ export default {
 
         return this.nomeFaseSelecionada
           ? `Confrontos da ${this.nomeFaseSelecionada}`
-          : 'Confrontos eliminatorios'
+          : 'Confrontos eliminatórios'
       }
 
       return 'Tabela do campeonato'
@@ -308,10 +308,10 @@ export default {
     subtituloPainelClassificacao() {
       if (this.faseAtualEhEliminatoria) {
         if (this.nomeFaseSelecionada && this.nomeRodadaSelecionada) {
-          return `Fase ${this.nomeFaseSelecionada}  Rodada ${this.nomeRodadaSelecionada}. Toque em um time para abrir o historico completo de partidas.`
+          return `Fase ${this.nomeFaseSelecionada}  Rodada ${this.nomeRodadaSelecionada}. Toque em um time para abrir o histórico completo de partidas.`
         }
 
-        return 'Toque em um time para abrir o historico completo de partidas.'
+        return 'Toque em um time para abrir o histórico completo de partidas.'
       }
 
       return 'Toque em um time para abrir o histórico completo de partidas.'
@@ -588,7 +588,7 @@ export default {
           }
         })
       } catch (err) {
-        console.error('Erro ao carregar colunas da classificacao:', err)
+        console.error('Erro ao carregar colunas da classificação:', err)
       }
     },
 

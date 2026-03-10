@@ -1116,7 +1116,7 @@ export default {
       const capitalize = str => str.charAt(0).toUpperCase() + str.slice(1)
 
       const nomesModalidades = agendamentosConfirmados.map(a => {
-        let nome = 'Nao definido'
+        let nome = 'Não definido'
         if (a.modalidade?.nome) nome = a.modalidade.nome
         else if (a.quadra?.modalidades?.length > 0) nome = a.quadra.modalidades[0].nome
         return capitalize(nome)

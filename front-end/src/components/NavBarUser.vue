@@ -33,7 +33,7 @@
     <PerfilUsuarioModal
       v-model="isPerfilModalOpen"
       :usuario="usuario || {}"
-      role-fallback="Sem permissao"
+      role-fallback="Sem permissão"
       @perfil-atualizado="atualizarUsuarioLocal"
       @conta-excluida="aoExcluirConta"
     />
@@ -56,10 +56,10 @@ export default {
   },
   computed: {
     userName() {
-      return this.usuario?.nome || 'Usuario'
+      return this.usuario?.nome || 'Usuário'
     },
     roleLabel() {
-      return String(this.usuario?.permissao?.descricao || 'Sem permissao').toUpperCase()
+      return String(this.usuario?.permissao?.descricao || 'Sem permissão').toUpperCase()
     },
     userInitial() {
       return this.userName.trim().charAt(0).toUpperCase() || 'U'

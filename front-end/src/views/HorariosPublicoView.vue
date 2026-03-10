@@ -7,16 +7,16 @@
       <section class="page-header">
         <div class="header-copy">
           <div class="header-topline">
-            <h1 class="title">Horarios</h1>
+            <h1 class="title">Horários</h1>
           </div>
           <p class="page-subtitle">
-            Consulte a grade semanal das quadras, acompanhe reservas e veja os horarios disponiveis.
+            Consulte a grade semanal das quadras, acompanhe reservas e veja os horários disponíveis.
           </p>
         </div>
       </section>
 
       <div v-if="carregandoInicial" class="loader-container-centralizado">
-        <LoadingState title="Carregando horarios"
+        <LoadingState title="Carregando horários"
           description="Buscando quadras, grade semanal e reservas publicas para montar o painel." />
       </div>
 
@@ -65,14 +65,14 @@
                     </button>
                     <button type="button" class="btn-week" @click="irParaProximaSemana"
                       :disabled="isLoading || !quadraSelecionada">
-                      Proxima semana
+                      Próxima semana
                     </button>
                   </div>
 
                 </div>
               </div>
               <p class="section-subtitle">
-                Horarios livres ficam apenas para consulta. Horarios reservados podem ser abertos para ver o
+                Horários livres ficam apenas para consulta. Horários reservados podem ser abertos para ver o
                 agendamento.
               </p>
             </div>
@@ -80,12 +80,12 @@
 
           <div class="tabela-container">
             <div v-if="isLoading" class="loader-overlay">
-              <LoadingState size="compact" title="Carregando grade de horarios"
+              <LoadingState size="compact" title="Carregando grade de horários"
                 description="Montando a disponibilidade e as reservas da semana selecionada." />
             </div>
 
             <div v-else-if="gradeMontada.length === 0" class="state-card">
-              <p class="state-title">Nenhum dia com horarios configurados para esta quadra.</p>
+              <p class="state-title">Nenhum dia com horários configurados para esta quadra.</p>
               <p class="state-copy">Ajuste a grade da unidade para exibir a semana operacional aqui.</p>
             </div>
 
@@ -185,7 +185,7 @@ export default {
     const tituloControles = computed(() => (podeTrocarQuadra.value ? 'Selecione a Quadra ' : 'Quadra vinculada'))
     const subtituloControles = computed(() => {
       if (podeTrocarQuadra.value) {
-        return 'A grade abaixo reflete a quadra selecionada. Clique em um horario reservado para abrir os detalhes.'
+        return 'A grade abaixo reflete a quadra selecionada. Clique em um horário reservado para abrir os detalhes.'
       }
 
       return 'Esta agenda exibe apenas a unidade vinculada ao seu perfil administrativo.'
@@ -274,7 +274,7 @@ export default {
           const res = await api.get(rotaGrade)
           slotsConfig = res.data
         } catch (e) {
-          console.warn('Grade nÃ£o configurada.')
+          console.warn('Grade não configurada.')
         }
 
         let diasAtivosIndices = []
@@ -334,7 +334,7 @@ export default {
               ocupado: !!agendamentoEncontrado,
               texto: agendamentoEncontrado
                 ? obterTextoAgendamento(agendamentoEncontrado)
-                : 'Disponivel',
+                : 'Disponível',
               dadosAgendamento: agendamentoEncontrado
             }
           })

@@ -15,7 +15,7 @@
             <div v-if="isLoading" class="painel-card aainel-loading">
                 <LoadingState
                     title="Carregando modalidades"
-                    description="Buscando as categorias disponÃ­veis para montar a vitrine de times."
+                    description="Buscando as categorias disponíveis para montar a vitrine de times."
                 />
             </div>
 
@@ -26,7 +26,7 @@
                             <div>
                                 <span class="section-kicker">Modalidades</span>
                                 <h2>Escolha a modalidade</h2>
-                                <a>Troque a visualizaÃ§Ã£o para navegar entre os times cadastrados.</a>
+                                <a>Troque a visualização para navegar entre os times cadastrados.</a>
                             </div>
                         </div>
 
@@ -82,7 +82,7 @@
 
                     <div v-else class="painel-card estado-vazio">
                         <h2>Nenhum time encontrado</h2>
-                        <a>NÃ£o hÃ¡ equipes cadastradas para a modalidade selecionada.</a>
+                        <a>Não há equipes cadastradas para a modalidade selecionada.</a>
                     </div>
                 </div>
             </div>
@@ -91,7 +91,7 @@
                 <div class="modal-conteudo modal-placar">
                     <div class="header-placar">
                         <h2 class="title_placar">
-                            Jogadores â€“ {{ timeSelecionado?.nome }}
+                            Jogadores - {{ timeSelecionado?.nome }}
                         </h2>
                     </div>
 
@@ -99,7 +99,7 @@
                         <LoadingState
                             size="compact"
                             title="Carregando jogadores"
-                            description="Buscando o elenco completo e as funÃ§Ãµes do time selecionado."
+                            description="Buscando o elenco completo e as funções do time selecionado."
                         />
                     </div>
 
@@ -166,7 +166,7 @@ export default {
             const grupos = {}
 
             this.jogadores.forEach(j => {
-                const funcao = j.funcao?.nome || 'Sem funÃ§Ã£o'
+                const funcao = j.funcao?.nome || 'Sem função'
 
                 if (!grupos[funcao]) {
                     grupos[funcao] = []
@@ -915,6 +915,7 @@ a {
     }
 }
 </style>
+
 
 
 

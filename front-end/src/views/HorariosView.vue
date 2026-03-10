@@ -13,10 +13,10 @@
       <section class="page-header">
         <div class="header-copy">
           <div class="header-topline">
-            <h1 class="title">{{ publico ? 'Horarios' : 'Grade Semanal' }}</h1>
+            <h1 class="title">{{ publico ? 'Horários' : 'Grade Semanal' }}</h1>
           </div>
           <p v-if="publico" class="page-subtitle">
-            Consulte a grade semanal das quadras, acompanhe reservas e veja os horarios disponiveis.
+            Consulte a grade semanal das quadras, acompanhe reservas e veja os horários disponíveis.
           </p>
         </div>
       </section>
@@ -67,7 +67,7 @@
                     Semana atual
                   </button>
                   <button type="button" class="btn-week" @click="irParaProximaSemana" :disabled="isLoading || !quadraSelecionada">
-                    Proxima semana
+                    Próxima semana
                   </button>
                 </div>
               <button v-if="!publico" @click="gerarPDF" class="btn-pdf" :disabled="isLoading || !quadraSelecionada" title="Gerar PDF">
@@ -91,7 +91,7 @@
           <div v-if="isLoading" class="loader-overlay">
             <LoadingState
               size="compact"
-              title="Carregando grade de horarios"
+              title="Carregando grade de horários"
               description="Montando a disponibilidade e as reservas da semana selecionada."
             />
           </div>

@@ -62,7 +62,7 @@
                   <strong>{{ equipe.nome }}</strong>
                   <span>{{ equipe.qtdJogadores || 0 }} jogador{{ (equipe.qtdJogadores || 0) === 1 ? '' : 'es' }}</span>
                   <span class="equipe-treinador">
-                    Treinador: {{ equipe.treinador || 'Nao informado' }}
+                    Treinador: {{ equipe.treinador || 'Não informado' }}
                   </span>
                 </div>
               </div>
@@ -217,7 +217,7 @@
 
                       <div class="jogador-info">
                         <strong>{{ jogador.nome }}</strong>
-                        <span>{{ jogador.funcao?.nome || 'Sem funcao' }}</span>
+                        <span>{{ jogador.funcao?.nome || 'Sem função' }}</span>
                       </div>
                     </div>
                   </td>
@@ -433,7 +433,7 @@ export default {
         console.error('Erro ao carregar equipes:', error)
         this.equipes = []
         this.jogadores = []
-        await Swal.fire('Erro', error?.response?.data?.error || 'Nao foi possivel carregar as equipes.', 'error')
+        await Swal.fire('Erro', error?.response?.data?.error || 'Não foi possível carregar as equipes.', 'error')
       } finally {
         this.isLoadingEquipes = false
       }
@@ -456,7 +456,7 @@ export default {
       } catch (error) {
         console.error('Erro ao carregar jogadores da equipe:', error)
         this.jogadores = []
-        await Swal.fire('Erro', error?.response?.data?.error || 'Nao foi possivel carregar os jogadores.', 'error')
+        await Swal.fire('Erro', error?.response?.data?.error || 'Não foi possível carregar os jogadores.', 'error')
       } finally {
         this.isLoadingJogadores = false
       }
@@ -508,7 +508,7 @@ export default {
       } catch (error) {
         console.error('Erro ao adicionar equipe:', error)
         this.mostrarModalAdicionarEquipe = false
-        await Swal.fire('Erro', error?.response?.data?.error || 'Nao foi possivel carregar os times disponiveis.', 'error')
+        await Swal.fire('Erro', error?.response?.data?.error || 'Não foi possível carregar os times disponíveis.', 'error')
       } finally {
         this.isLoadingEquipesDisponiveis = false
       }
@@ -541,11 +541,11 @@ export default {
         if (falhas === 0) {
           await Swal.fire('Sucesso', `${sucesso} time${sucesso === 1 ? '' : 's'} adicionado${sucesso === 1 ? '' : 's'} ao campeonato.`, 'success')
         } else {
-          await Swal.fire('Atenção', `${sucesso} time${sucesso === 1 ? '' : 's'} adicionado${sucesso === 1 ? '' : 's'}. ${falhas} nao puderam ser adicionados.`, 'warning')
+          await Swal.fire('Atenção', `${sucesso} time${sucesso === 1 ? '' : 's'} adicionado${sucesso === 1 ? '' : 's'}. ${falhas} não puderam ser adicionados.`, 'warning')
         }
       } catch (error) {
         console.error('Erro ao confirmar adicao de equipe:', error)
-        await Swal.fire('Erro', error?.response?.data?.error || 'Nao foi possivel adicionar o time.', 'error')
+        await Swal.fire('Erro', error?.response?.data?.error || 'Não foi possível adicionar o time.', 'error')
       } finally {
         this.isAdicionandoEquipe = false
       }
@@ -581,7 +581,7 @@ export default {
         await Swal.fire('Removido', 'Time removido do campeonato com sucesso.', 'success')
       } catch (error) {
         console.error('Erro ao remover equipe:', error)
-        await Swal.fire('Erro', error?.response?.data?.error || 'Nao foi possivel remover o time.', 'error')
+        await Swal.fire('Erro', error?.response?.data?.error || 'Não foi possível remover o time.', 'error')
       } finally {
         this.isRemovendoEquipeId = null
       }
@@ -589,7 +589,7 @@ export default {
     async atualizarSuspensao(jogador, suspenso) {
       const timeId = Number(jogador?.timeId || this.equipeSelecionadaId || this.equipeSelecionada?.id || 0)
       if (!this.campeonatoId || !Number.isInteger(timeId) || timeId <= 0 || !jogador?.id || this.isCampeonatoEncerrado) {
-        await Swal.fire('Erro', 'Nao foi possivel identificar o time deste jogador.', 'error')
+        await Swal.fire('Erro', 'Não foi possível identificar o time deste jogador.', 'error')
         return
       }
 
@@ -637,7 +637,7 @@ export default {
         } else {
           const quantidadeSelecionada = Number(duracaoSelecionada)
           if (!Number.isInteger(quantidadeSelecionada) || quantidadeSelecionada < 1 || quantidadeSelecionada > 10) {
-            await Swal.fire('Atencao', 'Selecione uma duracao valida para suspensao manual.', 'warning')
+            await Swal.fire('Atenção', 'Selecione uma duração válida para suspensão manual.', 'warning')
             return
           }
           tipoDuracao = 'PARTIDAS'
@@ -682,7 +682,7 @@ export default {
         }
       } catch (error) {
         console.error('Erro ao atualizar suspensao do jogador:', error)
-        await Swal.fire('Erro', error?.response?.data?.error || 'Nao foi possivel atualizar a suspensao.', 'error')
+        await Swal.fire('Erro', error?.response?.data?.error || 'Não foi possível atualizar a suspensão.', 'error')
       } finally {
         this.acaoJogadorId = null
       }
@@ -1730,3 +1730,4 @@ export default {
   z-index: 3000 !important;
 }
 </style>
+

@@ -44,7 +44,7 @@
             :class="{ active: showGeradorAgenda }"
             @click="showGeradorAgenda = !showGeradorAgenda"
           >
-            <span>Automatico</span>
+            <span>Automático</span>
           </button>
 
           <button
@@ -62,7 +62,7 @@
         <div class="painel-head">
           <div>
             <p class="tool-kicker">GERADOR</p>
-            <h4 class="tool-title">Montar horarios automaticamente</h4>
+            <h4 class="tool-title">Montar horários automaticamente</h4>
           </div>
         </div>
 
@@ -92,7 +92,7 @@
         <div class="painel-head">
           <div>
             <p class="tool-kicker">REPLICAR</p>
-            <h4 class="tool-title">Copiar horarios para outras datas</h4>
+            <h4 class="tool-title">Copiar horários para outras datas</h4>
           </div>
         </div>
 
@@ -121,7 +121,7 @@
         <div class="editor-head">
           <div>
             <p class="tool-kicker">HORARIOS</p>
-            <h4 class="tool-title">Adicionar horarios manualmente</h4>
+            <h4 class="tool-title">Adicionar horários manualmente</h4>
           </div>
 
           <button type="button" class="btn-remove-date" @click="removerDataAgenda(dataAgendaSelecionada)">
@@ -161,7 +161,7 @@
         </div>
 
         <div v-if="agendaSelecionada.horarios.length > 0" class="resumo-footer">
-          <span>{{ agendaSelecionada.horarios.length }} horarios listados</span>
+          <span>{{ agendaSelecionada.horarios.length }} horários listados</span>
           <button type="button" class="btn-clear" @click="limparHorariosAgenda">Limpar data</button>
         </div>
       </div>
@@ -283,12 +283,12 @@ export default {
     },
     adicionarDataAgenda() {
       if (!this.novaDataAgenda) {
-        Swal.fire('Atencao', 'Selecione uma data.', 'warning')
+        Swal.fire('Atenção', 'Selecione uma data.', 'warning')
         return
       }
 
       if (this.minDate && this.novaDataAgenda < this.minDate) {
-        Swal.fire('Atencao', 'Selecione uma data valida para a agenda.', 'warning')
+        Swal.fire('Atenção', 'Selecione uma data válida para a agenda.', 'warning')
         return
       }
 
@@ -362,7 +362,7 @@ export default {
       const duracao = Number(this.geradorAgenda.duracao)
 
       if (!Number.isFinite(duracao) || duracao <= 0 || inicio >= fim) {
-        Swal.fire('Atencao', 'Preencha um intervalo valido para gerar os horarios.', 'warning')
+        Swal.fire('Atenção', 'Preencha um intervalo válido para gerar os horários.', 'warning')
         return
       }
 

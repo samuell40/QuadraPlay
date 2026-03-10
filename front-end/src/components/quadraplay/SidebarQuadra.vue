@@ -47,7 +47,7 @@
         </button>
       </div>
 
-      <nav class="menu-itens" aria-label="Navegacao principal QuadraPlay">
+      <nav class="menu-itens" aria-label="Navegação principal QuadraPlay">
         <router-link
           :to="{ name: 'TelaInicial' }"
           class="menu-link"
@@ -76,7 +76,7 @@
               <path d="M16 18a4 4 0 0 1 4 4M16 14a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM8 16a4 4 0 0 0-4 4M8 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0 3h8" />
             </svg>
           </span>
-          <span v-if="!isDesktopCollapsed" class="nav-text">Times e Funcoes</span>
+          <span v-if="!isDesktopCollapsed" class="nav-text">Times e Funções</span>
         </router-link>
 
         <router-link
@@ -92,7 +92,7 @@
               <path d="M21 12a9 9 0 1 1-3.22-6.91" />
             </svg>
           </span>
-          <span v-if="!isDesktopCollapsed" class="nav-text">Historico</span>
+          <span v-if="!isDesktopCollapsed" class="nav-text">Histórico</span>
         </router-link>
       </nav>
 
@@ -110,7 +110,7 @@
           </div>
 
           <div v-if="!isDesktopCollapsed" class="user-text">
-            <div class="user-name">{{ usuario?.nome || 'Usuario QuadraPlay' }}</div>
+            <div class="user-name">{{ usuario?.nome || 'Usuário QuadraPlay' }}</div>
             <div class="user-role">{{ usuario?.permissao?.descricao || 'Equipe da quadra' }}</div>
           </div>
         </button>
