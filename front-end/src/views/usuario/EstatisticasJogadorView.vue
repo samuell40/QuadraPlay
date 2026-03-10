@@ -13,14 +13,14 @@
 
         <div v-if="loading" class="loader-card">
           <LoadingState
-            title="Carregando estatÃ­sticas"
+            title="Carregando estatisticas"
             description="Buscando partidas finalizadas e consolidando o desempenho do jogador."
           />
         </div>
 
         <template v-else>
           <section v-if="erroCarregamento" class="feedback-card feedback-card-error">
-            <h2>NÃ£o foi possÃ­vel carregar as estatÃ­sticas</h2>
+            <h2>NÃ£o foi possi­vel carregar as estata­sticas</h2>
             <p>{{ erroCarregamento }}</p>
             <button type="button" class="btn-tentar" @click="carregarEstatisticas">
               Tentar novamente
@@ -30,7 +30,7 @@
           <section v-else-if="!possuiJogador" class="feedback-card">
             <h2>Nenhum jogador vinculado</h2>
             <p>
-              Esta tela serÃ¡ exibida automaticamente quando seu usuÃ¡rio estiver vinculado a um jogador.
+              Esta tela será exibida automaticamente quando seu usúario estiver vinculado a um jogador.
             </p>
           </section>
 
@@ -85,9 +85,6 @@
               </div>
 
               <div class="jogador-meta">
-                <span class="meta-pill">
-                  {{ jogadorVinculadoTexto }}
-                </span>
                 <span class="meta-pill">
                   {{ filtroAnoTexto }}
                 </span>
@@ -246,11 +243,41 @@
                     </span>
                   </div>
 
-                  <p class="partida-times">{{ partida.meuTimeNome }} x {{ partida.adversarioNome }}</p>
                   <p class="partida-campeonato">{{ partida.campeonatoNome }}</p>
 
+                  <div class="partida-placar-linha">
+                    <div class="partida-time-lado partida-time-a">
+                      <img
+                        :src="obterEscudoTime(partida.timeAFoto)"
+                        class="partida-escudo"
+                        :alt="`Escudo ${partida.timeANome || 'Time A'}`"
+                      />
+                      <span class="partida-time-nome">
+                        {{ partida.timeANome || partida.meuTimeNome || "Time A" }}
+                      </span>
+                    </div>
+
+                    <div class="partida-placar-centro">
+                      <strong>{{ formatarInteiro(obterPontosPartida(partida, "A")) }}</strong>
+                      <span>x</span>
+                      <strong>{{ formatarInteiro(obterPontosPartida(partida, "B")) }}</strong>
+                    </div>
+
+                    <div class="partida-time-lado partida-time-b">
+                      <img
+                        :src="obterEscudoTime(partida.timeBFoto)"
+                        class="partida-escudo"
+                        :alt="`Escudo ${partida.timeBNome || 'Time B'}`"
+                      />
+                      <span class="partida-time-nome">
+                        {{ partida.timeBNome || partida.adversarioNome || "Time B" }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <p class="partida-quadra">{{ partida.quadraNome || "Quadra nao informada" }}</p>
+
                   <div class="partida-metricas">
-                    <span>Placar {{ partida.placar }}</span>
                     <span>Gols {{ formatarInteiro(partida.gols) }}</span>
                     <span>{{ formatarInteiro(partida.cartoesAmarelos) }}A / {{ formatarInteiro(partida.cartoesVermelhos) }}V</span>
                   </div>
@@ -272,6 +299,7 @@ import LoadingState from "@/components/loading/LoadingState.vue";
 import api from "@/axios";
 import { useAuthStore } from "@/store";
 import logoQuadraPlay from "@/assets/logo.png";
+import { obterFotoTime } from "@/utils/timeImagem";
 
 const authStore = useAuthStore();
 
@@ -334,14 +362,6 @@ const resumoLinhaJogador = computed(() => {
   }
 
   return `Times/modalidades considerados: ${vinculos.join(" | ")}`;
-});
-
-const jogadorVinculadoTexto = computed(() => {
-  const idJogador = Number(jogador.value?.id);
-  if (Number.isInteger(idJogador) && idJogador > 0) {
-    return `Jogador vinculado: ID ${formatarInteiro(idJogador)}`;
-  }
-  return "Jogador vinculado: nao identificado";
 });
 
 const filtroAnoTexto = computed(() => `Filtro aplicado: partidas finalizadas de ${anoAtual}`);
@@ -435,6 +455,24 @@ function resultadoClasse(resultado) {
   if (resultado === "V") return "resultado-vitoria";
   if (resultado === "D") return "resultado-derrota";
   return "resultado-empate";
+}
+
+function obterEscudoTime(foto) {
+  return obterFotoTime(foto);
+}
+
+function obterPontosPartida(partida = {}, lado = "A") {
+  const chave = lado === "B" ? "pontosTimeB" : "pontosTimeA";
+  const valorDireto = Number(partida?.[chave]);
+  if (Number.isFinite(valorDireto)) return valorDireto;
+
+  const placarTexto = String(partida?.placar || "");
+  const match = placarTexto.match(/(-?\d+)\s*x\s*(-?\d+)/i);
+  if (!match) return 0;
+
+  const pontosA = Number(match[1]) || 0;
+  const pontosB = Number(match[2]) || 0;
+  return lado === "B" ? pontosB : pontosA;
 }
 
 function sanitizarNomeArquivo(valor) {
@@ -795,7 +833,7 @@ async function gerarImagemEstatisticasBlob() {
     `${campanha.campeonatoNome || "Campeonato"} - ${formatarInteiro(campanha.partidas)}j | ${formatarInteiro(campanha.gols)}g | ${formatarInteiro(campanha.aproveitamento)}%`
   );
   const partidasLinhas = ultimasPartidas.value.slice(0, 4).map((partida) =>
-    `${formatarData(partida.data)} - ${partida.meuTimeNome || "Time"} ${partida.placar || "x"} ${partida.adversarioNome || "Adversario"} (${partida.resultadoLabel || "-"})`
+    `${formatarData(partida.data)} - ${partida.timeANome || "Time A"} ${obterPontosPartida(partida, "A")} x ${obterPontosPartida(partida, "B")} ${partida.timeBNome || "Time B"} (${partida.resultadoLabel || "-"})`
   );
 
   desenharListaCanvas(ctx, {
@@ -1497,17 +1535,90 @@ onMounted(() => {
   color: #1d4ed8;
 }
 
-.partida-times {
-  margin: 0;
-  color: #0f172a;
-  font-size: 1rem;
-  font-weight: 700;
-}
-
 .partida-campeonato {
   margin: 0;
   color: #475569;
   font-size: 0.86rem;
+}
+
+.partida-placar-linha {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.partida-time-lado {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.partida-time-a {
+  justify-content: flex-start;
+}
+
+.partida-time-b {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.partida-time-b .partida-escudo {
+  order: 2;
+}
+
+.partida-time-b .partida-time-nome {
+  order: 1;
+}
+
+.partida-escudo {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  object-fit: cover;
+  flex: 0 0 auto;
+}
+
+.partida-time-nome {
+  color: #0f172a;
+  font-size: 0.94rem;
+  font-weight: 800;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.partida-placar-centro {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 82px;
+}
+
+.partida-placar-centro strong {
+  color: #0f172a;
+  font-size: 1.5rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.partida-placar-centro span {
+  color: #475569;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.partida-quadra {
+  margin: 0;
+  text-align: center;
+  color: #2563eb;
+  font-size: 0.84rem;
+  font-weight: 700;
 }
 
 .partida-metricas {
@@ -1597,6 +1708,19 @@ onMounted(() => {
 
   .campanha-grid {
     grid-template-columns: 1fr;
+  }
+
+  .partida-escudo {
+    width: 28px;
+    height: 28px;
+  }
+
+  .partida-time-nome {
+    font-size: 0.86rem;
+  }
+
+  .partida-placar-centro strong {
+    font-size: 1.25rem;
   }
 }
 </style>

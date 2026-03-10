@@ -800,9 +800,14 @@ async function getEstatisticasJogadorVinculado(usuarioId) {
               },
             },
           },
-        },
-      },
-    },
+          quadra: {
+            select: {
+              nome: true,
+            },
+          },
+         },
+       },
+     },
     orderBy: [
       { partidaId: 'desc' },
       { id: 'desc' },
@@ -929,14 +934,24 @@ async function getEstatisticasJogadorVinculado(usuarioId) {
         ? partida?.timeA
         : null;
 
+    const pontosTimeA = Number(partida?.pontosTimeA) || 0;
+    const pontosTimeB = Number(partida?.pontosTimeB) || 0;
+
     ultimasPartidas.push({
       partidaId: Number(partida?.id) || item.partidaId,
       data: partida?.data || null,
       campeonatoId: campanha.campeonatoId,
       campeonatoNome: campanha.campeonatoNome,
+      timeANome: partida?.timeA?.nome || 'Time A',
+      timeAFoto: partida?.timeA?.foto || null,
+      timeBNome: partida?.timeB?.nome || 'Time B',
+      timeBFoto: partida?.timeB?.foto || null,
       meuTimeNome: meuTime?.nome || campanha.timeNome || 'Meu time',
       adversarioNome: adversario?.nome || 'Adversario',
-      placar: `${Number(partida?.pontosTimeA) || 0} x ${Number(partida?.pontosTimeB) || 0}`,
+      placar: `${pontosTimeA} x ${pontosTimeB}`,
+      pontosTimeA,
+      pontosTimeB,
+      quadraNome: partida?.quadra?.nome || null,
       resultado: resultado.codigo,
       resultadoLabel: resultado.label,
       gols: Number(item?.gols) || 0,
