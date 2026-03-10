@@ -1,4 +1,5 @@
 const campeonatoService = require('../services/campeonatos.service');
+const { emitirAtualizacaoCampeonato } = require('../socket');
 
 async function criarCampeonatoController(req, res) {
   try {
@@ -304,6 +305,36 @@ async function finalizarCampeonatoController(req, res) {
   }
 }
 
+async function gerarMataMataPontosCorridosController(req, res) {
+  try {
+    const permissaoId = Number(req.user?.permissaoId);
+    if (![1, 2].includes(permissaoId)) {
+      return res.status(403).json({ error: 'Sem permissao para gerar o mata-mata.' });
+    }
+
+    const campeonatoId = Number(req.params.id);
+    const faseOrigemId = Number(req.body?.faseOrigemId);
+    const usuarioId = Number(req.user?.id);
+
+    const resultado = await campeonatoService.gerarMataMataPontosCorridos(campeonatoId, {
+      faseOrigemId: Number.isInteger(faseOrigemId) && faseOrigemId > 0 ? faseOrigemId : null,
+      usuarioId
+    });
+
+    emitirAtualizacaoCampeonato({
+      tipo: 'PARTIDA_CRIADA',
+      campeonatoId: resultado?.campeonatoId,
+      faseId: resultado?.faseEliminatoriaId,
+      rodadaId: resultado?.rodadaInicialId
+    });
+
+    return res.status(201).json(resultado);
+  } catch (error) {
+    console.error('Erro ao gerar mata-mata de pontos corridos:', error);
+    return res.status(400).json({ error: error.message || 'Erro ao gerar o mata-mata.' });
+  }
+}
+
 async function listarPlacarPorFaseController(req, res) {
   const { campeonatoId } = req.params;
   const { faseId } = req.query;
@@ -404,6 +435,7 @@ module.exports = {
   listarCampeonatoPorIdController,
   atualizarCampeonatoController,
   finalizarCampeonatoController,
+  gerarMataMataPontosCorridosController,
   obterRegrasCampeonatoController,
   atualizarRegrasCampeonatoController,
   listarPlacarPorFaseController,

@@ -180,9 +180,8 @@
             <ListaPartidas
               :partidas="partidasHomeTop5"
               :loading="isLoadingPartidas"
-              empty-title="Nenhuma partida disponível no momento."
+              empty-title="Nenhuma partida disponivel no momento."
               quadra-class="nome-quadra-home"
-              empty-align="left"
               @time-click="abrirModalPartidasTime"
             />
 

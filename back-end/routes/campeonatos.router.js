@@ -28,6 +28,7 @@ router.get('/campeonato/:id', controller.listarCampeonatoPorIdController);
 router.put('/campeonato/:id', controller.atualizarCampeonatoController);
 
 router.patch('/campeonato/:id/finalizar', controller.finalizarCampeonatoController);
+router.post('/campeonato/:id/gerar-mata-mata', [validarJWT], controller.gerarMataMataPontosCorridosController);
 
 router.get('/campeonato/:id/regras', controller.obterRegrasCampeonatoController);
 

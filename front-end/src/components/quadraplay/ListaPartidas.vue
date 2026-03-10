@@ -7,8 +7,12 @@
     />
   </div>
 
-  <div v-else-if="!partidas.length" class="sem-dados-centralizado" :class="{ 'sem-dados-alinhado': emptyAlign === 'left' }">
-    <div>
+  <div
+    v-else-if="!partidas.length"
+    class="sem-dados-centralizado"
+    :class="{ 'sem-dados-alinhado': emptyAlign === 'left', 'sem-dados-card': emptyCard }"
+  >
+    <div :class="{ 'sem-dados-card-box': emptyCard }">
       <p class="empty-title">{{ emptyTitle }}</p>
       <p v-if="emptySubtitle" class="empty-subtitle">{{ emptySubtitle }}</p>
     </div>
@@ -94,7 +98,8 @@ export default {
     emptySubtitle: { type: String, default: '' },
     enableScroll: { type: Boolean, default: false },
     quadraClass: { type: String, default: '' },
-    emptyAlign: { type: String, default: 'center' }
+    emptyAlign: { type: String, default: 'center' },
+    emptyCard: { type: Boolean, default: false }
   },
   emits: ['time-click'],
   data() {
@@ -404,9 +409,28 @@ export default {
   text-align: left;
 }
 
+.sem-dados-centralizado.sem-dados-card {
+  min-height: 0;
+  padding: 16px 0 0;
+}
+
+.sem-dados-card-box {
+  width: 100%;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 46px 20px;
+  text-align: center;
+}
+
 .empty-title {
   margin: 0;
   font-weight: 700;
+}
+
+.sem-dados-card-box .empty-title {
+  color: #6b7280;
+  font-weight: 500;
 }
 
 .empty-subtitle {

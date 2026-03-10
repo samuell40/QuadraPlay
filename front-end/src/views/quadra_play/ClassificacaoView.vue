@@ -36,6 +36,20 @@
             <h2>Fase e rodada</h2>
             <a>Atualize os filtros para trocar a classificação exibida sem sair da mesma tela.</a>
           </div>
+          <div class="section-head-actions">
+            <button
+              v-if="podeGerarMataMata"
+              type="button"
+              class="btn-gerar-mata"
+              :disabled="gerandoMataMata"
+              @click="gerarMataMata"
+            >
+              <span class="btn-inline-content">
+                <span v-if="gerandoMataMata" class="btn-gerar-mata-spinner" aria-hidden="true"></span>
+                <span>{{ gerandoMataMata ? 'Gerando...' : 'Gerar mata-mata' }}</span>
+              </span>
+            </button>
+          </div>
 
         </div>
 
@@ -172,6 +186,7 @@ import TabelaClassificacao from '@/components/quadraplay/TabelaClassificacao.vue
 import ListaPartidas from '@/components/quadraplay/ListaPartidas.vue'
 import LoadingState from '@/components/loading/LoadingState.vue'
 import api from '@/axios'
+import Swal from 'sweetalert2'
 import {
   getColunasClassificacaoPorModalidade,
   resolverColunasVisiveisClassificacao
@@ -220,7 +235,9 @@ export default {
       socketCampeonatoId: null,
       onSocketAtualizacao: null,
       socketTimerPlacar: null,
-      socketTimerPartidas: null
+      socketTimerPartidas: null,
+      usuario: null,
+      gerandoMataMata: false
     }
   },
 
@@ -340,6 +357,25 @@ export default {
       return 'Toque em um time para abrir o historico completo de partidas.'
     },
 
+    tipoCampeonatoNormalizado() {
+      return this.normalizarTexto(this.campeonato?.tipo)
+    },
+
+    isGestorCampeonato() {
+      const permissaoId = Number(this.usuario?.permissaoId)
+      return [1, 2].includes(permissaoId)
+    },
+
+    podeGerarMataMata() {
+      if (!this.campeonato?.id) return false
+      if (!this.isGestorCampeonato) return false
+      if (this.isCampeonatoEncerrado) return false
+      if (this.gerandoMataMata) return false
+      if (this.tipoCampeonatoNormalizado !== 'pontos_corridos_eliminatorias') return false
+      if (this.faseAtualEhEliminatoria) return false
+      return Number(this.faseSelecionada) > 0
+    },
+
     isCampeonatoEncerrado() {
       const status = String(this.campeonato?.status || '').toUpperCase()
       return ['FINALIZADO', 'FINALIZADA', 'CANCELADO', 'CANCELADA', 'DELETADO', 'DELETADA'].includes(status)
@@ -347,6 +383,7 @@ export default {
   },
 
   async mounted() {
+    this.carregarUsuarioLogado()
     this.conectarSocket()
 
     try {
@@ -373,6 +410,14 @@ export default {
   },
 
   methods: {
+    carregarUsuarioLogado() {
+      try {
+        this.usuario = JSON.parse(localStorage.getItem('usuario') || 'null')
+      } catch (error) {
+        this.usuario = null
+      }
+    },
+
     conectarSocket() {
       this.socket = obterSocket()
 
@@ -460,6 +505,68 @@ export default {
     abrirConfiguracoes() {
       if (this.isCampeonatoEncerrado) return
       this.modalConfiguracoes = true
+    },
+
+    async gerarMataMata() {
+      if (!this.podeGerarMataMata || this.gerandoMataMata) return
+
+      const confirmacao = await Swal.fire({
+        title: 'Gerar mata-mata?',
+        text: 'O sistema vai pegar os melhores colocados da fase atual e criar os confrontos da eliminatoria.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Gerar agora',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true
+      })
+
+      if (!confirmacao.isConfirmed) return
+
+      this.gerandoMataMata = true
+
+      try {
+        const faseOrigemId = Number(this.faseSelecionada)
+        const payload = {}
+        if (Number.isInteger(faseOrigemId) && faseOrigemId > 0) {
+          payload.faseOrigemId = faseOrigemId
+        }
+
+        const { data } = await api.post(`/campeonato/${this.campeonato.id}/gerar-mata-mata`, payload)
+
+        await this.carregarFases()
+
+        const faseEliminatoriaId = Number(data?.faseEliminatoriaId)
+        if (faseEliminatoriaId && this.fases.some((fase) => Number(fase.id) === faseEliminatoriaId)) {
+          this.faseSelecionada = faseEliminatoriaId
+          this.atualizarRodadasDaFase()
+
+          const rodadaInicialId = Number(data?.rodadaInicialId)
+          if (rodadaInicialId && this.rodadas.some((rodada) => Number(rodada.id) === rodadaInicialId)) {
+            this.rodadaSelecionada = rodadaInicialId
+          }
+
+          await this.carregarPlacarPorFase()
+          await this.carregarPartidasPorRodada()
+        }
+
+        const quantidadeClassificados = Number(data?.quantidadeClassificados || 0)
+        const quantidadeConfrontos = Array.isArray(data?.partidasGeradas) ? data.partidasGeradas.length : 0
+
+        await Swal.fire(
+          'Sucesso',
+          `Mata-mata gerado com ${quantidadeClassificados} classificados e ${quantidadeConfrontos} confronto(s).`,
+          'success'
+        )
+      } catch (error) {
+        console.error('Erro ao gerar mata-mata:', error)
+        const mensagem = error?.response?.data?.error
+          || error?.response?.data?.erro
+          || error?.response?.data?.message
+          || 'Nao foi possivel gerar o mata-mata.'
+        await Swal.fire('Erro', mensagem, 'error')
+      } finally {
+        this.gerandoMataMata = false
+      }
     },
 
     abrirModalGrupos() {
@@ -995,6 +1102,57 @@ a {
   flex: 1;
 }
 
+.section-head-actions {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.btn-gerar-mata {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid rgba(16, 185, 129, 0.34);
+  border-radius: 14px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  box-shadow: 0 12px 24px rgba(16, 185, 129, 0.25);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.btn-gerar-mata:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 30px rgba(16, 185, 129, 0.3);
+}
+
+.btn-gerar-mata:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-inline-content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-gerar-mata-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #ffffff;
+  animation: spin 0.8s linear infinite;
+}
+
 .section-title-row {
   display: flex;
   align-items: flex-start;
@@ -1404,6 +1562,16 @@ a {
     margin-bottom: 14px;
   }
 
+  .section-head-actions {
+    width: 100%;
+  }
+
+  .btn-gerar-mata {
+    width: 100%;
+    min-height: 40px;
+    border-radius: 12px;
+  }
+
   .grupo-toggle-desktop-only {
     display: none;
   }
@@ -1456,6 +1624,12 @@ a {
   .filtros-card {
     padding: 14px 16px;
     margin-bottom: 16px;
+  }
+
+  .filtros-card .section-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
   }
 
   .filtros-topo {

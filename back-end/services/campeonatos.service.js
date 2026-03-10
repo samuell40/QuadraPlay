@@ -391,6 +391,51 @@ function statusCampeonatoEncerrado(status) {
   return STATUS_CAMPEONATO_ENCERRADO.has(String(status || '').toUpperCase());
 }
 
+function faseEhEliminatoria(nomeFase) {
+  const nomeNormalizado = normalizarTexto(nomeFase);
+  return /(eliminat|mata ?mata|playoff)/.test(nomeNormalizado);
+}
+
+function obterQuantidadeClassificadosMataMata(totalTimes) {
+  const total = Number(totalTimes) || 0;
+  if (total >= 8) return 8;
+  if (total >= 4) return 4;
+  if (total >= 2) return 2;
+  return 0;
+}
+
+function obterNomeRodadaInicialMataMata(quantidadeClassificados) {
+  if (Number(quantidadeClassificados) >= 8) return 'Quartas de Final';
+  if (Number(quantidadeClassificados) >= 4) return 'Semifinal';
+  return 'Final';
+}
+
+function montarConfrontosMataMata(timeIdsOrdenados = []) {
+  const ids = Array.isArray(timeIdsOrdenados)
+    ? timeIdsOrdenados.map(Number).filter((id) => Number.isInteger(id) && id > 0)
+    : [];
+
+  const tamanho = ids.length;
+  if (!tamanho || tamanho % 2 !== 0) return [];
+
+  const confrontos = [];
+  for (let indice = 0; indice < tamanho / 2; indice += 1) {
+    confrontos.push({
+      timeAId: ids[indice],
+      timeBId: ids[tamanho - 1 - indice]
+    });
+  }
+
+  return confrontos;
+}
+
+function obterInicioDoProximoDia(dataBase = new Date()) {
+  const data = new Date(dataBase);
+  data.setHours(0, 0, 0, 0);
+  data.setDate(data.getDate() + 1);
+  return data;
+}
+
 function extrairSuspensoesManuais(regras) {
   const lista = Array.isArray(regras?.suspensoesManuais) ? regras.suspensoesManuais : [];
   const mapa = new Map();
@@ -2190,6 +2235,261 @@ async function finalizarCampeonato(campeonatoId) {
   };
 }
 
+async function gerarMataMataPontosCorridos(campeonatoId, opcoes = {}) {
+  const idCampeonato = Number(campeonatoId);
+  const usuarioId = Number(opcoes?.usuarioId);
+  const faseOrigemIdInformada = Number(opcoes?.faseOrigemId);
+
+  if (!Number.isInteger(idCampeonato) || idCampeonato <= 0) {
+    throw new Error('ID do campeonato invalido.');
+  }
+
+  if (!Number.isInteger(usuarioId) || usuarioId <= 0) {
+    throw new Error('Usuario invalido para gerar o mata-mata.');
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const campeonato = await tx.campeonato.findFirst({
+      where: {
+        id: idCampeonato,
+        ativo: true,
+        deletedAt: null
+      },
+      select: {
+        id: true,
+        nome: true,
+        tipo: true,
+        status: true,
+        modalidadeId: true,
+        quadraId: true,
+        fases: {
+          where: {
+            ativo: true,
+            deletedAt: null
+          },
+          select: {
+            id: true,
+            nome: true,
+            rodadas: {
+              where: { ativo: true },
+              select: {
+                id: true,
+                nome: true
+              },
+              orderBy: { id: 'asc' }
+            }
+          },
+          orderBy: { id: 'asc' }
+        },
+        partidas: {
+          where: {
+            status: { notIn: ['CANCELADA', 'DELETADA'] }
+          },
+          select: {
+            id: true,
+            faseId: true,
+            rodadaId: true,
+            data: true,
+            status: true
+          }
+        },
+        agendamentos: {
+          where: {
+            deletedAt: null,
+            status: 'Confirmado'
+          },
+          select: {
+            datahora: true
+          },
+          orderBy: { datahora: 'asc' }
+        }
+      }
+    });
+
+    if (!campeonato) {
+      throw new Error('Campeonato nao encontrado.');
+    }
+
+    if (statusCampeonatoEncerrado(campeonato.status)) {
+      throw new Error('Nao e possivel gerar o mata-mata em campeonato encerrado.');
+    }
+
+    const tipoCampeonato = String(campeonato.tipo || '').toUpperCase();
+    if (tipoCampeonato !== 'PONTOS_CORRIDOS_ELIMINATORIAS') {
+      throw new Error('Transicao para mata-mata disponivel apenas para pontos corridos + eliminatorias.');
+    }
+
+    const fasesAtivas = Array.isArray(campeonato.fases) ? campeonato.fases : [];
+    const faseEliminatoria = fasesAtivas.find((fase) => faseEhEliminatoria(fase.nome));
+    if (!faseEliminatoria) {
+      throw new Error('Fase de eliminatorias nao encontrada no campeonato.');
+    }
+
+    const faseOrigem = Number.isInteger(faseOrigemIdInformada) && faseOrigemIdInformada > 0
+      ? fasesAtivas.find((fase) => Number(fase.id) === faseOrigemIdInformada)
+      : fasesAtivas.find((fase) => !faseEhEliminatoria(fase.nome));
+
+    if (!faseOrigem) {
+      throw new Error('Fase classificatoria nao encontrada para gerar o mata-mata.');
+    }
+
+    if (Number(faseOrigem.id) === Number(faseEliminatoria.id) || faseEhEliminatoria(faseOrigem.nome)) {
+      throw new Error('Selecione uma fase de liga/classificacao para gerar o mata-mata.');
+    }
+
+    const partidasFaseOrigem = (campeonato.partidas || []).filter(
+      (partida) => Number(partida.faseId) === Number(faseOrigem.id)
+    );
+    if (!partidasFaseOrigem.length) {
+      throw new Error('Nao ha partidas na fase classificatoria para calcular classificados.');
+    }
+
+    const partidasPendentes = partidasFaseOrigem.filter(
+      (partida) => String(partida.status || '').toUpperCase() !== 'FINALIZADA'
+    );
+    if (partidasPendentes.length) {
+      throw new Error('Finalize todas as partidas da fase classificatoria antes de gerar o mata-mata.');
+    }
+
+    const partidasEliminatoriasExistentes = (campeonato.partidas || []).filter(
+      (partida) => Number(partida.faseId) === Number(faseEliminatoria.id)
+    );
+    if (partidasEliminatoriasExistentes.length) {
+      throw new Error('A fase eliminatoria ja possui confrontos cadastrados.');
+    }
+
+    const placaresFaseOrigem = await tx.placar.findMany({
+      where: {
+        campeonatoId: idCampeonato,
+        faseId: Number(faseOrigem.id),
+        visivel: true,
+        deletedAt: null
+      },
+      include: {
+        time: {
+          select: {
+            id: true,
+            nome: true
+          }
+        }
+      },
+      orderBy: [
+        { posicao: 'asc' },
+        { pontuacao: 'desc' },
+        { vitorias: 'desc' },
+        { saldoDeGols: 'desc' },
+        { golsPro: 'desc' },
+        { timeId: 'asc' }
+      ]
+    });
+
+    const placaresOrdenados = placaresFaseOrigem.filter(
+      (placar) => Number.isInteger(Number(placar.timeId)) && Number(placar.timeId) > 0
+    );
+
+    const quantidadeClassificados = obterQuantidadeClassificadosMataMata(placaresOrdenados.length);
+    if (!quantidadeClassificados) {
+      throw new Error('Sao necessarios ao menos 2 times classificados para gerar o mata-mata.');
+    }
+
+    const classificados = placaresOrdenados.slice(0, quantidadeClassificados);
+    const confrontos = montarConfrontosMataMata(classificados.map((item) => Number(item.timeId)));
+    if (!confrontos.length) {
+      throw new Error('Nao foi possivel montar os confrontos da eliminatoria.');
+    }
+
+    const rodadaInicialNome = obterNomeRodadaInicialMataMata(quantidadeClassificados);
+    let rodadaInicial = (faseEliminatoria.rodadas || []).find(
+      (rodada) => normalizarTexto(rodada.nome) === normalizarTexto(rodadaInicialNome)
+    );
+
+    if (!rodadaInicial) {
+      rodadaInicial = await tx.rodada.create({
+        data: {
+          nome: rodadaInicialNome,
+          faseId: Number(faseEliminatoria.id),
+          ativo: true
+        }
+      });
+    }
+
+    const chavesDatasOcupadas = new Set(
+      (campeonato.partidas || [])
+        .map((partida) => obterChaveDataHora(partida?.data))
+        .filter(Boolean)
+    );
+
+    const inicioDoProximoDia = obterInicioDoProximoDia();
+    const mapaSlotsLivres = new Map();
+    for (const agendamento of campeonato.agendamentos || []) {
+      const dataHora = paraDataValida(agendamento?.datahora);
+      if (!dataHora || dataHora < inicioDoProximoDia) continue;
+
+      const chave = obterChaveDataHora(dataHora);
+      if (!chave || chavesDatasOcupadas.has(chave) || mapaSlotsLivres.has(chave)) continue;
+      mapaSlotsLivres.set(chave, dataHora);
+    }
+
+    const slotsDisponiveis = Array.from(mapaSlotsLivres.values())
+      .sort((a, b) => a.getTime() - b.getTime());
+
+    if (slotsDisponiveis.length < confrontos.length) {
+      throw new Error(
+        `Nao ha horarios livres suficientes na agenda do campeonato para gerar ${confrontos.length} confronto(s).`
+      );
+    }
+
+    const partidasGeradas = [];
+    for (let indice = 0; indice < confrontos.length; indice += 1) {
+      const confronto = confrontos[indice];
+      const dataPartida = slotsDisponiveis[indice];
+
+      const partidaCriada = await tx.partida.create({
+        data: {
+          status: 'AGENDADA',
+          data: dataPartida,
+          campeonatoId: idCampeonato,
+          faseId: Number(faseEliminatoria.id),
+          rodadaId: Number(rodadaInicial.id),
+          modalidadeId: Number(campeonato.modalidadeId),
+          quadraId: campeonato.quadraId ? Number(campeonato.quadraId) : null,
+          timeAId: Number(confronto.timeAId),
+          timeBId: Number(confronto.timeBId),
+          usuarioCriadorId: usuarioId
+        },
+        select: {
+          id: true,
+          data: true,
+          status: true,
+          faseId: true,
+          rodadaId: true,
+          timeAId: true,
+          timeBId: true
+        }
+      });
+
+      partidasGeradas.push(partidaCriada);
+    }
+
+    return {
+      campeonatoId: idCampeonato,
+      faseOrigemId: Number(faseOrigem.id),
+      faseOrigemNome: String(faseOrigem.nome || ''),
+      faseEliminatoriaId: Number(faseEliminatoria.id),
+      faseEliminatoriaNome: String(faseEliminatoria.nome || ''),
+      rodadaInicialId: Number(rodadaInicial.id),
+      rodadaInicialNome: String(rodadaInicial.nome || rodadaInicialNome),
+      quantidadeClassificados,
+      classificados: classificados.map((item, indice) => ({
+        posicao: indice + 1,
+        timeId: Number(item.timeId),
+        nomeTime: String(item?.time?.nome || '')
+      })),
+      partidasGeradas
+    };
+  });
+}
+
 async function listarPlacarPorFase(campeonatoId, faseId = null) {
   if (!campeonatoId) throw new Error("campeonatoId é obrigatório");
 
@@ -2392,6 +2692,7 @@ module.exports = {
   getCampeonatoById,
   atualizarDadosCampeonato,
   finalizarCampeonato,
+  gerarMataMataPontosCorridos,
   getRegrasCampeonato,
   atualizarRegrasCampeonato,
   listarPlacarPorFase: listarPlacarPorFaseComUltimosJogos,

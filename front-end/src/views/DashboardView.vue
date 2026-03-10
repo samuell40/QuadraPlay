@@ -544,7 +544,10 @@ export default {
       return this.agendamentosConfirmados.length > 0
     },
     temDadosGraficoTipo() {
-      return this.agendamentosConfirmados.length > 0
+      const tiposValidos = new Set(['AMISTOSO', 'TREINO', 'CAMPEONATO', 'EVENTO', 'OUTRO'])
+      return this.agendamentosConfirmados.some((agendamento) =>
+        tiposValidos.has(String(agendamento?.tipo || '').toUpperCase())
+      )
     },
     temDadosGraficoMes() {
       return this.agendamentosConfirmados.some(a => {
@@ -1009,6 +1012,7 @@ export default {
         this.totalConfirmados = this.agendamentos.filter(a => a.status === 'Confirmado').length
         this.totalCancelados = this.agendamentos.filter(a => a.status === 'Recusado').length
 
+        this.loading = false
         await nextTick()
         this.atualizarGraficosAgendamentos()
       } catch (error) {
@@ -1225,7 +1229,7 @@ export default {
       ]
 
       const quantidade = tipos.map(({ value }) =>
-        agendamentosConfirmados.filter(a => a.tipo === value).length
+        agendamentosConfirmados.filter(a => String(a?.tipo || '').toUpperCase() === value).length
       )
 
       this.agendamentosTipoChart = new Chart(ctx, {
@@ -1250,7 +1254,9 @@ export default {
         'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
       ]
 
-      const mesesAgendamentos = agendamentosConfirmados.map(a => a.mes)
+      const mesesAgendamentos = agendamentosConfirmados
+        .map(a => Number(a?.mes))
+        .filter(mes => Number.isInteger(mes) && mes >= 1 && mes <= 12)
 
       if (mesesAgendamentos.length === 0) {
         this.agendamentosMesChart = new Chart(ctx, {
@@ -1273,7 +1279,7 @@ export default {
       const mesesFiltrados = mesesNomes.slice(mesInicial)
 
       const quantidade = mesesFiltrados.map((_, idx) =>
-        agendamentosConfirmados.filter(a => a.mes === (mesInicial + idx + 1)).length
+        agendamentosConfirmados.filter(a => Number(a?.mes) === (mesInicial + idx + 1)).length
       )
 
       this.agendamentosMesChart = new Chart(ctx, {
@@ -1822,6 +1828,10 @@ export default {
   margin-bottom: 16px;
 }
 
+.section_graficos_top .chart-panel {
+  min-height: 380px;
+}
+
 .section_graficos_bottom {
   position: relative;
 }
@@ -1897,16 +1907,18 @@ export default {
 }
 
 .loader-container-centralizado {
-  position: absolute;
-  inset: 82px 20px 20px;
+  margin-top: 16px;
+  min-height: 220px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 14px;
+  padding: 20px;
+  text-align: center;
   border-radius: 18px;
-  background: rgba(248, 250, 252, 0.88);
-  z-index: 2;
+  border: 1px dashed rgba(148, 163, 184, 0.35);
+  background: #f8fafc;
 }
 
 .loader {
@@ -2151,6 +2163,10 @@ export default {
     grid-template-columns: 1fr;
   }
 
+  .section_graficos_top .chart-panel {
+    min-height: 0;
+  }
+
   .card_avisos_container,
   .chart-panel,
   .modal-content {
@@ -2246,7 +2262,8 @@ export default {
   }
 
   .loader-container-centralizado {
-    inset: 84px 16px 16px;
+    min-height: 180px;
+    padding: 16px;
   }
 
   .loader {
