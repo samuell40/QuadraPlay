@@ -122,7 +122,7 @@
           <input id="fotoCampeonato" type="file" accept=".jpg,.jpeg,.png" @change="handleImagemUpload" />
           <small class="texto-ajuda">
             Recomendado: imagem horizontal (1920 x 600 px).<br>
-            Tamanho minimo: 1280 x 400 px.
+            Tamanho m&iacute;nimo: 1280 x 400 px.
           </small>
         </div>
 
@@ -141,13 +141,14 @@
   <div v-if="mostrarModalTimes" class="modal-overlay" @click.self="voltarParaDados">
     <div class="modal-content modal-times">
       <div class="modal-header">
-        <h2>Selecione os times</h2>
+        <h2>Selecione os times (opcional)</h2>
         <button type="button" class="btn-close-x" :disabled="carregandoTimes || salvandoCadastro" @click="voltarParaDados">x</button>
       </div>
 
       <div class="contador">{{ timesSelecionados.length }} selecionado(s)</div>
+      <p class="times-opcional-dica">Caso n&atilde;o queira selecionar agora, voc&ecirc; poder&aacute; adicionar depois na tela de Gerenciar Equipes.</p>
 
-      <div class="lista-times">
+      <div v-if="times.length" class="lista-times">
         <div
           v-for="time in times"
           :key="time.id"
@@ -165,10 +166,22 @@
           <span>{{ time._count?.jogadores }} jogadores</span>
         </div>
       </div>
+      <div v-else class="estado-times-vazio">
+        <p class="estado-times-vazio-titulo">Nenhum time cadastrado para essa modalidade.</p>
+        <p class="estado-times-vazio-descricao">Voc&ecirc; precisa ir para a tela de Gerenciar Times e adicionar os times por l&aacute;.</p>
+        <button
+          type="button"
+          class="btn-ir-gerenciar-times"
+          :disabled="salvandoCadastro"
+          @click="irParaGerenciarTimes"
+        >
+          Clique aqui para gerenciar times
+        </button>
+      </div>
 
       <div class="botoes botoes-acao-dupla">
         <button type="button" class="btn-cancelar-escolha-tipo" :disabled="carregandoTimes || salvandoCadastro" @click="voltarParaDados">Voltar</button>
-        <button class="btn-save" :disabled="carregandoTimes || salvandoCadastro || timesSelecionados.length < 2" @click="abrirModalAgenda">Continuar</button>
+        <button class="btn-save" :disabled="carregandoTimes || salvandoCadastro" @click="abrirModalAgenda">Continuar</button>
       </div>
     </div>
   </div>
@@ -283,13 +296,13 @@ import { obterFotoTime } from '@/utils/timeImagem'
         },
         {
           value: 'PONTOS_CORRIDOS_ELIMINATORIAS',
-          titulo: 'Pontos Corridos + Eliminatorias',
+          titulo: 'Pontos Corridos + Eliminatórias',
           descricao: 'Primeira fase em liga e depois mata-mata'
         },
         {
           value: 'ELIMINATORIAS',
-          titulo: 'Eliminatorias',
-          descricao: 'Competicao no formato mata-mata'
+          titulo: 'Eliminatórias',
+          descricao: 'Competição no formato mata-mata'
         }
       ]
     },
@@ -440,6 +453,13 @@ import { obterFotoTime } from '@/utils/timeImagem'
       }
     },
 
+    irParaGerenciarTimes() {
+      if (this.salvandoCadastro) return
+      this.limparCampos()
+      this.$emit('fechar')
+      this.$router.push({ name: 'gerenciar_times' })
+    },
+
     voltarParaTimes() {
       if (this.salvandoCadastro) return
       this.mostrarModalAgenda = false
@@ -512,7 +532,7 @@ import { obterFotoTime } from '@/utils/timeImagem'
           toast: true,
           position: 'top-end',
           icon: 'warning',
-          title: 'Horario ja existe',
+          title: 'Horário já existe',
           showConfirmButton: false,
           timer: 1600
         })
@@ -975,10 +995,61 @@ import { obterFotoTime } from '@/utils/timeImagem'
   font-weight: 700;
 }
 
+.times-opcional-dica {
+  margin: -6px 0 16px;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .lista-times {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 14px;
+}
+
+.estado-times-vazio {
+  margin-bottom: 8px;
+  padding: 20px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 16px;
+  background: #f8fafc;
+}
+
+.estado-times-vazio-titulo {
+  margin: 0 0 6px;
+  color: #0f172a;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.estado-times-vazio-descricao {
+  margin: 0 0 14px;
+  color: #475569;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.btn-ir-gerenciar-times {
+  border: 1px solid rgba(59, 130, 246, 0.45);
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: rgba(37, 99, 235, 0.08);
+  color: #1d4ed8;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.btn-ir-gerenciar-times:hover {
+  background: rgba(37, 99, 235, 0.14);
+  border-color: rgba(37, 99, 235, 0.65);
+}
+
+.btn-ir-gerenciar-times:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .time-card {
@@ -1271,3 +1342,4 @@ import { obterFotoTime } from '@/utils/timeImagem'
   }
 }
 </style>
+

@@ -680,6 +680,10 @@ async function getEstatisticasJogadorVinculado(usuarioId) {
     throw new Error('Usuario invalido');
   }
 
+  const anoAtual = new Date().getFullYear();
+  const inicioAnoAtual = new Date(anoAtual, 0, 1, 0, 0, 0, 0);
+  const inicioProximoAno = new Date(anoAtual + 1, 0, 1, 0, 0, 0, 0);
+
   const usuario = await prisma.usuario.findFirst({
     where: {
       id: usuarioIdNum,
@@ -747,6 +751,10 @@ async function getEstatisticasJogadorVinculado(usuarioId) {
       jogadorId,
       partida: {
         status: 'FINALIZADA',
+        data: {
+          gte: inicioAnoAtual,
+          lt: inicioProximoAno,
+        },
       },
     },
     select: {

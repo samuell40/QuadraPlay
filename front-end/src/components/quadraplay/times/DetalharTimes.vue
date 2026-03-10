@@ -1785,6 +1785,13 @@ textarea.dropdown-gerenciar {
 
   .placar-table {
     max-height: 52vh;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .placar-table::-webkit-scrollbar {
+    width: 8px;
+    height: 0;
   }
 
   .btn-cancel-placar {

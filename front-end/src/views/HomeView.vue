@@ -72,7 +72,7 @@
         </div>
       </section>
 
-      <section class="painel-home">
+      <section v-if="temCampeonatoCadastrado" class="painel-home">
         <div class="painel-card filtros-card">
           <div class="section-head">
             <div>
@@ -335,6 +335,10 @@ export default {
     },
     partidasHomeTop5() {
       return Array.isArray(this.partidas) ? this.partidas.slice(0, 5) : []
+    },
+    temCampeonatoCadastrado() {
+      const campeonatoId = Number(this.campeonatoId)
+      return Number.isInteger(campeonatoId) && campeonatoId > 0
     }
   },
 

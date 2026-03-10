@@ -99,7 +99,15 @@
             </div>
           </div>
 
-          <div v-if="listaPendentes.length === 0" class="sem-avisos">
+          <div v-if="loadingAvisos" class="avisos-loading-wrap">
+            <LoadingState
+              size="compact"
+              title="Carregando avisos"
+              description="Buscando comunicados recentes para o mural."
+            />
+          </div>
+
+          <div v-else-if="listaPendentes.length === 0" class="sem-avisos">
             <p class="sem-avisos-title">Nenhum aviso pendente.</p>
             <p class="sem-avisos-copy">Consulte o histórico para revisar as mensagens antigas quando precisar.</p>
           </div>
@@ -192,7 +200,11 @@
             />
           </div>
 
-          <div class="chart-wrapper chart-wrapper-fixed">
+          <div v-else-if="!temDadosGraficoModalidade" class="chart-empty-state">
+            Nenhum dado de agendamentos confirmados para modalidade.
+          </div>
+
+          <div v-else class="chart-wrapper chart-wrapper-fixed">
             <div class="chart-container">
               <canvas id="agendamentosModalidadeChart"></canvas>
             </div>
@@ -212,7 +224,11 @@
             />
           </div>
 
-          <div class="chart-wrapper chart-wrapper-fixed">
+          <div v-else-if="!temDadosGraficoTipo" class="chart-empty-state">
+            Nenhum dado de agendamentos confirmados para tipo.
+          </div>
+
+          <div v-else class="chart-wrapper chart-wrapper-fixed">
             <div class="chart-area-pie">
               <canvas id="agendamentosTipoChart"></canvas>
             </div>
@@ -234,7 +250,11 @@
             />
           </div>
 
-          <div class="chart-wrapper chart-wrapper-fixed">
+          <div v-else-if="!temDadosGraficoMes" class="chart-empty-state">
+            Nenhum dado de agendamentos confirmados para evolução mensal.
+          </div>
+
+          <div v-else class="chart-wrapper chart-wrapper-fixed">
             <div class="chart-container-full">
               <canvas id="agendamentosMesChart"></canvas>
             </div>
@@ -445,6 +465,7 @@ export default {
       listaQuadras: [],
       exibirModalAviso: false,
       exibirModalHistorico: false,
+      loadingAvisos: true,
       loadingHistoricoAvisos: false,
       filtroAno: new Date().getFullYear(),
       filtroOrigem: 'todos',
@@ -514,6 +535,22 @@ export default {
         unicos.push(new Date().getFullYear());
       }
       return unicos.sort((a, b) => b - a);
+    },
+    agendamentosConfirmados() {
+      return (Array.isArray(this.agendamentos) ? this.agendamentos : [])
+        .filter(a => String(a?.status || '').toUpperCase() === 'CONFIRMADO')
+    },
+    temDadosGraficoModalidade() {
+      return this.agendamentosConfirmados.length > 0
+    },
+    temDadosGraficoTipo() {
+      return this.agendamentosConfirmados.length > 0
+    },
+    temDadosGraficoMes() {
+      return this.agendamentosConfirmados.some(a => {
+        const mes = Number(a?.mes)
+        return Number.isInteger(mes) && mes >= 1 && mes <= 12
+      })
     }
   },
   async mounted() {
@@ -887,7 +924,7 @@ export default {
       this.exibirModalHistorico = true;
       this.loadingHistoricoAvisos = true;
       try {
-        await this.carregarAvisos();
+        await this.carregarAvisos({ usarLoadingPrincipal: false });
       } finally {
         this.loadingHistoricoAvisos = false;
       }
@@ -973,9 +1010,7 @@ export default {
         this.totalCancelados = this.agendamentos.filter(a => a.status === 'Recusado').length
 
         await nextTick()
-        this.renderAgendamentosModalidadeChart()
-        this.renderAgendamentosTipoChart()
-        this.renderAgendamentosMesChart()
+        this.atualizarGraficosAgendamentos()
       } catch (error) {
         console.error('Erro ao carregar agendamentos:', error)
       } finally {
@@ -983,7 +1018,31 @@ export default {
       }
     },
 
-    async carregarAvisos() {
+    atualizarGraficosAgendamentos() {
+      if (this.temDadosGraficoModalidade) {
+        this.renderAgendamentosModalidadeChart()
+      } else if (this.agendamentosModalidadeChart) {
+        this.agendamentosModalidadeChart.destroy()
+        this.agendamentosModalidadeChart = null
+      }
+
+      if (this.temDadosGraficoTipo) {
+        this.renderAgendamentosTipoChart()
+      } else if (this.agendamentosTipoChart) {
+        this.agendamentosTipoChart.destroy()
+        this.agendamentosTipoChart = null
+      }
+
+      if (this.temDadosGraficoMes) {
+        this.renderAgendamentosMesChart()
+      } else if (this.agendamentosMesChart) {
+        this.agendamentosMesChart.destroy()
+        this.agendamentosMesChart = null
+      }
+    },
+
+    async carregarAvisos({ usarLoadingPrincipal = true } = {}) {
+      if (usarLoadingPrincipal) this.loadingAvisos = true;
       try {
         const { data } = await api.get('/avisos');
         const avisos = Array.isArray(data) ? data : [];
@@ -1002,6 +1061,8 @@ export default {
 
       } catch (error) {
         console.error('Erro ao carregar avisos', error);
+      } finally {
+        if (usarLoadingPrincipal) this.loadingAvisos = false;
       }
     },
 
@@ -1108,10 +1169,11 @@ export default {
 
     renderAgendamentosModalidadeChart() {
       const canvas = document.getElementById('agendamentosModalidadeChart')
+      if (!canvas) return
       if (this.agendamentosModalidadeChart) this.agendamentosModalidadeChart.destroy()
       const ctx = canvas.getContext('2d')
 
-      const agendamentosConfirmados = this.agendamentos.filter(a => a.status === 'Confirmado')
+      const agendamentosConfirmados = this.agendamentosConfirmados
 
       const capitalize = str => str.charAt(0).toUpperCase() + str.slice(1)
 
@@ -1148,10 +1210,11 @@ export default {
     },
     renderAgendamentosTipoChart() {
       const canvas = document.getElementById('agendamentosTipoChart')
+      if (!canvas) return
       if (this.agendamentosTipoChart) this.agendamentosTipoChart.destroy()
       const ctx = canvas.getContext('2d')
 
-      const agendamentosConfirmados = this.agendamentos.filter(a => a.status === 'Confirmado')
+      const agendamentosConfirmados = this.agendamentosConfirmados
 
       const tipos = [
         { value: 'AMISTOSO', label: 'Amistoso', color: '#152147' },
@@ -1176,10 +1239,11 @@ export default {
     },
     renderAgendamentosMesChart() {
       const canvas = document.getElementById('agendamentosMesChart')
+      if (!canvas) return
       if (this.agendamentosMesChart) this.agendamentosMesChart.destroy()
       const ctx = canvas.getContext('2d')
 
-      const agendamentosConfirmados = this.agendamentos.filter(a => a.status === 'Confirmado')
+      const agendamentosConfirmados = this.agendamentosConfirmados
 
       const mesesNomes = [
         'Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho',
@@ -1673,6 +1737,18 @@ export default {
   background: #f8fafc;
 }
 
+.avisos-loading-wrap {
+  margin-top: 20px;
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  border-radius: 24px;
+  border: 1px dashed rgba(148, 163, 184, 0.35);
+  background: #f8fafc;
+}
+
 .sem-avisos-title {
   margin: 0;
   font-size: 22px;
@@ -1763,6 +1839,23 @@ export default {
 
 .chart-wrapper-fixed {
   margin-top: 16px;
+}
+
+.chart-empty-state {
+  margin-top: 16px;
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+  border-radius: 18px;
+  border: 1px dashed rgba(148, 163, 184, 0.35);
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
 }
 
 .chart-container,
@@ -2139,6 +2232,12 @@ export default {
 
   .chart-container-full {
     height: 270px;
+  }
+
+  .chart-empty-state {
+    min-height: 180px;
+    font-size: 14px;
+    padding: 16px;
   }
 
   .chart-panel-full {
