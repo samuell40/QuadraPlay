@@ -277,8 +277,21 @@
 
                   <p class="partida-quadra">{{ partida.quadraNome || "Quadra nao informada" }}</p>
 
+                  <p
+                    v-if="temDestaquePartida(partida)"
+                    class="partida-destaque"
+                    :class="classeDestaquePartida(partida)"
+                  >
+                    {{ textoDestaquePartida(partida) }}
+                  </p>
+
                   <div class="partida-metricas">
-                    <span>Gols {{ formatarInteiro(partida.gols) }}</span>
+                    <span>
+                      Gols {{ formatarInteiro(partida.gols) }}
+                      <template v-if="textoParticipacaoGols(partida)">
+                        | {{ textoParticipacaoGols(partida) }}
+                      </template>
+                    </span>
                     <span>{{ formatarInteiro(partida.cartoesAmarelos) }}A / {{ formatarInteiro(partida.cartoesVermelhos) }}V</span>
                   </div>
                 </article>
@@ -473,6 +486,62 @@ function obterPontosPartida(partida = {}, lado = "A") {
   const pontosA = Number(match[1]) || 0;
   const pontosB = Number(match[2]) || 0;
   return lado === "B" ? pontosB : pontosA;
+}
+
+function textoParticipacaoGols(partida = {}) {
+  const percentual = Number(partida?.participacaoGols);
+  if (!Number.isFinite(percentual) || percentual <= 0) return "";
+  return `${formatarInteiro(percentual)}% dos gols do time`;
+}
+
+function temDestaquePartida(partida = {}) {
+  return Number.isFinite(Number(partida?.gols));
+}
+
+function textoDestaquePartida(partida = {}) {
+  const gols = Number(partida?.gols) || 0;
+  if (gols <= 0) return "Nao marcou gols nesta partida";
+
+  const marcouTodos = Boolean(partida?.marcouTodosGolsTime);
+  const golsFormatados = formatarInteiro(gols);
+  const sufixoPlural = gols === 1 ? "" : "s";
+
+  if (gols >= 3 && marcouTodos) {
+    return `Hat-trick: ${golsFormatados} gols e 100% dos gols do time`;
+  }
+
+  if (gols >= 3) {
+    return `Hat-trick: ${golsFormatados} gols na partida`;
+  }
+
+  if (marcouTodos) {
+    return `Decisivo: ${golsFormatados} gol${sufixoPlural} e 100% dos gols do time`;
+  }
+
+  if (gols === 2) {
+    return "Destaque ofensivo: 2 gols na partida";
+  }
+
+  return "Marcou na partida";
+}
+
+function classeDestaquePartida(partida = {}) {
+  const gols = Number(partida?.gols) || 0;
+  const marcouTodos = Boolean(partida?.marcouTodosGolsTime);
+
+  if (gols <= 0) {
+    return "partida-destaque-neutro";
+  }
+
+  if (gols >= 3 && marcouTodos) {
+    return "partida-destaque-maximo";
+  }
+
+  if (gols >= 3 || marcouTodos) {
+    return "partida-destaque-alto";
+  }
+
+  return "partida-destaque-base";
 }
 
 function sanitizarNomeArquivo(valor) {
@@ -1619,6 +1688,38 @@ onMounted(() => {
   color: #2563eb;
   font-size: 0.84rem;
   font-weight: 700;
+}
+
+.partida-destaque {
+  margin: 0;
+  align-self: flex-start;
+  border-radius: 999px;
+  min-height: 28px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.partida-destaque-base {
+  color: #1d4ed8;
+  background: rgba(59, 130, 246, 0.16);
+}
+
+.partida-destaque-neutro {
+  color: #475569;
+  background: rgba(148, 163, 184, 0.2);
+}
+
+.partida-destaque-alto {
+  color: #b45309;
+  background: rgba(245, 158, 11, 0.2);
+}
+
+.partida-destaque-maximo {
+  color: #047857;
+  background: rgba(16, 185, 129, 0.2);
 }
 
 .partida-metricas {

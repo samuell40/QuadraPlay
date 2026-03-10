@@ -936,6 +936,21 @@ async function getEstatisticasJogadorVinculado(usuarioId) {
 
     const pontosTimeA = Number(partida?.pontosTimeA) || 0;
     const pontosTimeB = Number(partida?.pontosTimeB) || 0;
+    const meuLado = Number(item?.timeId) === Number(partida?.timeAId)
+      ? 'A'
+      : Number(item?.timeId) === Number(partida?.timeBId)
+        ? 'B'
+        : null;
+    const golsMeuTime = meuLado === 'A'
+      ? pontosTimeA
+      : meuLado === 'B'
+        ? pontosTimeB
+        : 0;
+    const golsJogador = Number(item?.gols) || 0;
+    const participacaoGols = golsMeuTime > 0
+      ? Math.round((golsJogador / golsMeuTime) * 100)
+      : 0;
+    const marcouTodosGolsTime = golsMeuTime > 0 && golsJogador >= golsMeuTime;
 
     ultimasPartidas.push({
       partidaId: Number(partida?.id) || item.partidaId,
@@ -951,10 +966,14 @@ async function getEstatisticasJogadorVinculado(usuarioId) {
       placar: `${pontosTimeA} x ${pontosTimeB}`,
       pontosTimeA,
       pontosTimeB,
+      meuLado,
+      golsMeuTime,
+      participacaoGols,
+      marcouTodosGolsTime,
       quadraNome: partida?.quadra?.nome || null,
       resultado: resultado.codigo,
       resultadoLabel: resultado.label,
-      gols: Number(item?.gols) || 0,
+      gols: golsJogador,
       cartoesAmarelos: Number(item?.cartoesAmarelos) || 0,
       cartoesVermelhos: Number(item?.cartoesVermelhos) || 0,
     });
