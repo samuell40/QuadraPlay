@@ -1,41 +1,26 @@
-<template>
+﻿<template>
   <div class="layout-estatisticas">
     <NavBar />
 
     <main class="conteudo-estatisticas">
       <div class="page-shell">
-        <section class="page-header">
-          <div class="header-copy">
-            <p class="header-kicker">DESEMPENHO</p>
-
-            <div class="header-mainline">
-              <h1 class="titulo-principal">Minhas estatísticas</h1>
-
-              <div v-if="!loading && possuiJogador" class="header-chip">
-                <strong>{{ formatarInteiro(resumo.gols) }}</strong>
-                <span>gols no total</span>
-              </div>
-            </div>
-
-            <p class="subtitulo">
-              Acompanhe os números do jogador vinculado ao seu usuário em partidas finalizadas.
-            </p>
-            <p class="header-contexto">
-              Dados do ano atual ({{ anoAtual }}) em partidas com status FINALIZADA.
-            </p>
-          </div>
+        <section class="page-heading">
+          <h1 class="titulo-principal">Minhas estatisticas</h1>
+          <p class="subtitulo">
+            Acompanhe os numeros do jogador vinculado ao seu usuario em partidas finalizadas.
+          </p>
         </section>
 
         <div v-if="loading" class="loader-card">
           <LoadingState
-            title="Carregando estatísticas"
+            title="Carregando estatÃ­sticas"
             description="Buscando partidas finalizadas e consolidando o desempenho do jogador."
           />
         </div>
 
         <template v-else>
           <section v-if="erroCarregamento" class="feedback-card feedback-card-error">
-            <h2>Não foi possível carregar as estatísticas</h2>
+            <h2>NÃ£o foi possÃ­vel carregar as estatÃ­sticas</h2>
             <p>{{ erroCarregamento }}</p>
             <button type="button" class="btn-tentar" @click="carregarEstatisticas">
               Tentar novamente
@@ -45,12 +30,13 @@
           <section v-else-if="!possuiJogador" class="feedback-card">
             <h2>Nenhum jogador vinculado</h2>
             <p>
-              Esta tela será exibida automaticamente quando seu usuário estiver vinculado a um jogador.
+              Esta tela serÃ¡ exibida automaticamente quando seu usuÃ¡rio estiver vinculado a um jogador.
             </p>
           </section>
 
           <template v-else>
             <section class="jogador-card">
+              <p class="section-kicker">DESEMPENHO</p>
               <div class="jogador-topo">
                 <div class="jogador-identidade">
                   <div class="avatar-wrap">
@@ -75,7 +61,7 @@
                   type="button"
                   class="btn-compartilhar-estatisticas btn-compartilhar-estatisticas-card"
                   :disabled="compartilhandoImagem"
-                  :aria-label="compartilhandoImagem ? 'Gerando imagem para compartilhar' : 'Compartilhar estatísticas do jogador'"
+                  :aria-label="compartilhandoImagem ? 'Gerando imagem para compartilhar' : 'Compartilhar estatÃ­sticas do jogador'"
                   @click="compartilharEstatisticasJogador"
                 >
                   <span class="btn-share-content">
@@ -119,14 +105,15 @@
               >
                 <p class="resumo-label">
                   <span>{{ item.label }}</span>
-                  <span
+                  <button
                     v-if="item.ajuda"
+                    type="button"
                     class="resumo-info"
-                    :title="item.ajuda"
-                    aria-hidden="true"
+                    :aria-label="`Ver explicacao de ${item.label}`"
+                    @click.stop="mostrarExplicacaoMetrica(item)"
                   >
-                    i
-                  </span>
+                    !
+                  </button>
                 </p>
                 <p class="resumo-valor">{{ item.valor }}</p>
               </article>
@@ -233,9 +220,6 @@
                   <p class="section-kicker">HISTORICO</p>
                   <h2 class="section-title">Ultimas partidas</h2>
                 </div>
-                <p v-if="resumoCampanhasOcultoPorCampeonatoUnico" class="painel-nota">
-                  Somente 1 campeonato no ano atual. Resumo por campeonato ocultado para evitar repeticao.
-                </p>
               </div>
 
               <div v-if="ultimasPartidas.length === 0" class="estado-vazio estado-vazio-detalhado">
@@ -317,7 +301,6 @@ const campanhas = computed(() => (Array.isArray(estatisticas.value?.campanhas) ?
 const ultimasPartidas = computed(() => (Array.isArray(estatisticas.value?.ultimasPartidas) ? estatisticas.value.ultimasPartidas : []));
 const timesJogador = computed(() => (Array.isArray(jogador.value?.times) ? jogador.value.times : []));
 const exibirPainelCampanhas = computed(() => campanhas.value.length !== 1);
-const resumoCampanhasOcultoPorCampeonatoUnico = computed(() => campanhas.value.length === 1);
 
 const inicialJogador = computed(() =>
   String(jogador.value?.nome || "J")
@@ -409,6 +392,20 @@ const metricasResumo = computed(() => [
   },
 ]);
 
+function mostrarExplicacaoMetrica(item = {}) {
+  const titulo = String(item?.label || "Metrica").trim() || "Metrica";
+  const explicacao = String(item?.ajuda || "").trim();
+  if (!explicacao) return;
+
+  Swal.fire({
+    icon: "info",
+    title: titulo,
+    text: explicacao,
+    confirmButtonText: "Entendi",
+    confirmButtonColor: "#1d4ed8",
+  });
+}
+
 function formatarInteiro(valor) {
   const numero = Number(valor) || 0;
   return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(numero);
@@ -423,9 +420,9 @@ function formatarDecimal(valor) {
 }
 
 function formatarData(valor) {
-  if (!valor) return "Data não informada";
+  if (!valor) return "Data nÃ£o informada";
   const data = new Date(valor);
-  if (Number.isNaN(data.getTime())) return "Data não informada";
+  if (Number.isNaN(data.getTime())) return "Data nÃ£o informada";
 
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
@@ -568,7 +565,7 @@ function desenharListaCanvas(ctx, opcoes = {}) {
   if (!itens.length) {
     ctx.fillStyle = "#94a3b8";
     ctx.font = "600 22px Montserrat, Arial, sans-serif";
-    ctx.fillText("Sem informações para exibir.", x + 22, y + 100);
+    ctx.fillText("Sem informaÃ§Ãµes para exibir.", x + 22, y + 100);
     return;
   }
 
@@ -599,7 +596,7 @@ function desenharListaCanvas(ctx, opcoes = {}) {
 async function gerarImagemEstatisticasBlob() {
   const jogadorAtual = jogador.value;
   if (!jogadorAtual) {
-    throw new Error("Jogador não encontrado para gerar imagem.");
+    throw new Error("Jogador nÃ£o encontrado para gerar imagem.");
   }
 
   const resumoAtual = resumo.value || resumoBase;
@@ -609,7 +606,7 @@ async function gerarImagemEstatisticasBlob() {
 
   const ctx = canvas.getContext("2d");
   if (!ctx) {
-    throw new Error("Não foi possível inicializar o canvas.");
+    throw new Error("NÃ£o foi possÃ­vel inicializar o canvas.");
   }
 
   const [logoMarca, fotoJogador] = await Promise.all([
@@ -708,7 +705,7 @@ async function gerarImagemEstatisticasBlob() {
   const numeroJogadorTexto = jogadorAtual?.numero != null ? formatarInteiro(jogadorAtual.numero) : "-";
   const nomeJogadorTexto = String(jogadorAtual?.nome || "Jogador").trim() || "Jogador";
   const numeroNomeJogador = `${numeroJogadorTexto} ${nomeJogadorTexto}`.trim();
-  const funcaoJogadorTexto = String(jogadorAtual?.funcao?.nome || "Sem função definida").trim() || "Sem função definida";
+  const funcaoJogadorTexto = String(jogadorAtual?.funcao?.nome || "Sem funÃ§Ã£o definida").trim() || "Sem funÃ§Ã£o definida";
 
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
@@ -825,7 +822,7 @@ async function gerarImagemEstatisticasBlob() {
     canvas.toBlob(
       (arquivo) => {
         if (arquivo) resolve(arquivo);
-        else reject(new Error("Falha ao gerar imagem das estatísticas."));
+        else reject(new Error("Falha ao gerar imagem das estatÃ­sticas."));
       },
       "image/jpeg",
       0.92
@@ -842,8 +839,8 @@ async function compartilharEstatisticasJogador() {
     const nomeArquivo = `estatisticas-${sanitizarNomeArquivo(jogador.value?.nome)}.jpg`;
     baixarImagemBlob(blob, nomeArquivo);
   } catch (error) {
-    console.error("Erro ao gerar imagem de estatísticas:", error);
-    Swal.fire("Erro", "Não foi possível gerar a imagem das estatísticas.", "error");
+    console.error("Erro ao gerar imagem de estatÃ­sticas:", error);
+    Swal.fire("Erro", "NÃ£o foi possÃ­vel gerar a imagem das estatÃ­sticas.", "error");
   } finally {
     compartilhandoImagem.value = false;
   }
@@ -863,7 +860,7 @@ function atualizarUsuarioLocalComJogador(jogadorAtual) {
     localStorage.setItem("usuario", JSON.stringify(atualizado));
     authStore.usuario = atualizado;
   } catch (error) {
-    console.error("Erro ao atualizar usuário local com jogador:", error);
+    console.error("Erro ao atualizar usuÃ¡rio local com jogador:", error);
   }
 }
 
@@ -881,7 +878,7 @@ function limparJogadorDoUsuarioLocal() {
     localStorage.setItem("usuario", JSON.stringify(atualizado));
     authStore.usuario = atualizado;
   } catch (error) {
-    console.error("Erro ao limpar jogador do usuário local:", error);
+    console.error("Erro ao limpar jogador do usuÃ¡rio local:", error);
   }
 }
 
@@ -948,31 +945,10 @@ onMounted(() => {
   gap: 18px;
 }
 
-.page-header {
-  background: rgba(248, 250, 252, 0.82);
-  border: 1px solid rgba(191, 219, 254, 0.6);
-  border-radius: 30px;
-  padding: 26px 28px;
-  display: block;
-}
-
-.header-copy {
-  min-width: 0;
-}
-
-.header-mainline {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-}
-
-.header-kicker {
-  margin: 0 0 8px;
-  color: #2563eb;
-  font-size: 0.9rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
+.page-heading {
+  display: grid;
+  gap: 8px;
+  padding: 2px 2px 0;
 }
 
 .titulo-principal {
@@ -983,39 +959,10 @@ onMounted(() => {
 }
 
 .subtitulo {
-  margin: 10px 0 0;
+  margin: 0;
   color: #475569;
   font-size: 1.04rem;
-  max-width: 760px;
-}
-
-.header-contexto {
-  margin: 10px 0 0;
-  color: #1e3a8a;
-  font-size: 0.92rem;
-  font-weight: 700;
-}
-
-.header-chip {
-  min-width: 180px;
-  padding: 12px 20px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #2563eb, #3b82f6);
-  color: #ffffff;
-  display: grid;
-  text-align: center;
-  box-shadow: 0 16px 32px rgba(37, 99, 235, 0.3);
-}
-
-.header-chip strong {
-  font-size: 1.5rem;
-  line-height: 1;
-}
-
-.header-chip span {
-  font-size: 0.86rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  max-width: 900px;
 }
 
 .loader-card {
@@ -1313,10 +1260,14 @@ onMounted(() => {
 }
 
 .resumo-info {
+  width: 20px;
+  height: 20px;
+  padding: 0;
   min-width: 18px;
   min-height: 18px;
   border-radius: 999px;
   border: 1px solid rgba(37, 99, 235, 0.35);
+  background: #eff6ff;
   color: #1d4ed8;
   display: inline-flex;
   align-items: center;
@@ -1324,7 +1275,16 @@ onMounted(() => {
   font-size: 0.72rem;
   font-weight: 800;
   line-height: 1;
-  cursor: help;
+  cursor: pointer;
+}
+
+.resumo-info:hover {
+  background: #dbeafe;
+}
+
+.resumo-info:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.35);
+  outline-offset: 2px;
 }
 
 .resumo-valor {
@@ -1363,15 +1323,6 @@ onMounted(() => {
   margin: 6px 0 0;
   color: #0f172a;
   font-size: 1.72rem;
-}
-
-.painel-nota {
-  margin: 0;
-  max-width: 420px;
-  color: #475569;
-  font-size: 0.85rem;
-  line-height: 1.35;
-  text-align: right;
 }
 
 .estado-vazio {
@@ -1582,39 +1533,13 @@ onMounted(() => {
     width: calc(100% - 28px);
   }
 
-  .page-header {
-    padding: 18px;
-    border-radius: 24px;
-  }
-
-  .header-mainline {
-    gap: 10px;
-  }
-
-  .header-contexto {
-    font-size: 0.86rem;
+  .page-heading {
+    gap: 6px;
   }
 
   .titulo-principal {
     font-size: clamp(1.8rem, 7vw, 2.4rem);
     line-height: 1.05;
-  }
-
-  .header-chip {
-    min-width: 132px;
-    padding: 8px 14px;
-    box-shadow: none;
-    flex: 0 0 auto;
-  }
-
-  .header-chip strong {
-    font-size: 1.8rem;
-  }
-
-  .header-chip span {
-    font-size: 0.72rem;
-    letter-spacing: 0.06em;
-    white-space: nowrap;
   }
 
   .jogador-card,
@@ -1625,11 +1550,6 @@ onMounted(() => {
 
   .resumo-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .painel-nota {
-    text-align: left;
-    max-width: none;
   }
 
   .jogador-topo {
@@ -1652,28 +1572,9 @@ onMounted(() => {
 }
 
 @media (max-width: 620px) {
-  .header-mainline {
-    gap: 8px;
-  }
-
   .titulo-principal {
     font-size: clamp(1.55rem, 8vw, 2rem);
     line-height: 1.04;
-  }
-
-  .header-chip {
-    min-width: 108px;
-    padding: 6px 10px;
-    border-radius: 20px;
-  }
-
-  .header-chip strong {
-    font-size: 1.45rem;
-  }
-
-  .header-chip span {
-    font-size: 0.64rem;
-    letter-spacing: 0.05em;
   }
 
   .campanhas-lista {
@@ -1699,4 +1600,6 @@ onMounted(() => {
   }
 }
 </style>
+
+
 
