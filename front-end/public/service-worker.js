@@ -11,12 +11,12 @@ self.addEventListener('push', (event) => {
   }
 
   const title = String(payload?.title || 'Atualizacao de partida');
-  const icon = String(payload?.icon || '/ico.png');
+  const icon = String(payload?.icon || '/logo.png');
   const image = String(payload?.image || '').trim();
   const options = {
     body: String(payload?.body || ''),
     icon,
-    badge: String(payload?.badge || '/ico.png'),
+    badge: String(payload?.badge || '/logo.png'),
     image: image || undefined,
     tag: String(payload?.tag || 'partida-live'),
     renotify: Boolean(payload?.renotify),

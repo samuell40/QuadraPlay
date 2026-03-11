@@ -321,7 +321,7 @@ export default {
 
       const tag = `partida-live-${id}`
       const encerrada = Boolean(partida.encerrada)
-      const icon = partida.timeAFoto || partida.timeBFoto || '/ico.png'
+      const icon = partida.timeAFoto || partida.timeBFoto || '/logo.png'
       const image = partida.timeBFoto || partida.timeAFoto || undefined
 
       try {
@@ -333,7 +333,7 @@ export default {
         const notificacao = new Notification(titulo, {
           body,
           icon,
-          badge: '/ico.png',
+          badge: '/logo.png',
           image,
           tag,
           renotify: true,
