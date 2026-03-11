@@ -1022,7 +1022,7 @@ async function getEstatisticasJogadorVinculado(usuarioId) {
       mediaGols: totalPartidas > 0 ? Number((totalGols / totalPartidas).toFixed(2)) : 0,
     },
     campanhas,
-    ultimasPartidas: ultimasPartidas.slice(0, 8),
+    ultimasPartidas: ultimasPartidas.slice(0, 4),
     atualizadoEm: new Date().toISOString(),
   };
 }

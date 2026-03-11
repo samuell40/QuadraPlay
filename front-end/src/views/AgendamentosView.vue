@@ -188,6 +188,7 @@ const loadingCards = ref([])
 const abaAtiva = ref('pendentes')
 
 const ITENS_POR_PAGINA = 10
+const ANO_ATUAL = new Date().getFullYear()
 const podeTrocarQuadra = computed(() => Number(authStore.usuario?.permissaoId) === 1)
 
 const paginasAtuais = ref({
@@ -223,6 +224,16 @@ const obterDataAgendamento = (agendamento) => {
   }
 
   return null
+}
+
+const obterAnoAgendamento = (agendamento) => {
+  const anoDoRegistro = Number(agendamento?.ano)
+  if (Number.isInteger(anoDoRegistro) && anoDoRegistro > 0) {
+    return anoDoRegistro
+  }
+
+  const dataAgendamento = obterDataAgendamento(agendamento)
+  return dataAgendamento ? dataAgendamento.getFullYear() : null
 }
 
 const obterUsuarioIdAgendamento = (agendamento) => {
@@ -280,6 +291,10 @@ const calcularLimiteSemanalAtingido = (agendamento) => {
 
 const agendamentosFiltrados = computed(() => {
   return agendamentos.value.filter((agendamento) => {
+    if (obterAnoAgendamento(agendamento) !== ANO_ATUAL) {
+      return false
+    }
+
     if (quadraId.value && Number(agendamento?.quadra?.id) !== Number(quadraId.value)) {
       return false
     }
