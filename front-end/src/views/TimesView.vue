@@ -7,7 +7,7 @@
                 <div class="header-copy">
                     <h1 class="title">Times</h1>
                     <a class="page-subtitle">
-                        Explore os elencos cadastrados por modalidade e abra cada time para ver os jogadores.
+                        Explore os times cadastrados por modalidade e abra cada time para ver os jogadores.
                     </a>
                 </div>
             </div>
@@ -15,7 +15,7 @@
             <div v-if="isLoading" class="painel-card aainel-loading">
                 <LoadingState
                     title="Carregando modalidades"
-                    description="Buscando as categorias dispon�veis para montar a vitrine de times."
+                    description="Buscando as categorias disponiveis"
                 />
             </div>
 
@@ -82,7 +82,7 @@
 
                     <div v-else class="painel-card estado-vazio">
                         <h2>Nenhum time encontrado</h2>
-                        <a>N�o h� equipes cadastradas para a modalidade selecionada.</a>
+                        <a>Não ha equipes cadastradas para a modalidade selecionada.</a>
                     </div>
                 </div>
             </div>
@@ -99,7 +99,7 @@
                         <LoadingState
                             size="compact"
                             title="Carregando jogadores"
-                            description="Buscando o elenco completo e as fun��es do time selecionado."
+                            description="Buscando o elenco completo e as funçõeses do time selecionado."
                         />
                     </div>
 
