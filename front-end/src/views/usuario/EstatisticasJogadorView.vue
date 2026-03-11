@@ -91,6 +91,9 @@
                 <span class="meta-pill meta-pill-wrap">
                   {{ resumoLinhaJogador }}
                 </span>
+                <span v-if="atualizadoEmTexto" class="meta-pill">
+                  {{ atualizadoEmTexto }}
+                </span>
               </div>
             </section>
 
@@ -130,7 +133,7 @@
               </button>
             </section>
 
-            <section v-if="exibirPainelCampanhas" class="painel">
+            <section class="painel">
               <div class="painel-head">
                 <div>
                   <p class="section-kicker">CAMPANHAS</p>
@@ -286,13 +289,14 @@
                   </p>
 
                   <div class="partida-metricas">
-                    <span>
-                      Gols {{ formatarInteiro(partida.gols) }}
-                      <template v-if="textoParticipacaoGols(partida)">
-                        | {{ textoParticipacaoGols(partida) }}
-                      </template>
+                    <span class="partida-cartao">
+                      <span class="partida-cartao-icone partida-cartao-icone-amarelo" aria-hidden="true"></span>
+                      <span>{{ formatarInteiro(partida.cartoesAmarelos) }}</span>
                     </span>
-                    <span>{{ formatarInteiro(partida.cartoesAmarelos) }}A / {{ formatarInteiro(partida.cartoesVermelhos) }}V</span>
+                    <span class="partida-cartao">
+                      <span class="partida-cartao-icone partida-cartao-icone-vermelho" aria-hidden="true"></span>
+                      <span>{{ formatarInteiro(partida.cartoesVermelhos) }}</span>
+                    </span>
                   </div>
                 </article>
               </div>
@@ -341,7 +345,6 @@ const jogador = computed(() => estatisticas.value?.jogador || null);
 const campanhas = computed(() => (Array.isArray(estatisticas.value?.campanhas) ? estatisticas.value.campanhas : []));
 const ultimasPartidas = computed(() => (Array.isArray(estatisticas.value?.ultimasPartidas) ? estatisticas.value.ultimasPartidas : []));
 const timesJogador = computed(() => (Array.isArray(jogador.value?.times) ? jogador.value.times : []));
-const exibirPainelCampanhas = computed(() => campanhas.value.length !== 1);
 
 const inicialJogador = computed(() =>
   String(jogador.value?.nome || "J")
@@ -378,6 +381,24 @@ const resumoLinhaJogador = computed(() => {
 });
 
 const filtroAnoTexto = computed(() => `Filtro aplicado: partidas finalizadas de ${anoAtual}`);
+
+const atualizadoEmTexto = computed(() => {
+  const valor = estatisticas.value?.atualizadoEm;
+  if (!valor) return "";
+
+  const data = new Date(valor);
+  if (Number.isNaN(data.getTime())) return "";
+
+  const dataHora = new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(data);
+
+  return `Atualizado em: ${dataHora}`;
+});
 
 function obterChaveCampanha(campanha = {}) {
   const campeonatoId = Number(campanha?.campeonatoId);
@@ -488,12 +509,6 @@ function obterPontosPartida(partida = {}, lado = "A") {
   return lado === "B" ? pontosB : pontosA;
 }
 
-function textoParticipacaoGols(partida = {}) {
-  const percentual = Number(partida?.participacaoGols);
-  if (!Number.isFinite(percentual) || percentual <= 0) return "";
-  return `${formatarInteiro(percentual)}% dos gols do time`;
-}
-
 function temDestaquePartida(partida = {}) {
   return Number.isFinite(Number(partida?.gols));
 }
@@ -507,11 +522,11 @@ function textoDestaquePartida(partida = {}) {
   const sufixoPlural = gols === 1 ? "" : "s";
 
   if (gols >= 3 && marcouTodos) {
-    return `Hat-trick: ${golsFormatados} gols e 100% dos gols do time`;
+    return `Carta da manga: ${golsFormatados} gols e 100% dos gols do time`;
   }
 
   if (gols >= 3) {
-    return `Hat-trick: ${golsFormatados} gols na partida`;
+    return `Carta da manga: ${golsFormatados} gols na partida`;
   }
 
   if (marcouTodos) {
@@ -1725,9 +1740,35 @@ onMounted(() => {
 .partida-metricas {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
   color: #334155;
   font-size: 0.82rem;
+}
+
+.partida-cartao {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.partida-cartao-icone {
+  width: 11px;
+  height: 16px;
+  border-radius: 2px;
+  border: 1px solid transparent;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.18);
+}
+
+.partida-cartao-icone-amarelo {
+  background: linear-gradient(180deg, #fef08a 0%, #facc15 100%);
+  border-color: #ca8a04;
+}
+
+.partida-cartao-icone-vermelho {
+  background: linear-gradient(180deg, #fca5a5 0%, #ef4444 100%);
+  border-color: #b91c1c;
 }
 
 @keyframes shareSpin {
