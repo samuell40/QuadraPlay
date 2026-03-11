@@ -136,7 +136,7 @@
             <section class="painel">
               <div class="painel-head">
                 <div>
-                  <p class="section-kicker">CAMPANHAS</p>
+                  <p class="section-kicker">CAMPEONATO</p>
                   <h2 class="section-title">Resumo por campeonato</h2>
                 </div>
               </div>
@@ -184,31 +184,6 @@
                       <span>Aproveitamento</span>
                       <strong>{{ formatarInteiro(campanha.aproveitamento) }}%</strong>
                     </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    class="btn-campanha-detalhe"
-                    @click="alternarDetalhesCampanha(obterChaveCampanha(campanha))"
-                  >
-                    {{ campanhaDetalhesVisivel(obterChaveCampanha(campanha)) ? "Ocultar detalhes" : "Ver detalhes" }}
-                  </button>
-
-                  <div
-                    v-if="campanhaDetalhesVisivel(obterChaveCampanha(campanha))"
-                    class="campanha-detalhes"
-                  >
-                    <span>
-                      V/E/D:
-                      {{ formatarInteiro(campanha.vitorias) }}/{{ formatarInteiro(campanha.empates) }}/{{ formatarInteiro(campanha.derrotas) }}
-                    </span>
-                    <span>
-                      Cartoes:
-                      {{ formatarInteiro(campanha.cartoesAmarelos) }}A / {{ formatarInteiro(campanha.cartoesVermelhos) }}V
-                    </span>
-                    <span v-if="campanha.statusCampeonato">
-                      Status: {{ campanha.statusCampeonato }}
-                    </span>
                   </div>
                 </article>
               </div>
@@ -325,7 +300,6 @@ const erroCarregamento = ref("");
 const possuiJogador = ref(true);
 const estatisticas = ref(null);
 const compartilhandoImagem = ref(false);
-const campanhasExpandidas = ref([]);
 const anoAtual = new Date().getFullYear();
 
 const resumoBase = {
@@ -399,30 +373,6 @@ const atualizadoEmTexto = computed(() => {
 
   return `Atualizado em: ${dataHora}`;
 });
-
-function obterChaveCampanha(campanha = {}) {
-  const campeonatoId = Number(campanha?.campeonatoId);
-  if (Number.isInteger(campeonatoId) && campeonatoId > 0) {
-    return `campeonato-${campeonatoId}`;
-  }
-  return `campanha-${String(campanha?.campeonatoNome || "avulso")}`;
-}
-
-function campanhaDetalhesVisivel(chave) {
-  return campanhasExpandidas.value.includes(String(chave || ""));
-}
-
-function alternarDetalhesCampanha(chave) {
-  const chaveNormalizada = String(chave || "");
-  if (!chaveNormalizada) return;
-
-  if (campanhasExpandidas.value.includes(chaveNormalizada)) {
-    campanhasExpandidas.value = campanhasExpandidas.value.filter((item) => item !== chaveNormalizada);
-    return;
-  }
-
-  campanhasExpandidas.value = [...campanhasExpandidas.value, chaveNormalizada];
-}
 
 const metricasResumo = computed(() => [
   { label: "Partidas", valor: formatarInteiro(resumo.value.partidas) },
@@ -715,6 +665,250 @@ function desenharListaCanvas(ctx, opcoes = {}) {
   }
 }
 
+function truncarTextoCanvas(ctx, texto, larguraMaxima) {
+  const base = String(texto || "-");
+  if (!Number.isFinite(larguraMaxima) || larguraMaxima <= 0) return base;
+  if (ctx.measureText(base).width <= larguraMaxima) return base;
+
+  let truncado = base;
+  while (truncado.length > 1 && ctx.measureText(`${truncado}...`).width > larguraMaxima) {
+    truncado = truncado.slice(0, -1);
+  }
+  return `${truncado}...`;
+}
+
+function desenharEscudoCanvas(ctx, opcoes = {}) {
+  const {
+    x = 0,
+    y = 0,
+    tamanho = 26,
+    imagem = null,
+    fallbackTexto = "T",
+  } = opcoes;
+
+  const raio = tamanho / 2;
+  const centroX = x + raio;
+  const centroY = y + raio;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(centroX, centroY, raio, 0, Math.PI * 2);
+  ctx.closePath();
+  ctx.clip();
+
+  if (imagem) {
+    ctx.drawImage(imagem, x, y, tamanho, tamanho);
+  } else {
+    const gradiente = ctx.createLinearGradient(x, y, x + tamanho, y + tamanho);
+    gradiente.addColorStop(0, "#38bdf8");
+    gradiente.addColorStop(1, "#1d4ed8");
+    ctx.fillStyle = gradiente;
+    ctx.fillRect(x, y, tamanho, tamanho);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "700 13px Montserrat, Arial, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(String(fallbackTexto || "T").slice(0, 1).toUpperCase(), centroX, centroY + 0.5);
+  }
+
+  ctx.restore();
+  ctx.beginPath();
+  ctx.arc(centroX, centroY, raio, 0, Math.PI * 2);
+  ctx.strokeStyle = "rgba(226, 232, 240, 0.85)";
+  ctx.lineWidth = 1.4;
+  ctx.stroke();
+}
+
+function desenharIndicadorCartaoCanvas(ctx, opcoes = {}) {
+  const {
+    x = 0,
+    y = 0,
+    tipo = "amarelo",
+    valor = 0,
+  } = opcoes;
+
+  const vermelho = tipo === "vermelho";
+  const fundo = vermelho ? "#ef4444" : "#facc15";
+  const borda = vermelho ? "#991b1b" : "#a16207";
+
+  desenharRetanguloArredondado(ctx, x, y, 12, 17, 2);
+  ctx.fillStyle = fundo;
+  ctx.fill();
+  ctx.strokeStyle = borda;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = "#e2e8f0";
+  ctx.font = "700 16px Montserrat, Arial, sans-serif";
+  ctx.fillText(formatarInteiro(valor), x + 18, y + 14);
+}
+
+function desenharSecaoPartidasCanvas(ctx, opcoes = {}) {
+  const {
+    x = 0,
+    y = 0,
+    largura = 0,
+    altura = 0,
+    partidas = [],
+    escudosPorUrl = new Map(),
+  } = opcoes;
+
+  desenharRetanguloArredondado(ctx, x, y, largura, altura, 20);
+  ctx.fillStyle = "rgba(15, 23, 42, 0.25)";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(245, 158, 11, 0.3)";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = "#fde68a";
+  ctx.font = "700 28px Montserrat, Arial, sans-serif";
+  ctx.fillText("ULTIMAS PARTIDAS", x + 22, y + 38);
+
+  const yLinhaCabecalho = y + 54;
+  const gradienteTopo = ctx.createLinearGradient(x + 20, yLinhaCabecalho, x + largura - 20, yLinhaCabecalho);
+  gradienteTopo.addColorStop(0, "rgba(245, 158, 11, 0.08)");
+  gradienteTopo.addColorStop(0.5, "rgba(245, 158, 11, 0.8)");
+  gradienteTopo.addColorStop(1, "rgba(245, 158, 11, 0.08)");
+  ctx.fillStyle = gradienteTopo;
+  ctx.fillRect(x + 20, yLinhaCabecalho, largura - 40, 2);
+
+  const itens = Array.isArray(partidas) ? partidas : [];
+  if (!itens.length) {
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "600 22px Montserrat, Arial, sans-serif";
+    ctx.fillText("Sem informacoes para exibir.", x + 22, y + 100);
+    return;
+  }
+
+  const cardAltura = 84;
+  const gap = 10;
+  let cursorY = y + 68;
+  const limiteY = y + altura - 16;
+
+  for (let i = 0; i < itens.length; i += 1) {
+    if ((cursorY + cardAltura) > limiteY) break;
+
+    const partida = itens[i] || {};
+    const cardX = x + 16;
+    const cardLargura = largura - 32;
+
+    desenharRetanguloArredondado(ctx, cardX, cursorY, cardLargura, cardAltura, 14);
+    ctx.fillStyle = "rgba(15, 23, 42, 0.36)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(148, 163, 184, 0.32)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    const dataCampeonato = `${formatarData(partida.data)} | ${partida.campeonatoNome || "Partida avulsa"}`;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillStyle = "#93c5fd";
+    ctx.font = "600 14px Montserrat, Arial, sans-serif";
+    ctx.fillText(
+      truncarTextoCanvas(ctx, dataCampeonato, cardLargura - 190),
+      cardX + 12,
+      cursorY + 19
+    );
+
+    const resultadoLabel = String(partida.resultadoLabel || "-");
+    const resultado = String(partida.resultado || "");
+    const pillFundo = resultado === "V"
+      ? "rgba(34, 197, 94, 0.22)"
+      : resultado === "D"
+        ? "rgba(239, 68, 68, 0.22)"
+        : "rgba(148, 163, 184, 0.24)";
+    const pillCor = resultado === "V"
+      ? "#bbf7d0"
+      : resultado === "D"
+        ? "#fecaca"
+        : "#e2e8f0";
+    ctx.font = "700 13px Montserrat, Arial, sans-serif";
+    const pillLargura = Math.max(74, ctx.measureText(resultadoLabel).width + 22);
+    const pillX = cardX + cardLargura - pillLargura - 10;
+    desenharRetanguloArredondado(ctx, pillX, cursorY + 8, pillLargura, 22, 999);
+    ctx.fillStyle = pillFundo;
+    ctx.fill();
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = pillCor;
+    ctx.fillText(resultadoLabel, pillX + (pillLargura / 2), cursorY + 19);
+
+    const timeANome = String(partida.timeANome || "Time A");
+    const timeBNome = String(partida.timeBNome || "Time B");
+    const placarTexto = `${formatarInteiro(obterPontosPartida(partida, "A"))} x ${formatarInteiro(obterPontosPartida(partida, "B"))}`;
+    const escudoAUrl = obterEscudoTime(partida.timeAFoto);
+    const escudoBUrl = obterEscudoTime(partida.timeBFoto);
+
+    desenharEscudoCanvas(ctx, {
+      x: cardX + 12,
+      y: cursorY + 30,
+      tamanho: 24,
+      imagem: escudosPorUrl.get(escudoAUrl) || null,
+      fallbackTexto: timeANome,
+    });
+
+    desenharEscudoCanvas(ctx, {
+      x: cardX + cardLargura - 36,
+      y: cursorY + 30,
+      tamanho: 24,
+      imagem: escudosPorUrl.get(escudoBUrl) || null,
+      fallbackTexto: timeBNome,
+    });
+
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillStyle = "#e2e8f0";
+    ctx.font = "600 14px Montserrat, Arial, sans-serif";
+    ctx.fillText(
+      truncarTextoCanvas(ctx, timeANome, 190),
+      cardX + 42,
+      cursorY + 47
+    );
+
+    ctx.textAlign = "right";
+    ctx.fillText(
+      truncarTextoCanvas(ctx, timeBNome, 190),
+      cardX + cardLargura - 42,
+      cursorY + 47
+    );
+
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#f8fafc";
+    ctx.font = "800 20px Montserrat, Arial, sans-serif";
+    ctx.fillText(placarTexto, cardX + (cardLargura / 2), cursorY + 49);
+
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "600 12px Montserrat, Arial, sans-serif";
+    ctx.fillText(
+      truncarTextoCanvas(ctx, partida.quadraNome || "Quadra nao informada", cardLargura - 170),
+      cardX + 12,
+      cursorY + 72
+    );
+
+    const cartoesY = cursorY + 57;
+    const blocoCartoesX = cardX + cardLargura - 122;
+    desenharIndicadorCartaoCanvas(ctx, {
+      x: blocoCartoesX,
+      y: cartoesY,
+      tipo: "amarelo",
+      valor: Number(partida.cartoesAmarelos) || 0,
+    });
+    desenharIndicadorCartaoCanvas(ctx, {
+      x: blocoCartoesX + 56,
+      y: cartoesY,
+      tipo: "vermelho",
+      valor: Number(partida.cartoesVermelhos) || 0,
+    });
+
+    cursorY += cardAltura + gap;
+  }
+}
+
 async function gerarImagemEstatisticasBlob() {
   const jogadorAtual = jogador.value;
   if (!jogadorAtual) {
@@ -731,10 +925,25 @@ async function gerarImagemEstatisticasBlob() {
     throw new Error("NÃ£o foi possÃ­vel inicializar o canvas.");
   }
 
-  const [logoMarca, fotoJogador] = await Promise.all([
+  const partidasCanvas = ultimasPartidas.value.slice(0, 4);
+  const escudosUrls = Array.from(
+    new Set(
+      partidasCanvas
+        .flatMap((partida) => [obterEscudoTime(partida?.timeAFoto), obterEscudoTime(partida?.timeBFoto)])
+        .map((url) => String(url || "").trim())
+        .filter(Boolean)
+    )
+  );
+
+  const [logoMarca, fotoJogador, ...escudosCarregados] = await Promise.all([
     carregarImagemCanvas(logoQuadraPlay),
     carregarImagemCanvas(jogadorAtual?.foto),
+    ...escudosUrls.map((url) => carregarImagemCanvas(url)),
   ]);
+  const escudosPorUrl = new Map();
+  escudosUrls.forEach((url, indice) => {
+    escudosPorUrl.set(url, escudosCarregados[indice] || null);
+  });
 
   const gradienteFundo = ctx.createLinearGradient(0, 0, 0, canvas.height);
   gradienteFundo.addColorStop(0, "#06163f");
@@ -857,8 +1066,8 @@ async function gerarImagemEstatisticasBlob() {
     { label: "Empates", valor: formatarInteiro(resumoAtual.empates) },
     { label: "Derrotas", valor: formatarInteiro(resumoAtual.derrotas) },
     { label: "Gols", valor: formatarInteiro(resumoAtual.gols) },
-    { label: "Cartoes A", valor: formatarInteiro(resumoAtual.cartoesAmarelos) },
-    { label: "Cartoes V", valor: formatarInteiro(resumoAtual.cartoesVermelhos) },
+    { label: "Cartoes amarelos", valor: formatarInteiro(resumoAtual.cartoesAmarelos) },
+    { label: "Cartoes vermelhos", valor: formatarInteiro(resumoAtual.cartoesVermelhos) },
     { label: "Media gols", valor: formatarDecimal(resumoAtual.mediaGols) },
     { label: "Aproveitamento", valor: `${formatarInteiro(resumoAtual.aproveitamento)}%` },
   ];
@@ -914,10 +1123,7 @@ async function gerarImagemEstatisticasBlob() {
   const secaoPartidasX = secaoCampanhasX + secoesLargura + 18;
 
   const campanhasLinhas = campanhas.value.slice(0, 4).map((campanha) =>
-    `${campanha.campeonatoNome || "Campeonato"} - ${formatarInteiro(campanha.partidas)}j | ${formatarInteiro(campanha.gols)}g | ${formatarInteiro(campanha.aproveitamento)}%`
-  );
-  const partidasLinhas = ultimasPartidas.value.slice(0, 4).map((partida) =>
-    `${formatarData(partida.data)} - ${partida.timeANome || "Time A"} ${obterPontosPartida(partida, "A")} x ${obterPontosPartida(partida, "B")} ${partida.timeBNome || "Time B"} (${partida.resultadoLabel || "-"})`
+    `${campanha.campeonatoNome || "Campeonato"} - ${formatarInteiro(campanha.partidas)}j | V/E/D ${formatarInteiro(campanha.vitorias)}/${formatarInteiro(campanha.empates)}/${formatarInteiro(campanha.derrotas)} | ${formatarInteiro(campanha.aproveitamento)}%`
   );
 
   desenharListaCanvas(ctx, {
@@ -925,19 +1131,18 @@ async function gerarImagemEstatisticasBlob() {
     y: secoesY,
     largura: secoesLargura,
     altura: secoesAltura,
-    titulo: "CAMPEONATOS",
+    titulo: "CAMPEONATO",
     linhas: campanhasLinhas,
     corMarcador: "#38bdf8",
   });
 
-  desenharListaCanvas(ctx, {
+  desenharSecaoPartidasCanvas(ctx, {
     x: secaoPartidasX,
     y: secoesY,
     largura: secoesLargura,
     altura: secoesAltura,
-    titulo: "ULTIMAS PARTIDAS",
-    linhas: partidasLinhas,
-    corMarcador: "#f59e0b",
+    partidas: partidasCanvas,
+    escudosPorUrl,
   });
 
   return new Promise((resolve, reject) => {
@@ -1015,7 +1220,6 @@ async function carregarEstatisticas() {
     });
 
     estatisticas.value = data || null;
-    campanhasExpandidas.value = [];
     possuiJogador.value = Boolean(data?.jogador?.id);
 
     if (possuiJogador.value) {
@@ -1028,13 +1232,11 @@ async function carregarEstatisticas() {
     if (status === 404) {
       possuiJogador.value = false;
       estatisticas.value = null;
-      campanhasExpandidas.value = [];
       limparJogadorDoUsuarioLocal();
       return;
     }
 
     estatisticas.value = null;
-    campanhasExpandidas.value = [];
     possuiJogador.value = false;
     erroCarregamento.value =
       error?.response?.data?.error ||
@@ -1535,35 +1737,6 @@ onMounted(() => {
   color: #0f172a;
   font-size: 1rem;
   line-height: 1;
-}
-
-.btn-campanha-detalhe {
-  width: fit-content;
-  min-height: 34px;
-  border-radius: 999px;
-  border: 1px solid rgba(37, 99, 235, 0.32);
-  background: #ffffff;
-  color: #1d4ed8;
-  font: inherit;
-  font-size: 0.82rem;
-  font-weight: 700;
-  padding: 0 12px;
-  cursor: pointer;
-}
-
-.btn-campanha-detalhe:hover {
-  background: #eff6ff;
-}
-
-.campanha-detalhes {
-  border: 1px dashed rgba(147, 197, 253, 0.8);
-  border-radius: 12px;
-  background: rgba(239, 246, 255, 0.72);
-  padding: 8px 10px;
-  color: #1e293b;
-  font-size: 0.8rem;
-  display: grid;
-  gap: 4px;
 }
 
 .partidas-lista {
