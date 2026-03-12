@@ -282,6 +282,8 @@ const carregarAgendamentos = async () => {
           hora: dataObj.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
           duracao: a.duracao,
           tipo: a.tipo,
+          escola: a.escola || null,
+          descricao: a.descricao || null,
           status: a.status.toLowerCase(),
           codigoVerificacao: a.codigoVerificacao,
           motivoRecusa: a.motivoRecusa,

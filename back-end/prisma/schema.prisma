@@ -78,6 +78,7 @@ enum TipoAgendamento {
   TREINO
   CAMPEONATO
   EVENTO
+  AULA
   OUTRO
 }
 
@@ -91,6 +92,8 @@ model Agendamento {
   duracao           Int             @default(1)
   status            String          @default("Pendente")
   tipo              TipoAgendamento @default(TREINO)
+  escola            String?
+  descricao         String?         @db.Text
   usuarioId         Int?
   quadraId          Int?
   modalidadeId      Int?

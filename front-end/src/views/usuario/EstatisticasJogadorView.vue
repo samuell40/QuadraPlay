@@ -181,6 +181,14 @@
                       <strong>{{ formatarInteiro(campanha.gols) }}</strong>
                     </div>
                     <div class="campanha-metrica">
+                      <span>Cartoes amarelos</span>
+                      <strong>{{ formatarInteiro(campanha.cartoesAmarelos) }}</strong>
+                    </div>
+                    <div class="campanha-metrica">
+                      <span>Cartoes vermelhos</span>
+                      <strong>{{ formatarInteiro(campanha.cartoesVermelhos) }}</strong>
+                    </div>
+                    <div class="campanha-metrica">
                       <span>Aproveitamento</span>
                       <strong>{{ formatarInteiro(campanha.aproveitamento) }}%</strong>
                     </div>
@@ -214,10 +222,13 @@
                   :key="`partida-${partida.partidaId}`"
                   class="partida-card"
                 >
+                  <p class="partida-campeonato">{{ partida.campeonatoNome }}</p>
+
                   <div class="partida-topo">
                     <span class="partida-data">{{ formatarData(partida.data) }}</span>
                     <span class="partida-resultado" :class="resultadoClasse(partida.resultado)">
                       <svg
+                        v-if="partida.resultado === 'V'"
                         xmlns="http://www.w3.org/2000/svg"
                         width="14"
                         height="14"
@@ -241,8 +252,6 @@
                   >
                     {{ textoDestaquePartida(partida) }}
                   </p>
-
-                  <p class="partida-campeonato">{{ partida.campeonatoNome }}</p>
 
                   <div class="partida-placar-linha">
                     <div class="partida-time-lado partida-time-a">

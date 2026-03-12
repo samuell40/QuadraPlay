@@ -29,6 +29,13 @@ const HORARIOS_PADRAO_QUADRA = Array.from(
   { length: 17 },
   (_, indice) => `${String(indice + 7).padStart(2, "0")}:00`,
 );
+const ESCOLAS_AULA_VALIDAS = new Set([
+  "EEAF",
+  "EEJAM",
+  "EMFPA",
+  "CEMEI",
+  "DANÇA",
+]);
 
 const gerarCodigoVerificacao = () => {
   const caracteres = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -551,6 +558,8 @@ const criarAgendamentoService = async ({
   hora,
   duracao = 1,
   tipo = "TREINO",
+  escola = null,
+  descricao = null,
   quadraId,
   modalidadeId,
   timeId,
@@ -582,6 +591,10 @@ const criarAgendamentoService = async ({
   let modalidadeIdCalculada = modalidadeId ? Number(modalidadeId) : null;
 
   const tipoUpper = String(tipo || "TREINO").toUpperCase().trim();
+  const escolaUpper = String(escola || "").toUpperCase().trim();
+  const descricaoNormalizada = String(descricao || "").trim();
+  const escolaAula = tipoUpper === "AULA" ? escolaUpper : null;
+  const descricaoOutro = tipoUpper === "OUTRO" ? descricaoNormalizada : null;
   const exigeModalidade =
     Boolean(fixo) || tipoUpper === "TREINO" || tipoUpper === "AMISTOSO";
   const tipoPermiteEncaixe =
@@ -591,6 +604,27 @@ const criarAgendamentoService = async ({
     throw {
       status: 400,
       message: "Campos obrigatorios nao preenchidos.",
+    };
+  }
+
+  if (tipoUpper === "AULA" && !ESCOLAS_AULA_VALIDAS.has(escolaAula)) {
+    throw {
+      status: 400,
+      message: "Para agendamento do tipo AULA, selecione uma escola valida.",
+    };
+  }
+
+  if (tipoUpper === "OUTRO" && !descricaoOutro) {
+    throw {
+      status: 400,
+      message: "Para agendamento do tipo OUTRO, informe uma descricao.",
+    };
+  }
+
+  if (descricaoOutro && descricaoOutro.length > 250) {
+    throw {
+      status: 400,
+      message: "Descricao do agendamento deve ter no maximo 250 caracteres.",
     };
   }
 
@@ -612,6 +646,7 @@ const criarAgendamentoService = async ({
     AMISTOSO: 168,
     CAMPEONATO: 720,
     EVENTO: 4320,
+    AULA: 24,
     OUTRO: 24,
   };
 
@@ -833,7 +868,9 @@ const criarAgendamentoService = async ({
     hora: horaCalc,
     datahora: dataInicio,
     duracao,
-    tipo,
+    tipo: tipoUpper,
+    escola: escolaAula,
+    descricao: descricaoOutro,
     codigoVerificacao: novoCodigo,
     status,
     fixo,

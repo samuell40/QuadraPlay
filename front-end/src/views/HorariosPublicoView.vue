@@ -228,6 +228,7 @@ export default {
       const permissaoId = Number(agendamento?.usuario?.permissaoId)
       const nomeTime = String(agendamento?.time?.nome || '').trim()
       const nomeModalidade = String(agendamento?.modalidade?.nome || '').trim()
+      const descricaoOutro = String(agendamento?.descricao || '').trim()
       const tipo = String(agendamento?.tipo || '').trim().toUpperCase()
 
       if (permissaoId === 5 && nomeTime) {
@@ -239,7 +240,7 @@ export default {
       }
 
       if (tipo === 'EVENTO') return 'Evento'
-      if (tipo === 'OUTRO') return 'Outro'
+      if (tipo === 'OUTRO') return descricaoOutro || 'Outro'
       if (tipo === 'CAMPEONATO' || agendamento?.campeonatoId) return 'Campeonato'
 
       return formatarTipoLabel(tipo) || nomeModalidade || nomeTime || 'Reservado'

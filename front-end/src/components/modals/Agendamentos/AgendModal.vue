@@ -30,6 +30,7 @@
               <option value="TREINO">Treino - 24h de antecedência</option>
               <option value="AMISTOSO">Amistoso - 7 dias de antecedência</option>
               <option value="EVENTO">Evento - 180 dias de antecedência</option>
+              <option value="AULA">Aula - 24h de antecedência</option>
               <option value="OUTRO">Outro - 24h de antecedência</option>
             </select>
           </div>
@@ -57,6 +58,29 @@
                 </option>
               </select>
             </div>
+          </div>
+
+          <div v-if="tipoUpper === 'AULA'" class="campo mb-3">
+            <label><strong>Escola:</strong></label>
+            <div class="select-wrapper">
+              <select v-model="escolaSelecionada" class="form-select">
+                <option disabled :value="null">Selecione a escola</option>
+                <option v-for="escola in escolasAula" :key="escola.codigo" :value="escola.codigo">
+                  {{ escola.codigo }} - {{ escola.nome }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div v-if="tipoUpper === 'OUTRO'" class="campo mb-3">
+            <label><strong>Descrição do agendamento:</strong></label>
+            <textarea
+              v-model="descricaoOutro"
+              class="form-textarea"
+              rows="3"
+              maxlength="250"
+              placeholder="Descreva o motivo do agendamento"
+            ></textarea>
           </div>
 
           <div class="linha-selects">
@@ -237,6 +261,14 @@ export default {
       duracao: "",
       data: null,
       hora: "",
+      escolaSelecionada: null,
+      descricaoOutro: '',
+      escolasAula: [
+        { codigo: 'EEAF', nome: 'Escola Estadual Aristófanes Fernandes' },
+        { codigo: 'EEJAM', nome: 'Escola Estadual Joaquim Adelino de Medeiros' },
+        { codigo: 'EMFPM', nome: 'Escola Municipal Francisca Pires de Medeiros' },
+        { codigo: 'CEMEI', nome: 'Centro Municipal de Ensino Infantil Professor José Felicio' },
+      ],
       minDateObj: agora,
       maxDateObj: umMes,
 
@@ -328,6 +360,12 @@ export default {
       if (!this.exigeModalidade) {
         this.modalidadeSelecionada = null;
       }
+      if (this.tipoUpper !== 'AULA') {
+        this.escolaSelecionada = null;
+      }
+      if (this.tipoUpper !== 'OUTRO') {
+        this.descricaoOutro = '';
+      }
     },
     modoAgendamento() {
       if (this.podeSelecionarTime && !this.exigeTimeTreinador) {
@@ -335,6 +373,12 @@ export default {
       }
       if (!this.exigeModalidade) {
         this.modalidadeSelecionada = null;
+      }
+      if (this.modoAgendamento !== 'avulso' || this.tipoUpper !== 'AULA') {
+        this.escolaSelecionada = null;
+      }
+      if (this.modoAgendamento !== 'avulso' || this.tipoUpper !== 'OUTRO') {
+        this.descricaoOutro = '';
       }
     },
     timeSelecionado() {
@@ -400,6 +444,16 @@ export default {
       if (!this.exigeModalidade) return null;
       const idModalidade = Number(this.modalidadeSelecionada);
       return Number.isInteger(idModalidade) && idModalidade > 0 ? idModalidade : null;
+    },
+    obterEscolaAulaParaAgendamento() {
+      if (this.tipoUpper !== 'AULA') return null;
+      const escola = String(this.escolaSelecionada || '').trim();
+      return escola || null;
+    },
+    obterDescricaoOutroParaAgendamento() {
+      if (this.tipoUpper !== 'OUTRO') return null;
+      const descricao = String(this.descricaoOutro || '').trim();
+      return descricao || null;
     },
     verificarDataPermitida(date) {
       const dia = date.getDay();
@@ -560,6 +614,8 @@ export default {
       if (this.exigeModalidade && !this.obterModalidadeIdParaAgendamento()) return false;
       if (this.modoAgendamento === 'avulso') {
         if (!this.data || this.diaFechado || !this.hora || !this.tipo) return false;
+        if (this.tipoUpper === 'AULA' && !this.obterEscolaAulaParaAgendamento()) return false;
+        if (this.tipoUpper === 'OUTRO' && !this.obterDescricaoOutroParaAgendamento()) return false;
         if (this.exibirDuracao && !this.duracao) return false;
         return true;
       }
@@ -610,6 +666,8 @@ export default {
         datahora: datahora.toISOString(),
         duracao: duracaoFinal,
         tipo: this.tipo,
+        escola: this.obterEscolaAulaParaAgendamento(),
+        descricao: this.obterDescricaoOutroParaAgendamento(),
         fixo: false
       })
     },
@@ -840,6 +898,26 @@ export default {
 }
 
 .form-select:focus {
+  border-color: #1E3A8A;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(30, 58, 138, 0.1);
+}
+
+.form-textarea {
+  color: #374151;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  width: 100%;
+  font-size: 14px;
+  background-color: #fff;
+  transition: border-color 0.2s;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 84px;
+}
+
+.form-textarea:focus {
   border-color: #1E3A8A;
   outline: none;
   box-shadow: 0 0 0 2px rgba(30, 58, 138, 0.1);

@@ -46,6 +46,16 @@
         <span class="meta-label">Tipo</span>
         <strong class="meta-value">{{ tipoLabelExibicao }}</strong>
       </div>
+
+      <div v-if="escolaAula" class="meta-item">
+        <span class="meta-label">Escola</span>
+        <strong class="meta-value">{{ escolaAula }}</strong>
+      </div>
+
+      <div v-if="descricaoAgendamento" class="meta-item meta-item-wide">
+        <span class="meta-label">Descrição</span>
+        <strong class="meta-value">{{ descricaoAgendamento }}</strong>
+      </div>
     </div>
 
     <div class="code-strip">
@@ -112,6 +122,14 @@ const tipoPermiteCampoTime = computed(() => !['amistoso', 'evento', 'campeonato'
 const permissaoPermiteCampoTime = computed(() => [1, 2, 5].includes(permissaoSolicitanteId.value))
 const exibirCampoTime = computed(() => tipoPermiteCampoTime.value && permissaoPermiteCampoTime.value)
 const tipoLabelExibicao = computed(() => (ehEncaixe.value ? `${tipoLabel.value} (ENCAIXE)` : tipoLabel.value))
+const escolaAula = computed(() => {
+  if (String(props.agendamento?.tipo || '').trim().toUpperCase() !== 'AULA') return ''
+  return String(props.agendamento?.escola || '').trim()
+})
+const descricaoAgendamento = computed(() => {
+  if (String(props.agendamento?.tipo || '').trim().toUpperCase() !== 'OUTRO') return ''
+  return String(props.agendamento?.descricao || '').trim()
+})
 const duracaoLabel = computed(() => `${props.agendamento?.duracao || 0} hora(s)`)
 
 const formatarData = (agendamento) => {

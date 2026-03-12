@@ -1,0 +1,4 @@
+ALTER TYPE "TipoAgendamento" ADD VALUE IF NOT EXISTS 'AULA';
+
+ALTER TABLE "Agendamento"
+ADD COLUMN IF NOT EXISTS "escola" TEXT;

@@ -544,7 +544,7 @@ export default {
       return this.agendamentosConfirmados.length > 0
     },
     temDadosGraficoTipo() {
-      const tiposValidos = new Set(['AMISTOSO', 'TREINO', 'CAMPEONATO', 'EVENTO', 'OUTRO'])
+      const tiposValidos = new Set(['AMISTOSO', 'TREINO', 'CAMPEONATO', 'EVENTO', 'AULA', 'OUTRO'])
       return this.agendamentosConfirmados.some((agendamento) =>
         tiposValidos.has(String(agendamento?.tipo || '').toUpperCase())
       )
@@ -1225,6 +1225,7 @@ export default {
         { value: 'TREINO', label: 'Treino', color: '#1E3A8A' },
         { value: 'CAMPEONATO', label: 'Campeonato', color: '#2563EB' },
         { value: 'EVENTO', label: 'Evento', color: '#60A5FA' },
+        { value: 'AULA', label: 'Aula', color: '#93C5FD' },
         { value: 'OUTRO', label: 'Outro', color: '#D9D9D9' }
       ]
 

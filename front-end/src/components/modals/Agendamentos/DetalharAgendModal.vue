@@ -32,6 +32,7 @@
         </template>
 
         <p v-else><strong>Time:</strong> {{ obterNomeTime(agendamento) }}</p>
+        <p v-if="descricaoAgendamento"><strong>Descrição:</strong> {{ descricaoAgendamento }}</p>
 
         <div v-if="agendamento.motivoRecusa" class="alerta-recusa">
           <strong>Motivo da Recusa:</strong> {{ agendamento.motivoRecusa }}
@@ -67,6 +68,10 @@ export default {
     },
     resumoCampeonato() {
       return this.obterResumoCampeonato(this.agendamento)
+    },
+    descricaoAgendamento() {
+      const descricao = String(this.agendamento?.descricao || '').trim()
+      return descricao ? this.normalizarTextoExibicao(descricao) : ''
     }
   },
   methods: {

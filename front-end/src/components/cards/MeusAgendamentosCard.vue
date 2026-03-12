@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <article class="card">
     <div class="card-top">
       <div class="title-wrap">
@@ -18,18 +18,28 @@
       </div>
 
       <div class="meta-item">
-        <span class="meta-label">Horário</span>
+        <span class="meta-label">Horario</span>
         <strong>{{ formatarHora(agendamento) }}</strong>
       </div>
 
       <div class="meta-item">
-        <span class="meta-label">Duração</span>
+        <span class="meta-label">Duracao</span>
         <strong>{{ agendamento.duracao }} hora(s)</strong>
       </div>
 
       <div class="meta-item">
         <span class="meta-label">Tipo</span>
-        <strong>{{ agendamento.tipo || "Não informado" }}</strong>
+        <strong>{{ agendamento.tipo || "Nao informado" }}</strong>
+      </div>
+
+      <div v-if="escolaAula" class="meta-item">
+        <span class="meta-label">Escola</span>
+        <strong>{{ escolaAula }}</strong>
+      </div>
+
+      <div v-if="descricaoOutro" class="meta-item meta-item-wide">
+        <span class="meta-label">Descricao</span>
+        <strong>{{ descricaoOutro }}</strong>
       </div>
     </div>
 
@@ -37,7 +47,7 @@
       v-if="agendamento.status?.toLowerCase() === 'confirmado'"
       class="info-box code-box"
     >
-      <span class="info-label">Código de verificação </span>
+      <span class="info-label">Codigo de verificacao </span>
       <strong class="codigo-texto">{{ agendamento.codigoVerificacao || "N/A" }}</strong>
     </div>
 
@@ -108,6 +118,17 @@ export default {
         cancelado: "Cancelado",
       };
       return labels[this.statusKey] || this.agendamento.status || "Status";
+    },
+    tipoUpper() {
+      return String(this.agendamento?.tipo || "").trim().toUpperCase();
+    },
+    escolaAula() {
+      if (this.tipoUpper !== "AULA") return "";
+      return String(this.agendamento?.escola || "").trim();
+    },
+    descricaoOutro() {
+      if (this.tipoUpper !== "OUTRO") return "";
+      return String(this.agendamento?.descricao || "").trim();
     },
   },
   methods: {
@@ -235,6 +256,10 @@ h3 {
   border: 1px solid rgba(226, 232, 240, 0.95);
 }
 
+.meta-item-wide {
+  grid-column: span 2;
+}
+
 .meta-label,
 .info-label {
   color: #64748b;
@@ -353,6 +378,10 @@ h3 {
   .meta-grid {
     grid-template-columns: 1fr;
     gap: 10px;
+  }
+
+  .meta-item-wide {
+    grid-column: span 1;
   }
 
   .actions-wrapper {
