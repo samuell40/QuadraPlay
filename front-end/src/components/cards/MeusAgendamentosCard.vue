@@ -91,6 +91,8 @@
 </template>
 
 <script>
+import { formatarEscolaAulaLabel } from "@/utils/agendamentoExibicao";
+
 export default {
   name: "MeusAgendamentoCard",
   emits: ["gerarPdf", "cancelar", "novo"],
@@ -124,8 +126,7 @@ export default {
     },
     escolaAula() {
       if (this.tipoUpper !== "AULA") return "";
-      const escolaNormalizada = String(this.agendamento?.escola || "").trim().toUpperCase();
-      return escolaNormalizada;
+      return formatarEscolaAulaLabel(this.agendamento?.escola);
     },
     descricaoOutro() {
       if (this.tipoUpper !== "OUTRO") return "";

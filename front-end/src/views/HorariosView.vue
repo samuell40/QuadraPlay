@@ -173,6 +173,7 @@ import Footer from '@/components/Footer.vue'
 import DetalheAgendModal from '@/components/modals/Agendamentos/DetalharAgendModal.vue'
 import LoadingState from '@/components/loading/LoadingState.vue'
 import logoImg from '@/assets/logo.png'
+import { obterTextoAgendamento } from '@/utils/agendamentoExibicao'
 
 export default {
   name: 'HorariosView',
@@ -247,48 +248,6 @@ export default {
         return normalizarHorarioStr(format(d, 'HH:mm'))
       }
       return normalizarHorarioStr(`${String(ag.hora).padStart(2, '0')}:00`)
-    }
-
-    const obterPrimeiroNome = (nomeCompleto) => {
-      const nome = String(nomeCompleto || '').trim()
-      if (!nome) return ''
-      return nome.split(/\s+/)[0] || ''
-    }
-
-    const formatarTipoLabel = (tipo) => {
-      const valor = String(tipo || '').trim().toUpperCase()
-      if (!valor) return ''
-      return valor.charAt(0) + valor.slice(1).toLowerCase()
-    }
-
-    const obterDescricaoReserva = (agendamento) => {
-      const permissaoId = Number(agendamento?.usuario?.permissaoId)
-      const nomeTime = String(agendamento?.time?.nome || '').trim()
-      const nomeModalidade = String(agendamento?.modalidade?.nome || '').trim()
-      const descricaoOutro = String(agendamento?.descricao || '').trim()
-      const tipo = String(agendamento?.tipo || '').trim().toUpperCase()
-
-      if (permissaoId === 5 && nomeTime) {
-        return nomeTime
-      }
-
-      if (tipo === 'TREINO' || tipo === 'AMISTOSO') {
-        return nomeModalidade || formatarTipoLabel(tipo)
-      }
-
-      if (tipo === 'EVENTO') return 'Evento'
-      if (tipo === 'OUTRO') return descricaoOutro || 'Outro'
-      if (tipo === 'CAMPEONATO' || agendamento?.campeonatoId) return 'Campeonato'
-
-      return formatarTipoLabel(tipo) || nomeModalidade || nomeTime || 'Reservado'
-    }
-
-    const obterTextoAgendamento = (agendamento) => {
-      const primeiroNome = obterPrimeiroNome(agendamento?.usuario?.nome)
-      const descricaoReserva = obterDescricaoReserva(agendamento)
-
-      if (primeiroNome && descricaoReserva) return `${primeiroNome} - ${descricaoReserva}`
-      return primeiroNome || descricaoReserva || 'Reservado'
     }
 
     const buscarQuadras = async () => {

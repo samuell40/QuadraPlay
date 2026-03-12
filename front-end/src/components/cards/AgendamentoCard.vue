@@ -81,6 +81,7 @@
 
 <script setup>
 import { computed, defineEmits, defineProps } from 'vue'
+import { formatarEscolaAulaLabel } from '@/utils/agendamentoExibicao'
 
 const props = defineProps({
   agendamento: { type: Object, required: true },
@@ -124,8 +125,7 @@ const exibirCampoTime = computed(() => tipoPermiteCampoTime.value && permissaoPe
 const tipoLabelExibicao = computed(() => (ehEncaixe.value ? `${tipoLabel.value} (ENCAIXE)` : tipoLabel.value))
 const escolaAula = computed(() => {
   if (String(props.agendamento?.tipo || '').trim().toUpperCase() !== 'AULA') return ''
-  const escolaNormalizada = String(props.agendamento?.escola || '').trim().toUpperCase()
-  return escolaNormalizada
+  return formatarEscolaAulaLabel(props.agendamento?.escola)
 })
 const descricaoAgendamento = computed(() => {
   if (String(props.agendamento?.tipo || '').trim().toUpperCase() !== 'OUTRO') return ''
