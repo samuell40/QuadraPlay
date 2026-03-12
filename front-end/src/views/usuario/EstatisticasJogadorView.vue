@@ -217,9 +217,30 @@
                   <div class="partida-topo">
                     <span class="partida-data">{{ formatarData(partida.data) }}</span>
                     <span class="partida-resultado" :class="resultadoClasse(partida.resultado)">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="14"
+                        height="14"
+                        fill="currentColor"
+                        viewBox="0 0 16 16"
+                        aria-hidden="true"
+                        focusable="false"
+                        class="partida-resultado-icone"
+                      >
+                        <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
+                        <path d="m10.97 4.97-.02.022-3.473 4.425-2.093-2.094a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05" />
+                      </svg>
                       {{ partida.resultadoLabel }}
                     </span>
                   </div>
+
+                  <p
+                    v-if="temDestaquePartida(partida)"
+                    class="partida-destaque"
+                    :class="classeDestaquePartida(partida)"
+                  >
+                    {{ textoDestaquePartida(partida) }}
+                  </p>
 
                   <p class="partida-campeonato">{{ partida.campeonatoNome }}</p>
 
@@ -255,24 +276,6 @@
 
                   <p class="partida-quadra">{{ partida.quadraNome || "Quadra nao informada" }}</p>
 
-                  <p
-                    v-if="temDestaquePartida(partida)"
-                    class="partida-destaque"
-                    :class="classeDestaquePartida(partida)"
-                  >
-                    {{ textoDestaquePartida(partida) }}
-                  </p>
-
-                  <div class="partida-metricas">
-                    <span class="partida-cartao">
-                      <span class="partida-cartao-icone partida-cartao-icone-amarelo" aria-hidden="true"></span>
-                      <span>{{ formatarInteiro(partida.cartoesAmarelos) }}</span>
-                    </span>
-                    <span class="partida-cartao">
-                      <span class="partida-cartao-icone partida-cartao-icone-vermelho" aria-hidden="true"></span>
-                      <span>{{ formatarInteiro(partida.cartoesVermelhos) }}</span>
-                    </span>
-                  </div>
                 </article>
               </div>
             </section>
@@ -1773,8 +1776,13 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   font-size: 0.78rem;
   font-weight: 800;
+}
+
+.partida-resultado-icone {
+  flex: 0 0 auto;
 }
 
 .resultado-vitoria {
@@ -1908,40 +1916,6 @@ onMounted(() => {
 .partida-destaque-maximo {
   color: #047857;
   background: rgba(16, 185, 129, 0.2);
-}
-
-.partida-metricas {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  color: #334155;
-  font-size: 0.82rem;
-}
-
-.partida-cartao {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 700;
-}
-
-.partida-cartao-icone {
-  width: 11px;
-  height: 16px;
-  border-radius: 2px;
-  border: 1px solid transparent;
-  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.18);
-}
-
-.partida-cartao-icone-amarelo {
-  background: linear-gradient(180deg, #fef08a 0%, #facc15 100%);
-  border-color: #ca8a04;
-}
-
-.partida-cartao-icone-vermelho {
-  background: linear-gradient(180deg, #fca5a5 0%, #ef4444 100%);
-  border-color: #b91c1c;
 }
 
 @keyframes shareSpin {
