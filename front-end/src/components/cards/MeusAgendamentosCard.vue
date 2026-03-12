@@ -124,7 +124,8 @@ export default {
     },
     escolaAula() {
       if (this.tipoUpper !== "AULA") return "";
-      return String(this.agendamento?.escola || "").trim();
+      const escolaNormalizada = String(this.agendamento?.escola || "").trim().toUpperCase();
+      return escolaNormalizada;
     },
     descricaoOutro() {
       if (this.tipoUpper !== "OUTRO") return "";

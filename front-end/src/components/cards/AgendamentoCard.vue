@@ -124,7 +124,8 @@ const exibirCampoTime = computed(() => tipoPermiteCampoTime.value && permissaoPe
 const tipoLabelExibicao = computed(() => (ehEncaixe.value ? `${tipoLabel.value} (ENCAIXE)` : tipoLabel.value))
 const escolaAula = computed(() => {
   if (String(props.agendamento?.tipo || '').trim().toUpperCase() !== 'AULA') return ''
-  return String(props.agendamento?.escola || '').trim()
+  const escolaNormalizada = String(props.agendamento?.escola || '').trim().toUpperCase()
+  return escolaNormalizada
 })
 const descricaoAgendamento = computed(() => {
   if (String(props.agendamento?.tipo || '').trim().toUpperCase() !== 'OUTRO') return ''

@@ -266,8 +266,9 @@ export default {
       escolasAula: [
         { codigo: 'EEAF', nome: 'Escola Estadual Aristófanes Fernandes' },
         { codigo: 'EEJAM', nome: 'Escola Estadual Joaquim Adelino de Medeiros' },
-        { codigo: 'EMFPM', nome: 'Escola Municipal Francisca Pires de Medeiros' },
+        { codigo: 'EMFPA', nome: 'Escola Municipal Francisca Pires de Medeiros' },
         { codigo: 'CEMEI', nome: 'Centro Municipal de Ensino Infantil Professor José Felicio' },
+        { codigo: 'DANÇA', nome: 'Dança' },
       ],
       minDateObj: agora,
       maxDateObj: umMes,
