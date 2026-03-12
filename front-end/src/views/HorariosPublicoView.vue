@@ -191,52 +191,66 @@ export default {
       return 'Esta agenda exibe apenas a unidade vinculada ao seu perfil administrativo.'
     })
 
+    const normalizarHorarioStr = (valor) => {
+      const texto = String(valor || '').trim()
+      const match = texto.match(/^(\d{1,2}):(\d{1,2})/)
+      if (!match) return ''
+
+      const hora = Number(match[1])
+      const minuto = Number(match[2])
+      if (!Number.isInteger(hora) || hora < 0 || hora > 23) return ''
+      if (!Number.isInteger(minuto) || minuto < 0 || minuto > 59) return ''
+
+      return `${String(hora).padStart(2, '0')}:${String(minuto).padStart(2, '0')}`
+    }
+
     const extrairHoraMinutoStr = (ag) => {
       if (ag.datahora) {
         const d = new Date(ag.datahora)
-        return format(d, 'HH:mm')
+        return normalizarHorarioStr(format(d, 'HH:mm'))
       }
-      return String(ag.hora).padStart(2, '0') + ':00'
+      return normalizarHorarioStr(`${String(ag.hora).padStart(2, '0')}:00`)
     }
 
-    const abreviarNomeTime = (nome) => {
-      const nomeNormalizado = String(nome || '')
-        .trim()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-zA-Z0-9]/g, '')
-
-      return nomeNormalizado.slice(0, 3).toLowerCase()
+    const obterPrimeiroNome = (nomeCompleto) => {
+      const nome = String(nomeCompleto || '').trim()
+      if (!nome) return ''
+      return nome.split(/\s+/)[0] || ''
     }
 
-    const formatarResumoPartidaGrade = (agendamento) => {
-      const resumoEvento = String(agendamento?.resumoEvento || '').trim()
-      if (!resumoEvento) return ''
+    const formatarTipoLabel = (tipo) => {
+      const valor = String(tipo || '').trim().toUpperCase()
+      if (!valor) return ''
+      return valor.charAt(0) + valor.slice(1).toLowerCase()
+    }
 
-      const nomeCampeonato = String(agendamento?.campeonato?.nome || '').trim()
-      if (!agendamento?.campeonatoId || !nomeCampeonato || resumoEvento === nomeCampeonato) {
-        return resumoEvento
+    const obterDescricaoReserva = (agendamento) => {
+      const permissaoId = Number(agendamento?.usuario?.permissaoId)
+      const nomeTime = String(agendamento?.time?.nome || '').trim()
+      const nomeModalidade = String(agendamento?.modalidade?.nome || '').trim()
+      const tipo = String(agendamento?.tipo || '').trim().toUpperCase()
+
+      if (permissaoId === 5 && nomeTime) {
+        return nomeTime
       }
 
-      const partes = resumoEvento.split(/\s+x\s+/i).map((parte) => parte.trim()).filter(Boolean)
-      if (partes.length !== 2) return resumoEvento
-
-      const [timeA, timeB] = partes
-      const nomeCurtoA = abreviarNomeTime(timeA)
-      const nomeCurtoB = abreviarNomeTime(timeB)
-
-      if (!nomeCurtoA || !nomeCurtoB) {
-        return resumoEvento
+      if (tipo === 'TREINO' || tipo === 'AMISTOSO') {
+        return nomeModalidade || formatarTipoLabel(tipo)
       }
 
-      return `${nomeCurtoA} x ${nomeCurtoB}`
+      if (tipo === 'EVENTO') return 'Evento'
+      if (tipo === 'OUTRO') return 'Outro'
+      if (tipo === 'CAMPEONATO' || agendamento?.campeonatoId) return 'Campeonato'
+
+      return formatarTipoLabel(tipo) || nomeModalidade || nomeTime || 'Reservado'
     }
 
     const obterTextoAgendamento = (agendamento) => {
-      return formatarResumoPartidaGrade(agendamento) ||
-        agendamento?.time?.nome ||
-        agendamento?.usuario?.nome ||
-        'Reservado'
+      const primeiroNome = obterPrimeiroNome(agendamento?.usuario?.nome)
+      const descricaoReserva = obterDescricaoReserva(agendamento)
+
+      if (primeiroNome && descricaoReserva) return `${primeiroNome} - ${descricaoReserva}`
+      return primeiroNome || descricaoReserva || 'Reservado'
     }
 
     const buscarQuadras = async () => {
@@ -316,18 +330,38 @@ export default {
             const ds = s.diaSemana !== undefined ? s.diaSemana : s.dia_semana
             return Number(ds) === diaSemanaBanco
           })
-          slotsDoDia.sort((a, b) => a.horario.localeCompare(b.horario))
+          const agendamentosDoDia = agendamentos.filter((a) => {
+            const dataAg = a.datahora ? new Date(a.datahora) : new Date(a.ano, a.mes - 1, a.dia)
+            return isSameDay(dataAg, dataDoDia)
+          })
 
-          const colunaDoDia = slotsDoDia.map((slot) => {
-            const agendamentoEncontrado = agendamentos.find((a) => {
-              const dataAg = a.datahora ? new Date(a.datahora) : new Date(a.ano, a.mes - 1, a.dia)
+          const agendamentoPorHorario = new Map()
+          agendamentosDoDia.forEach((a) => {
+            const horario = extrairHoraMinutoStr(a)
+            if (!horario || agendamentoPorHorario.has(horario)) return
+            agendamentoPorHorario.set(horario, a)
+          })
 
-              const mesmaData = isSameDay(dataAg, dataDoDia)
-              if (!mesmaData) return false
-
-              const horaAgStr = extrairHoraMinutoStr(a)
-              return slot.horario === horaAgStr
+          const slotsBaseNormalizados = slotsDoDia
+            .map((slot) => {
+              const horario = normalizarHorarioStr(slot.horario)
+              if (!horario) return null
+              return { ...slot, horario }
             })
+            .filter(Boolean)
+
+          const horariosExtras = [...agendamentoPorHorario.keys()]
+            .filter((horarioAg) => !slotsBaseNormalizados.some((slot) => slot.horario === horarioAg))
+            .map((horarioAg) => ({
+              diaSemana: diaSemanaBanco,
+              horario: horarioAg,
+            }))
+
+          const slotsCompletos = [...slotsBaseNormalizados, ...horariosExtras]
+          slotsCompletos.sort((a, b) => a.horario.localeCompare(b.horario))
+
+          const colunaDoDia = slotsCompletos.map((slot) => {
+            const agendamentoEncontrado = agendamentoPorHorario.get(slot.horario) || null
 
             return {
               horario: slot.horario,

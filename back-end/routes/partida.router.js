@@ -18,6 +18,7 @@ router.get('/partidas/:id/retornar', controller.retornarPartidaController);
 router.post("/:partidaId/jogador/:jogadorId", controller.adicionarJogadorPartidaController);
 
 router.get('/partida/:partidaId', controller.listarJogadoresSelecionadosController);
+
 router.get('/partidas/escalacao/jogadores', controller.listarJogadoresEscalacaoController);
 
 router.post('/atuacao', controller.atualizarAtuacaoJogadorController);

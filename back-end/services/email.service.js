@@ -724,6 +724,18 @@ async function enviarEmailVinculoTreinador(usuario, time) {
 async function enviarEmailStatusAgendamento(agendamento) {
   const confirmado = agendamento.status === 'Confirmado';
   const statusFormatado = confirmado ? 'confirmado' : 'recusado';
+  const nomeUsuario = String(agendamento?.usuario?.nome || 'Usuario').trim();
+  const emailUsuario = String(agendamento?.usuario?.email || '').trim();
+  const nomeQuadra = String(agendamento?.quadra?.nome || 'quadra selecionada').trim();
+  const nomeModalidade = String(agendamento?.modalidade?.nome || '').trim();
+  const contextoModalidade = nomeModalidade
+    ? ` para a modalidade ${strong(nomeModalidade)}`
+    : '';
+
+  if (!emailUsuario) {
+    console.warn('[email] Agendamento sem email do usuario. Envio de status ignorado.');
+    return;
+  }
   const blocoStatus = confirmado
     ? renderCallout({
         tone: 'success',
@@ -743,14 +755,14 @@ async function enviarEmailStatusAgendamento(agendamento) {
     preheader: `Seu agendamento foi ${statusFormatado}`,
     eyebrow: 'Atualização de agendamento',
     title: confirmado ? 'Seu agendamento foi confirmado' : 'Seu agendamento foi recusado',
-    recipientName: agendamento.usuario.nome,
+    recipientName: nomeUsuario,
     introHtml: renderParagraph(
-      `Analisamos sua solicitação e o agendamento na quadra ${strong(agendamento.quadra.nome)} para a modalidade ${strong(agendamento.modalidade.nome)} foi ${strong(statusFormatado)}.`
+      `Analisamos sua solicitação e o agendamento na quadra ${strong(nomeQuadra)}${contextoModalidade} foi ${strong(statusFormatado)}.`
     ),
     sectionsHtml:
       renderDetailCard('Dados do agendamento', [
-        { label: 'Quadra', value: agendamento.quadra.nome },
-        { label: 'Modalidade', value: agendamento.modalidade.nome },
+        { label: 'Quadra', value: nomeQuadra },
+        { label: 'Modalidade', value: nomeModalidade },
         { label: 'Data', value: formatarDataAgendamento(agendamento) },
         { label: 'Horário', value: formatarHoraAgendamento(agendamento.hora) },
         { label: 'Status', value: confirmado ? 'Confirmado' : 'Recusado' },
@@ -762,7 +774,7 @@ async function enviarEmailStatusAgendamento(agendamento) {
   });
 
   return enviarEmail({
-    to: agendamento.usuario.email,
+    to: emailUsuario,
     subject: buildSubject(
       confirmado ? 'Agendamento confirmado' : 'Agendamento recusado'
     ),
