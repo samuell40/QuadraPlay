@@ -1,4 +1,4 @@
-const prisma = require('../lib/prisma');
+﻿const prisma = require('../lib/prisma');
 
 async function validarNumeroUnicoNoTime({
   timeId,
@@ -42,7 +42,30 @@ async function adicionarJogador(dados) {
     where: { id: dados.timeId },
     include: { modalidade: true },
   });
-  if (!time) throw new Error("Time não encontrado");
+  if (!time) throw new Error("Time nao encontrado");
+
+  let usuarioVinculado = null;
+  if (dados.usuarioId) {
+    usuarioVinculado = await prisma.usuario.findUnique({
+      where: { id: Number(dados.usuarioId) },
+      select: {
+        id: true,
+        jogadorId: true,
+        ativo: true,
+        deletedAt: true,
+        foto: true,
+      },
+    });
+
+    if (!usuarioVinculado || !usuarioVinculado.ativo || usuarioVinculado.deletedAt) {
+      throw new Error("Usuario informado nao existe");
+    }
+
+    if (usuarioVinculado.jogadorId) {
+      throw new Error("Usuario informado ja esta vinculado a um jogador");
+    }
+  }
+
   let funcaoIdFinal = dados.funcaoId;
 
   await validarNumeroUnicoNoTime({
@@ -74,7 +97,7 @@ async function adicionarJogador(dados) {
     data: {
       nome: dados.nome,
       numero: dados.numero ?? null,
-      foto: dados.foto,
+      foto: dados.foto || usuarioVinculado?.foto || null,
       funcaoId: funcaoIdFinal,
     },
     include: {
@@ -97,25 +120,28 @@ async function adicionarJogador(dados) {
   });
 
   if (dados.usuarioId) {
-    const usuario = await prisma.usuario.findUnique({
-      where: { id: dados.usuarioId },
+    await prisma.usuario.update({
+      where: { id: Number(dados.usuarioId) },
+      data: {
+        jogadorId: jogador.id,
+      },
     });
-    if (!usuario) throw new Error("Usuário informado não existe");
 
     await prisma.usuarioTime.upsert({
       where: {
         usuarioId_timeId: {
-          usuarioId: dados.usuarioId,
+          usuarioId: Number(dados.usuarioId),
           timeId: dados.timeId,
         },
       },
       update: {},
       create: {
-        usuarioId: dados.usuarioId,
+        usuarioId: Number(dados.usuarioId),
         timeId: dados.timeId,
       },
     });
   }
+
   return jogador;
 }
 
@@ -131,7 +157,7 @@ async function removerJogadorTime(jogadorId, timeId) {
   });
 
   if (!vinculo) {
-    throw new Error('Jogador não está vinculado a este time');
+    throw new Error('Jogador nÃ£o estÃ¡ vinculado a este time');
   }
   await prisma.jogadorTime.delete({
     where: {
@@ -150,7 +176,7 @@ async function atualizarFotoJogador(jogadorId, foto) {
   });
 
   if (!jogador) {
-    throw new Error("Jogador não encontrado");
+    throw new Error("Jogador nÃ£o encontrado");
   }
 
   const jogadorAtualizado = await prisma.jogador.update({
@@ -200,7 +226,7 @@ async function listarJogadoresPorTime(timeId) {
     },
   });
 
-  if (!time) throw new Error("Time não encontrado");
+  if (!time) throw new Error("Time nÃ£o encontrado");
 
   return time.jogadores.map(jt => ({
     id: jt.jogador.id,
@@ -254,7 +280,7 @@ async function atualizarFuncaoJogador(jogadorId, funcaoId) {
   });
 
   if (!jogador) {
-    throw new Error("Jogador não encontrado");
+    throw new Error("Jogador nÃ£o encontrado");
   }
 
   if (funcaoId !== null) {
@@ -263,7 +289,7 @@ async function atualizarFuncaoJogador(jogadorId, funcaoId) {
     });
 
     if (!funcao) {
-      throw new Error("Função de jogador não encontrada");
+      throw new Error("FunÃ§Ã£o de jogador nÃ£o encontrada");
     }
   }
 
@@ -293,7 +319,7 @@ async function adicionarFuncaoJogador(dados) {
   });
 
   if (existente) {
-    throw new Error("Essa função já existe para essa modalidade");
+    throw new Error("Essa funÃ§Ã£o jÃ¡ existe para essa modalidade");
   }
 
   const funcao = await prisma.funcaoJogador.create({
@@ -317,7 +343,7 @@ async function removerFuncaoJogador(dados) {
   });
 
   if (!existente) {
-    throw new Error("Função não encontrada para essa modalidade");
+    throw new Error("FunÃ§Ã£o nÃ£o encontrada para essa modalidade");
   }
 
   await prisma.jogador.updateMany({
@@ -333,7 +359,7 @@ async function removerFuncaoJogador(dados) {
     where: { id: Number(id) },
   });
 
-  return { message: "Função removida com sucesso" };
+  return { message: "FunÃ§Ã£o removida com sucesso" };
 }
 
 async function listarFuncoesJogador(modalidadeId) {
@@ -355,13 +381,13 @@ async function moverJogadorDeTime(jogadorId, novoTimeId) {
       times: { include: { time: { include: { modalidade: true } } } }
     }
   });
-  if (!jogador) throw new Error("Jogador não encontrado");
+  if (!jogador) throw new Error("Jogador nÃ£o encontrado");
 
   const novoTime = await prisma.time.findUnique({
     where: { id: novoTimeId },
     include: { modalidade: true }
   });
-  if (!novoTime) throw new Error("Time de destino não encontrado");
+  if (!novoTime) throw new Error("Time de destino nÃ£o encontrado");
 
   const modalidadeId = novoTime.modalidadeId;
   await validarNumeroUnicoNoTime({
@@ -409,3 +435,4 @@ module.exports = {
   moverJogadorDeTime,
   validarNumeroUnicoNoTime
 };
+

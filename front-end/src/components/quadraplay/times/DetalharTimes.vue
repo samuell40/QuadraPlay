@@ -151,7 +151,7 @@
 
               <ul>
                 <li v-for="u in gerenciarUsuariosFiltradosComBusca" :key="u.id" @click.stop="selecionarUsuario(u)">
-                  <img :src="u.foto" class="avatar" />
+                  <img :src="obterFotoComFallback(u.foto)" class="avatar" />
                   <span>{{ u.nome }}</span>
                 </li>
 
@@ -168,39 +168,40 @@
         </div>
 
         <div v-if="gerenciarAcaoLocal === 'adicionarExistente'" class="form-group-gerenciar">
-          <label>Adicionar jogador existente:</label>
+          <label>Adicionar jogador ou usuário existente:</label>
           <div ref="dropdownJogadoresAnchor" class="dropdown-custom-gerenciar">
             <div class="dropdown-selected-gerenciar"
               @click.stop="toggleDropdownJogadores">
               <img v-if="gerenciarJogadorSelecionadoExistente?.foto" :src="gerenciarJogadorSelecionadoExistente.foto"
                 class="avatar" />
               <span v-if="gerenciarJogadoresSelecionadosExistentes.length === 0">
-                Selecione jogador(es) existente(s)
+                Selecione jogador(es) e/ou usuário(s)
               </span>
               <span v-else>
-                {{ gerenciarJogadoresSelecionadosExistentes.length }} jogador(es) selecionado(s)
+                {{ gerenciarJogadoresSelecionadosExistentes.length }} item(ns) selecionado(s)
               </span>
             </div>
 
             <div v-if="gerenciarAbrirDropdownJogadores" ref="dropdownJogadoresLista"
               class="dropdown-list-gerenciar dropdown-list-gerenciar-solto" :style="dropdownJogadoresStyle" @click.stop>
-              <input v-model="gerenciarBuscaJogador" type="text" placeholder="Buscar por nome ou número..."
+              <input v-model="gerenciarBuscaJogador" type="text" placeholder="Buscar jogador/usuário por nome ou número..."
                 class="input-busca-jogador-gerenciar" @click.stop />
 
               <ul>
                 <li v-if="gerenciarJogadoresExistentesFiltradosComBusca.length === 0" class="sem-jogador-gerenciar">
-                  Nenhum jogador disponível
+                  Nenhum jogador ou usuário disponível
                 </li>
 
-                <li v-for="j in gerenciarJogadoresExistentesFiltradosComBusca" :key="j.id"
-                  @click.stop="toggleJogadorExistente(j)" :class="{ selecionado: isJogadorSelecionado(j.id) }">
-                  <span v-if="temNumeroJogador(j.numero)" class="numero-jogador">{{ j.numero }}</span>
-                  <img :src="j.foto" class="avatar" />
+                <li v-for="j in gerenciarJogadoresExistentesFiltradosComBusca" :key="j.chaveOpcao"
+                  @click.stop="toggleJogadorExistente(j)" :class="{ selecionado: isJogadorSelecionado(j.chaveOpcao) }">
+                  <span v-if="j.tipoOpcao === 'jogador' && temNumeroJogador(j.numero)" class="numero-jogador">{{ j.numero }}</span>
+                  <img :src="obterFotoComFallback(j.foto)" class="avatar" />
                   <span>
                     {{ formatarInicialMaiuscula(j.nome) }}
-                    <span v-if="j.times && j.times.length">
+                    <span v-if="j.tipoOpcao === 'jogador' && j.times && j.times.length">
                       ({{ formatarInicialMaiuscula(j.times[0].nome) }})
                     </span>
+                    <span v-if="j.tipoOpcao === 'usuario'" class="tag-opcao-usuario">Usuário</span>
                   </span>
                 </li>
               </ul>
@@ -264,6 +265,8 @@
 import api from '@/axios';
 import LoadingState from '@/components/loading/LoadingState.vue';
 import Swal from 'sweetalert2';
+
+const FOTO_PADRAO_JOGADOR = 'https://pub-8c7959cad5c04469b16f4b0706a2e931.r2.dev/uploads/Imagem%20padrao.png';
 
 export default {
   components: { LoadingState },
@@ -367,13 +370,34 @@ export default {
       return this.gerenciarJogadores.filter(j => !j.times.some(t => t.id === timeIdAtual));
     },
     gerenciarJogadoresExistentesFiltradosComBusca() {
-      return this.gerenciarJogadoresExistentesFiltrados.filter(j =>
-        this.jogadorCombinaBusca(j, this.gerenciarBuscaJogador)
-      );
+      const termoBusca = this.gerenciarBuscaJogador;
+
+      const opcoesJogadores = this.gerenciarJogadoresExistentesFiltrados
+        .filter(j => this.jogadorCombinaBusca(j, termoBusca))
+        .map(j => ({
+          ...j,
+          tipoOpcao: 'jogador',
+          chaveOpcao: `jogador-${j.id}`,
+        }));
+
+      const opcoesUsuarios = this.gerenciarUsuariosDisponiveis
+        .filter(u => !u.possuiJogador && Number(u.permissaoId) === 3)
+        .filter(u => this.usuarioCombinaBusca(u, termoBusca))
+        .map(u => ({
+          id: Number(u.id),
+          nome: u.nome,
+          numero: null,
+          foto: u.foto || FOTO_PADRAO_JOGADOR,
+          times: [],
+          tipoOpcao: 'usuario',
+          chaveOpcao: `usuario-${u.id}`,
+        }));
+
+      return [...opcoesJogadores, ...opcoesUsuarios];
     },
     gerenciarUsuariosFiltradosComBusca() {
       return this.gerenciarUsuariosDisponiveis
-        .filter(u => u.permissaoId !== 1)
+        .filter(u => !u.possuiJogador && Number(u.permissaoId) === 3)
         .filter(u => u.nome.toLowerCase().includes(this.gerenciarBuscaUsuario.toLowerCase()));
     },
     gerenciarJogadoresFiltradosRemover() {
@@ -572,6 +596,23 @@ export default {
       const numero = String(jogador?.numero ?? '').toLowerCase();
       return nome.includes(termo) || numero.includes(termo);
     },
+    usuarioCombinaBusca(usuario, busca) {
+      const termo = String(busca || '').trim().toLowerCase();
+      if (!termo) return true;
+      const nome = String(usuario?.nome || '').toLowerCase();
+      return nome.includes(termo);
+    },
+    obterFotoComFallback(urlFoto) {
+      return String(urlFoto || '').trim() || FOTO_PADRAO_JOGADOR;
+    },
+    obterChaveOpcaoExistente(item) {
+      if (!item) return '';
+      if (item.chaveOpcao) return String(item.chaveOpcao);
+      const tipo = String(item.tipoOpcao || 'jogador').toLowerCase() === 'usuario' ? 'usuario' : 'jogador';
+      const id = Number(item.id);
+      if (!Number.isInteger(id) || id <= 0) return '';
+      return `${tipo}-${id}`;
+    },
     normalizarLinhaJogadorMassa(linha) {
       const texto = String(linha || '').trim();
       if (!texto) return null;
@@ -612,7 +653,10 @@ export default {
       this.gerenciarAbrirDropdownUsuarios = false;
     },
     toggleJogadorExistente(jogador) {
-      const index = this.gerenciarJogadoresSelecionadosExistentes.findIndex(j => j.id === jogador.id);
+      const chaveJogador = this.obterChaveOpcaoExistente(jogador);
+      const index = this.gerenciarJogadoresSelecionadosExistentes.findIndex(
+        item => this.obterChaveOpcaoExistente(item) === chaveJogador
+      );
       if (index !== -1) {
         this.gerenciarJogadoresSelecionadosExistentes.splice(index, 1);
       } else {
@@ -620,8 +664,10 @@ export default {
         this.gerenciarJogadorSelecionadoExistente = jogador;
       }
     },
-    isJogadorSelecionado(id) {
-      return this.gerenciarJogadoresSelecionadosExistentes.some(j => j.id === id);
+    isJogadorSelecionado(chave) {
+      return this.gerenciarJogadoresSelecionadosExistentes.some(
+        item => this.obterChaveOpcaoExistente(item) === String(chave)
+      );
     },
     toggleJogadorRemover(jogador) {
       const index = this.gerenciarJogadoresSelecionadosRemover.findIndex(j => j.id === jogador.id);
@@ -648,7 +694,7 @@ export default {
       try {
         const res = await api.get('/usuarios/resumo');
         this.gerenciarUsuariosDisponiveis = res.data.filter(
-          u => !u.possuiJogador && Number(u.totalTimes || 0) === 0 && u.permissaoId === 3
+          u => !u.possuiJogador && Number(u.permissaoId) === 3
         );
       } catch (err) {
         console.error(err);
@@ -698,13 +744,12 @@ export default {
         return;
       }
 
-      const FOTO_PADRAO = 'https://pub-8c7959cad5c04469b16f4b0706a2e931.r2.dev/uploads/Imagem%20padrao.png';
       const urlImagem = await this.uploadImagemGerenciar();
 
       await api.post('/adicionar', {
         nome,
         numero: numeroJogador,
-        foto: urlImagem || FOTO_PADRAO,
+        foto: urlImagem || this.obterFotoComFallback(this.gerenciarUsuarioSelecionado?.foto),
         timeId: this.time.id,
         usuarioId: this.gerenciarUsuarioSelecionado?.id
       });
@@ -714,11 +759,18 @@ export default {
     async adicionarJogadorExistenteGerenciar() {
       if (this.gerenciarJogadoresSelecionadosExistentes.length === 0) return;
 
+      const jogadoresSelecionados = this.gerenciarJogadoresSelecionadosExistentes.filter(
+        item => String(item?.tipoOpcao || 'jogador') !== 'usuario'
+      );
+      const usuariosSelecionados = this.gerenciarJogadoresSelecionadosExistentes.filter(
+        item => String(item?.tipoOpcao || '') === 'usuario'
+      );
+
       const conflitosNumeroNoTime = [];
       const numerosDuplicadosNaSelecao = new Set();
       const numerosSelecionados = new Set();
 
-      for (const jogador of this.gerenciarJogadoresSelecionadosExistentes) {
+      for (const jogador of jogadoresSelecionados) {
         const numeroJogador = this.normalizarNumeroJogador(jogador?.numero);
         if (!numeroJogador) continue;
 
@@ -748,16 +800,34 @@ export default {
         return;
       }
 
-      for (const jogador of this.gerenciarJogadoresSelecionadosExistentes) {
+      for (const jogador of jogadoresSelecionados) {
         await api.post('/mover', {
           jogadorId: jogador.id,
           novoTimeId: this.time.id
         });
       }
 
+      for (const usuario of usuariosSelecionados) {
+        await api.post('/adicionar', {
+          nome: String(usuario?.nome || '').trim(),
+          numero: null,
+          foto: this.obterFotoComFallback(usuario?.foto),
+          timeId: this.time.id,
+          usuarioId: Number(usuario?.id),
+        });
+      }
+
+      const partesMensagem = [];
+      if (jogadoresSelecionados.length > 0) {
+        partesMensagem.push(`${jogadoresSelecionados.length} jogador(es) adicionado(s) ao time`);
+      }
+      if (usuariosSelecionados.length > 0) {
+        partesMensagem.push(`${usuariosSelecionados.length} usuário(s) convertido(s) em jogador(es)`);
+      }
+
       Swal.fire(
         'Sucesso',
-        `${this.gerenciarJogadoresSelecionadosExistentes.length} jogador(es) adicionados ao time!`,
+        `${partesMensagem.join(' e ')}!`,
         'success'
       );
     },
@@ -886,6 +956,7 @@ export default {
         if (acaoExecutada === 'adicionar') {
           this.limparFormularioAdicionarJogador();
           await this.carregarJogadoresGerenciar();
+          await this.carregarUsuariosDisponiveisGerenciar();
           return;
         }
       } catch (err) {
@@ -1648,6 +1719,20 @@ textarea.dropdown-gerenciar {
   color: #64748b;
   font-size: 13px;
   font-weight: 700;
+}
+
+.tag-opcao-usuario {
+  margin-left: 8px;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(37, 99, 235, 0.24);
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
 }
 
 .selecionado {

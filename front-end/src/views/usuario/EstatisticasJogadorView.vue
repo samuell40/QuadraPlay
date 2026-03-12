@@ -1291,6 +1291,7 @@ onMounted(() => {
   margin: 0;
   color: #1d4ed8;
   font-size: clamp(2rem, 2.8vw, 3.1rem);
+  font-weight: 900;
   line-height: 1.06;
 }
 
