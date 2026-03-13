@@ -119,6 +119,7 @@
             Regras do campeonato
           </button>
           <button
+            v-if="mostrarAbaCriteriosClassificacao"
             type="button"
             class="aba-config"
             :class="{ ativa: abaConfigAtiva === 'criterios' }"
@@ -166,7 +167,7 @@
           </div>
         </div>
 
-        <div v-else-if="abaConfigAtiva === 'criterios'" class="criterios-wrapper">
+        <div v-else-if="abaConfigAtiva === 'criterios' && mostrarAbaCriteriosClassificacao" class="criterios-wrapper">
           <a class="descricao-criterios">
             Arraste para definir a ordem de classificação.
           </a>
@@ -198,7 +199,7 @@
           </div>
         </div>
 
-        <div v-else class="mesarios-wrapper">
+        <div v-else-if="abaConfigAtiva === 'mesarios'" class="mesarios-wrapper">
           <a class="descricao-criterios">
             Selecione os usuários e mesários que podem atuar neste campeonato. Usuários (permissão 3) selecionados serão promovidos para mesário (permissão 4).
           </a>
@@ -345,6 +346,18 @@ export default {
 
     grupoAtual() {
       return grupoModalidade(this.campeonato?.modalidade?.nome)
+    },
+
+    tipoCampeonatoNormalizado() {
+      return String(this.campeonato?.tipo || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim()
+    },
+
+    mostrarAbaCriteriosClassificacao() {
+      return this.tipoCampeonatoNormalizado !== 'eliminatorias'
     },
 
     dataMinimaAgendaEdicao() {
@@ -502,8 +515,13 @@ export default {
           ...padrao,
           ...(this.campeonato.regras || {})
         }
+        this.normalizarAbaConfigAtiva()
         await this.carregarQuadras()
-        await this.carregarCriteriosClassificacao()
+        if (this.mostrarAbaCriteriosClassificacao) {
+          await this.carregarCriteriosClassificacao()
+        } else {
+          this.criteriosClassificacao = []
+        }
         this.preencherFormularioEdicao()
         this.preencherAgendaEdicao()
       }
@@ -623,6 +641,7 @@ export default {
 
     aplicarCampeonatoAtualizado(campeonatoAtualizado) {
       this.campeonato = campeonatoAtualizado
+      this.normalizarAbaConfigAtiva()
       this.preencherFormularioEdicao()
       this.preencherAgendaEdicao()
 
@@ -763,8 +782,14 @@ export default {
         this.salvandoRegras = false
       }
     },
+    normalizarAbaConfigAtiva() {
+      if (this.abaConfigAtiva === 'criterios' && !this.mostrarAbaCriteriosClassificacao) {
+        this.abaConfigAtiva = 'regras'
+      }
+    },
     abrirAbaCriterios() {
       if (this.isCampeonatoEncerrado) return
+      if (!this.mostrarAbaCriteriosClassificacao) return
       this.abaConfigAtiva = 'criterios'
       if (!this.criteriosClassificacao.length) {
         this.carregarCriteriosClassificacao()
@@ -854,6 +879,10 @@ export default {
       }
     },
     async carregarCriteriosClassificacao() {
+      if (!this.mostrarAbaCriteriosClassificacao) {
+        this.criteriosClassificacao = []
+        return
+      }
       if (!this.campeonato?.id) return
 
       try {
@@ -884,6 +913,7 @@ export default {
     },
     async salvarCriteriosClassificacao() {
       if (this.bloquearEdicaoEncerrado()) return
+      if (!this.mostrarAbaCriteriosClassificacao) return
       if (!this.campeonato?.id || !this.criteriosClassificacao.length) return
 
       this.salvandoCriterios = true

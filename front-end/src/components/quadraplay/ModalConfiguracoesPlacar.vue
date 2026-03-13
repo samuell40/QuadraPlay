@@ -24,7 +24,10 @@
           <small class="btn-tipo-sub">Cria uma nova fase e seleciona os times participantes</small>
         </button>
 
-        <button class="btn-tipo btn-tipo-card" :disabled="carregandoAcaoEscolha"
+        <button
+          v-if="podeConfigurarTabelaClassificacao"
+          class="btn-tipo btn-tipo-card"
+          :disabled="carregandoAcaoEscolha"
           @click="onEscolherConfiguracao('GRUPOS')">
           <span class="btn-tipo-titulo btn-tipo-titulo-com-icone">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-people-fill"
@@ -39,7 +42,10 @@
           <small class="btn-tipo-sub">Organiza os grupos do campeonato</small>
         </button>
 
-        <button class="btn-tipo btn-tipo-card" :disabled="carregandoAcaoEscolha"
+        <button
+          v-if="podeConfigurarTabelaClassificacao"
+          class="btn-tipo btn-tipo-card"
+          :disabled="carregandoAcaoEscolha"
           @click="onEscolherConfiguracao('CRITERIOS')">
           <span class="btn-tipo-titulo btn-tipo-titulo-com-icone">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-list-ol"
@@ -56,7 +62,10 @@
           <small class="btn-tipo-sub">Define a ordem dos critérios usados na classificação</small>
         </button>
 
-        <button class="btn-tipo btn-tipo-card" :disabled="carregandoAcaoEscolha"
+        <button
+          v-if="podeConfigurarTabelaClassificacao"
+          class="btn-tipo btn-tipo-card"
+          :disabled="carregandoAcaoEscolha"
           @click="onEscolherConfiguracao('COLUNAS')">
           <span class="btn-tipo-titulo btn-tipo-titulo-com-icone">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
@@ -315,6 +324,19 @@ export default {
   },
 
   computed: {
+    tipoCampeonatoNormalizado() {
+      return String(this.campeonato?.tipo || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+    },
+    campeonatoEhEliminatorias() {
+      return this.tipoCampeonatoNormalizado === "eliminatorias"
+    },
+    podeConfigurarTabelaClassificacao() {
+      return !this.campeonatoEhEliminatorias
+    },
     colunasDisponiveis() {
       return getColunasClassificacaoPorModalidade(this.campeonato?.modalidade?.nome)
     },
@@ -333,6 +355,7 @@ export default {
 
     async onEscolherConfiguracao(acao) {
       if (this.carregandoAcaoEscolha) return
+      if (this.campeonatoEhEliminatorias && ["GRUPOS", "CRITERIOS", "COLUNAS"].includes(acao)) return
       this.carregandoAcaoEscolha = true
       this.acaoSelecionada = acao
 
@@ -1580,6 +1603,7 @@ export default {
     },
 
     async criteriosClassificacao() {
+      if (this.campeonatoEhEliminatorias) return
       this.mostrarModalCriterios = true
       try {
         await this.carregarConfiguracoesClassificacao()
@@ -1594,6 +1618,7 @@ export default {
     },
 
     async colunasClassificacao() {
+      if (this.campeonatoEhEliminatorias) return
       this.mostrarModalColunas = true
       try {
         await this.carregarConfiguracoesClassificacao()
@@ -1764,6 +1789,7 @@ export default {
     },
 
     grupos() {
+      if (this.campeonatoEhEliminatorias) return
       this.$emit("grupos")
       this.fechar()
     },
