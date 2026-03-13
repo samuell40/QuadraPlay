@@ -618,7 +618,7 @@ function desenharSecaoCampanhasCanvas(ctx, opcoes = {}) {
   ctx.fillStyle = gradienteTopo;
   ctx.fillRect(x + 20, yLinhaCabecalho, largura - 40, 2);
 
-  const itens = Array.isArray(campanhas) ? campanhas.slice(0, 2) : [];
+  const itens = Array.isArray(campanhas) ? campanhas.slice(0, 1) : [];
   if (!itens.length) {
     ctx.fillStyle = "#94a3b8";
     ctx.font = "600 22px Montserrat, Arial, sans-serif";
@@ -629,7 +629,7 @@ function desenharSecaoCampanhasCanvas(ctx, opcoes = {}) {
   const areaTopo = y + 82;
   const gap = 10;
   const alturaDisponivel = altura - (areaTopo - y) - 16;
-  const alturaCard = Math.max(86, Math.floor((alturaDisponivel - (gap * (itens.length - 1))) / itens.length));
+  const alturaCard = Math.max(150, Math.floor((alturaDisponivel - (gap * (itens.length - 1))) / itens.length));
 
   for (let i = 0; i < itens.length; i += 1) {
     const campanha = itens[i] || {};
@@ -690,13 +690,20 @@ function desenharSecaoCampanhasCanvas(ctx, opcoes = {}) {
     ];
 
     const metricasX = cardX + 12;
-    const metricasY = cardY + alturaCard - 40;
-    const gapMetricas = 8;
-    const larguraMetrica = (cardLargura - 24 - (gapMetricas * (metricas.length - 1))) / metricas.length;
+    const metricasY = cardY + 84;
+    const colunasMetricas = 3;
+    const gapMetricasX = 8;
+    const gapMetricasY = 8;
+    const alturaMetrica = 36;
+    const larguraMetrica = (cardLargura - 24 - (gapMetricasX * (colunasMetricas - 1))) / colunasMetricas;
 
     metricas.forEach((metrica, indice) => {
-      const xMetrica = metricasX + (indice * (larguraMetrica + gapMetricas));
-      desenharRetanguloArredondado(ctx, xMetrica, metricasY, larguraMetrica, 30, 10);
+      const linha = Math.floor(indice / colunasMetricas);
+      const coluna = indice % colunasMetricas;
+      const xMetrica = metricasX + (coluna * (larguraMetrica + gapMetricasX));
+      const yMetrica = metricasY + (linha * (alturaMetrica + gapMetricasY));
+
+      desenharRetanguloArredondado(ctx, xMetrica, yMetrica, larguraMetrica, alturaMetrica, 10);
       ctx.fillStyle = "#f8fbff";
       ctx.fill();
       ctx.strokeStyle = "rgba(191, 219, 254, 0.8)";
@@ -710,7 +717,7 @@ function desenharSecaoCampanhasCanvas(ctx, opcoes = {}) {
       ctx.fillText(
         truncarTextoCanvas(ctx, metrica.label, larguraMetrica - 16),
         xMetrica + 8,
-        metricasY + 11
+        yMetrica + 12
       );
 
       ctx.fillStyle = "#0f172a";
@@ -718,7 +725,7 @@ function desenharSecaoCampanhasCanvas(ctx, opcoes = {}) {
       ctx.fillText(
         truncarTextoCanvas(ctx, metrica.valor, larguraMetrica - 16),
         xMetrica + 8,
-        metricasY + 26
+        yMetrica + 29
       );
     });
   }
@@ -779,32 +786,6 @@ function desenharEscudoCanvas(ctx, opcoes = {}) {
   ctx.strokeStyle = "rgba(226, 232, 240, 0.85)";
   ctx.lineWidth = 1.4;
   ctx.stroke();
-}
-
-function desenharIndicadorCartaoCanvas(ctx, opcoes = {}) {
-  const {
-    x = 0,
-    y = 0,
-    tipo = "amarelo",
-    valor = 0,
-  } = opcoes;
-
-  const vermelho = tipo === "vermelho";
-  const fundo = vermelho ? "#ef4444" : "#facc15";
-  const borda = vermelho ? "#991b1b" : "#a16207";
-
-  desenharRetanguloArredondado(ctx, x, y, 12, 17, 2);
-  ctx.fillStyle = fundo;
-  ctx.fill();
-  ctx.strokeStyle = borda;
-  ctx.lineWidth = 1;
-  ctx.stroke();
-
-  ctx.textAlign = "left";
-  ctx.textBaseline = "alphabetic";
-  ctx.fillStyle = "#e2e8f0";
-  ctx.font = "700 16px Montserrat, Arial, sans-serif";
-  ctx.fillText(formatarInteiro(valor), x + 18, y + 14);
 }
 
 function desenharSecaoPartidasCanvas(ctx, opcoes = {}) {
@@ -946,29 +927,14 @@ function desenharSecaoPartidasCanvas(ctx, opcoes = {}) {
     ctx.font = "800 20px Montserrat, Arial, sans-serif";
     ctx.fillText(placarTexto, cardX + (cardLargura / 2), cursorY + 49);
 
-    ctx.textAlign = "left";
+    ctx.textAlign = "center";
     ctx.fillStyle = "#94a3b8";
     ctx.font = "600 12px Montserrat, Arial, sans-serif";
     ctx.fillText(
-      truncarTextoCanvas(ctx, partida.quadraNome || "Quadra nao informada", cardLargura - 170),
-      cardX + 12,
+      truncarTextoCanvas(ctx, partida.quadraNome || "Quadra nao informada", cardLargura - 24),
+      cardX + (cardLargura / 2),
       cursorY + 72
     );
-
-    const cartoesY = cursorY + 57;
-    const blocoCartoesX = cardX + cardLargura - 122;
-    desenharIndicadorCartaoCanvas(ctx, {
-      x: blocoCartoesX,
-      y: cartoesY,
-      tipo: "amarelo",
-      valor: Number(partida.cartoesAmarelos) || 0,
-    });
-    desenharIndicadorCartaoCanvas(ctx, {
-      x: blocoCartoesX + 56,
-      y: cartoesY,
-      tipo: "vermelho",
-      valor: Number(partida.cartoesVermelhos) || 0,
-    });
 
     cursorY += cardAltura + gap;
   }
