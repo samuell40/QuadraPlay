@@ -674,11 +674,16 @@ async function vincularUsuarioTime(usuarioId, timeId, jogadorId) {
   };
 }
 
-async function getEstatisticasJogadorVinculado(usuarioId) {
+async function getEstatisticasJogadorVinculado(usuarioId, filtros = {}) {
   const usuarioIdNum = Number(usuarioId);
   if (!Number.isInteger(usuarioIdNum) || usuarioIdNum <= 0) {
     throw new Error('Usuario invalido');
   }
+
+  const modalidadeFiltroNum = Number(filtros?.modalidadeId);
+  const modalidadeFiltroId = Number.isInteger(modalidadeFiltroNum) && modalidadeFiltroNum > 0
+    ? modalidadeFiltroNum
+    : null;
 
   const anoAtual = new Date().getFullYear();
   const inicioAnoAtual = new Date(anoAtual, 0, 1, 0, 0, 0, 0);
@@ -745,6 +750,36 @@ async function getEstatisticasJogadorVinculado(usuarioId) {
     erro.code = 'USUARIO_SEM_JOGADOR';
     throw erro;
   }
+
+  const timesVinculados = (Array.isArray(usuario.jogador.times) ? usuario.jogador.times : [])
+    .filter((item) => item?.time?.ativo && !item?.time?.deletedAt)
+    .filter((item) => item?.modalidade?.ativo && !item?.modalidade?.deletedAt)
+    .map((item) => ({
+      timeId: Number(item?.time?.id) || null,
+      timeNome: item?.time?.nome || '',
+      timeFoto: item?.time?.foto || null,
+      modalidadeId: Number(item?.modalidade?.id) || null,
+      modalidadeNome: item?.modalidade?.nome || '',
+    }));
+
+  const modalidadesPorTimeId = new Map();
+  timesVinculados.forEach((item) => {
+    const timeId = Number(item?.timeId);
+    const modalidadeId = Number(item?.modalidadeId);
+    if (!Number.isInteger(timeId) || timeId <= 0 || !Number.isInteger(modalidadeId) || modalidadeId <= 0) return;
+
+    if (!modalidadesPorTimeId.has(timeId)) {
+      modalidadesPorTimeId.set(timeId, []);
+    }
+
+    const vinculadas = modalidadesPorTimeId.get(timeId);
+    if (!vinculadas.some((vinculo) => vinculo.modalidadeId === modalidadeId)) {
+      vinculadas.push({
+        modalidadeId,
+        modalidadeNome: item?.modalidadeNome || '',
+      });
+    }
+  });
 
   const atuacoes = await prisma.jogadorPartida.findMany({
     where: {
@@ -868,6 +903,24 @@ async function getEstatisticasJogadorVinculado(usuarioId) {
 
   for (const item of partidasConsolidadas) {
     const partida = item?.partida || {};
+    const modalidadeCampeonatoId = Number(partida?.campeonato?.modalidade?.id);
+    const vinculosTimeAtual = modalidadesPorTimeId.get(Number(item?.timeId)) || [];
+    const vinculoModalidadeTime = modalidadeFiltroId
+      ? vinculosTimeAtual.find((vinculo) => vinculo.modalidadeId === modalidadeFiltroId) || null
+      : (vinculosTimeAtual.length === 1 ? vinculosTimeAtual[0] : null);
+    const modalidadePartidaId = Number.isInteger(modalidadeCampeonatoId) && modalidadeCampeonatoId > 0
+      ? modalidadeCampeonatoId
+      : Number(vinculoModalidadeTime?.modalidadeId) || null;
+    const modalidadePartidaNome = String(
+      partida?.campeonato?.modalidade?.nome ||
+      vinculoModalidadeTime?.modalidadeNome ||
+      ''
+    ).trim() || null;
+
+    if (modalidadeFiltroId && Number(modalidadePartidaId) !== modalidadeFiltroId) {
+      continue;
+    }
+
     const resultado = classificarResultadoPartida({
       timeId: item?.timeId,
       partida,
@@ -885,14 +938,15 @@ async function getEstatisticasJogadorVinculado(usuarioId) {
     const idCampeonato = Number(partida?.campeonatoId);
     const campanhaKey = Number.isInteger(idCampeonato) && idCampeonato > 0
       ? `campeonato:${idCampeonato}`
-      : 'avulso';
+      : `avulso:${modalidadePartidaId || 'sem-modalidade'}`;
 
     if (!campanhasMap.has(campanhaKey)) {
       campanhasMap.set(campanhaKey, {
         campeonatoId: Number.isInteger(idCampeonato) && idCampeonato > 0 ? idCampeonato : null,
         campeonatoNome: partida?.campeonato?.nome || 'Partidas avulsas',
         statusCampeonato: partida?.campeonato?.status || null,
-        modalidadeNome: partida?.campeonato?.modalidade?.nome || null,
+        modalidadeId: modalidadePartidaId,
+        modalidadeNome: modalidadePartidaNome,
         timeNome: null,
         partidas: 0,
         gols: 0,
@@ -957,6 +1011,8 @@ async function getEstatisticasJogadorVinculado(usuarioId) {
       data: partida?.data || null,
       campeonatoId: campanha.campeonatoId,
       campeonatoNome: campanha.campeonatoNome,
+      modalidadeId: modalidadePartidaId,
+      modalidadeNome: modalidadePartidaNome,
       timeANome: partida?.timeA?.nome || 'Time A',
       timeAFoto: partida?.timeA?.foto || null,
       timeBNome: partida?.timeB?.nome || 'Time B',
@@ -988,17 +1044,6 @@ async function getEstatisticasJogadorVinculado(usuarioId) {
       if (b.partidas !== a.partidas) return b.partidas - a.partidas;
       return String(a.campeonatoNome || '').localeCompare(String(b.campeonatoNome || ''));
     });
-
-  const timesVinculados = (Array.isArray(usuario.jogador.times) ? usuario.jogador.times : [])
-    .filter((item) => item?.time?.ativo && !item?.time?.deletedAt)
-    .filter((item) => item?.modalidade?.ativo && !item?.modalidade?.deletedAt)
-    .map((item) => ({
-      timeId: Number(item?.time?.id) || null,
-      timeNome: item?.time?.nome || '',
-      timeFoto: item?.time?.foto || null,
-      modalidadeId: Number(item?.modalidade?.id) || null,
-      modalidadeNome: item?.modalidade?.nome || '',
-    }));
 
   return {
     usuarioId: usuarioIdNum,

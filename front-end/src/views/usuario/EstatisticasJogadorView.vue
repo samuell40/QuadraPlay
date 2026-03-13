@@ -11,6 +11,25 @@
           </p>
         </section>
 
+        <section v-if="exibirFiltroModalidade" class="filtro-modalidade-card">
+          <label for="filtro-modalidade-estatisticas" class="filtro-modalidade-label">Modalidade</label>
+          <select
+            id="filtro-modalidade-estatisticas"
+            v-model="modalidadeSelecionada"
+            class="filtro-modalidade-select"
+            :disabled="loading"
+          >
+            <option value="">Todas as modalidades</option>
+            <option
+              v-for="modalidade in modalidadesDisponiveis"
+              :key="`modalidade-${modalidade.id}`"
+              :value="String(modalidade.id)"
+            >
+              {{ modalidade.nome }}
+            </option>
+          </select>
+        </section>
+
         <div v-if="loading" class="loader-card">
           <LoadingState
             title="Carregando estatisticas"
@@ -225,6 +244,7 @@
                   <div class="partida-topo">
                     <div class="partida-meta">
                       <p class="partida-campeonato">{{ partida.campeonatoNome || "Partida avulsa" }}</p>
+                      <span class="partida-meta-separador" aria-hidden="true">|</span>
                       <span class="partida-data">{{ formatarData(partida.data) }}</span>
                     </div>
                     <span class="partida-resultado" :class="resultadoClasse(partida.resultado)">
@@ -297,7 +317,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import Swal from "sweetalert2";
 import NavBar from "@/components/Usuario/NavBar.vue";
 import LoadingState from "@/components/loading/LoadingState.vue";
@@ -313,6 +333,7 @@ const erroCarregamento = ref("");
 const possuiJogador = ref(true);
 const estatisticas = ref(null);
 const compartilhandoImagem = ref(false);
+const modalidadeSelecionada = ref("");
 const anoAtual = new Date().getFullYear();
 
 const resumoBase = {
@@ -332,6 +353,29 @@ const jogador = computed(() => estatisticas.value?.jogador || null);
 const campanhas = computed(() => (Array.isArray(estatisticas.value?.campanhas) ? estatisticas.value.campanhas : []));
 const ultimasPartidas = computed(() => (Array.isArray(estatisticas.value?.ultimasPartidas) ? estatisticas.value.ultimasPartidas : []));
 const timesJogador = computed(() => (Array.isArray(jogador.value?.times) ? jogador.value.times : []));
+const modalidadesDisponiveis = computed(() => {
+  const modalidadesMap = new Map();
+
+  timesJogador.value.forEach((item) => {
+    const modalidadeId = Number(item?.modalidadeId);
+    const modalidadeNome = String(item?.modalidadeNome || "").trim();
+    if (!Number.isInteger(modalidadeId) || modalidadeId <= 0 || !modalidadeNome) return;
+    if (!modalidadesMap.has(modalidadeId)) {
+      modalidadesMap.set(modalidadeId, { id: modalidadeId, nome: modalidadeNome });
+    }
+  });
+
+  return Array.from(modalidadesMap.values()).sort((a, b) => a.nome.localeCompare(b.nome));
+});
+const exibirFiltroModalidade = computed(() => modalidadesDisponiveis.value.length > 1);
+const timesJogadorConsiderados = computed(() => {
+  const modalidadeId = Number(modalidadeSelecionada.value);
+  if (!Number.isInteger(modalidadeId) || modalidadeId <= 0) {
+    return timesJogador.value;
+  }
+
+  return timesJogador.value.filter((item) => Number(item?.modalidadeId) === modalidadeId);
+});
 
 const inicialJogador = computed(() =>
   String(jogador.value?.nome || "J")
@@ -349,7 +393,7 @@ const numeroJogadorExibicao = computed(() => {
 });
 
 const resumoLinhaJogador = computed(() => {
-  const vinculos = timesJogador.value
+  const vinculos = timesJogadorConsiderados.value
     .map((item) => {
       const nomeTime = String(item?.timeNome || "").trim();
       const modalidade = String(item?.modalidadeNome || "").trim();
@@ -602,15 +646,11 @@ function desenharSecaoCampanhasCanvas(ctx, opcoes = {}) {
 
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
-  ctx.fillStyle = "#bfdbfe";
-  ctx.font = "700 15px Montserrat, Arial, sans-serif";
-  ctx.fillText("CAMPEONATO", x + 22, y + 24);
-
   ctx.fillStyle = "#f8fafc";
   ctx.font = "700 28px Montserrat, Arial, sans-serif";
-  ctx.fillText("Resumo por campeonato", x + 22, y + 57);
+  ctx.fillText("RESUMO POR CAMPEONATO", x + 22, y + 38);
 
-  const yLinhaCabecalho = y + 68;
+  const yLinhaCabecalho = y + 54;
   const gradienteTopo = ctx.createLinearGradient(x + 20, yLinhaCabecalho, x + largura - 20, yLinhaCabecalho);
   gradienteTopo.addColorStop(0, "rgba(56, 189, 248, 0.08)");
   gradienteTopo.addColorStop(0.5, "rgba(56, 189, 248, 0.8)");
@@ -626,7 +666,7 @@ function desenharSecaoCampanhasCanvas(ctx, opcoes = {}) {
     return;
   }
 
-  const areaTopo = y + 82;
+  const areaTopo = y + 68;
   const gap = 10;
   const alturaDisponivel = altura - (areaTopo - y) - 16;
   const alturaCard = Math.max(150, Math.floor((alturaDisponivel - (gap * (itens.length - 1))) / itens.length));
@@ -638,10 +678,10 @@ function desenharSecaoCampanhasCanvas(ctx, opcoes = {}) {
     const cardLargura = largura - 32;
 
     desenharRetanguloArredondado(ctx, cardX, cardY, cardLargura, alturaCard, 16);
-    ctx.fillStyle = "rgba(248, 250, 252, 0.98)";
+    ctx.fillStyle = "rgba(15, 23, 42, 0.36)";
     ctx.fill();
-    ctx.strokeStyle = "rgba(191, 219, 254, 0.95)";
-    ctx.lineWidth = 1.1;
+    ctx.strokeStyle = "rgba(148, 163, 184, 0.32)";
+    ctx.lineWidth = 1;
     ctx.stroke();
 
     const aproveitamentoTexto = `${formatarInteiro(campanha.aproveitamento)}%`;
@@ -649,16 +689,16 @@ function desenharSecaoCampanhasCanvas(ctx, opcoes = {}) {
     const pillLargura = Math.max(58, ctx.measureText(aproveitamentoTexto).width + 22);
     const pillX = cardX + cardLargura - pillLargura - 12;
     desenharRetanguloArredondado(ctx, pillX, cardY + 12, pillLargura, 28, 999);
-    ctx.fillStyle = "rgba(37, 99, 235, 0.14)";
+    ctx.fillStyle = "rgba(37, 99, 235, 0.22)";
     ctx.fill();
-    ctx.fillStyle = "#1d4ed8";
+    ctx.fillStyle = "#dbeafe";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(aproveitamentoTexto, pillX + (pillLargura / 2), cardY + 26);
 
     ctx.textAlign = "left";
     ctx.textBaseline = "alphabetic";
-    ctx.fillStyle = "#0f172a";
+    ctx.fillStyle = "#f8fafc";
     ctx.font = "700 16px Montserrat, Arial, sans-serif";
     ctx.fillText(
       truncarTextoCanvas(ctx, campanha.campeonatoNome || "Campeonato", cardLargura - pillLargura - 44),
@@ -673,7 +713,7 @@ function desenharSecaoCampanhasCanvas(ctx, opcoes = {}) {
       .filter(Boolean)
       .join(" | ");
 
-    ctx.fillStyle = "#475569";
+    ctx.fillStyle = "#93c5fd";
     ctx.font = "500 12px Montserrat, Arial, sans-serif";
     ctx.fillText(
       truncarTextoCanvas(ctx, subtitulo || "Time nao informado", cardLargura - 28),
@@ -690,7 +730,7 @@ function desenharSecaoCampanhasCanvas(ctx, opcoes = {}) {
     ];
 
     const metricasX = cardX + 12;
-    const metricasY = cardY + 84;
+    const metricasY = cardY + 62;
     const colunasMetricas = 3;
     const gapMetricasX = 8;
     const gapMetricasY = 8;
@@ -704,15 +744,15 @@ function desenharSecaoCampanhasCanvas(ctx, opcoes = {}) {
       const yMetrica = metricasY + (linha * (alturaMetrica + gapMetricasY));
 
       desenharRetanguloArredondado(ctx, xMetrica, yMetrica, larguraMetrica, alturaMetrica, 10);
-      ctx.fillStyle = "#f8fbff";
+      ctx.fillStyle = "rgba(15, 23, 42, 0.4)";
       ctx.fill();
-      ctx.strokeStyle = "rgba(191, 219, 254, 0.8)";
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = "rgba(147, 197, 253, 0.34)";
+      ctx.lineWidth = 1.1;
       ctx.stroke();
 
       ctx.textAlign = "left";
       ctx.textBaseline = "alphabetic";
-      ctx.fillStyle = "#475569";
+      ctx.fillStyle = "#93c5fd";
       ctx.font = "500 9px Montserrat, Arial, sans-serif";
       ctx.fillText(
         truncarTextoCanvas(ctx, metrica.label, larguraMetrica - 16),
@@ -720,7 +760,7 @@ function desenharSecaoCampanhasCanvas(ctx, opcoes = {}) {
         yMetrica + 12
       );
 
-      ctx.fillStyle = "#0f172a";
+      ctx.fillStyle = "#f8fafc";
       ctx.font = "800 14px Montserrat, Arial, sans-serif";
       ctx.fillText(
         truncarTextoCanvas(ctx, metrica.valor, larguraMetrica - 16),
@@ -802,21 +842,21 @@ function desenharSecaoPartidasCanvas(ctx, opcoes = {}) {
   desenharRetanguloArredondado(ctx, x, y, largura, altura, 20);
   ctx.fillStyle = "rgba(15, 23, 42, 0.25)";
   ctx.fill();
-  ctx.strokeStyle = "rgba(245, 158, 11, 0.3)";
+  ctx.strokeStyle = "rgba(125, 211, 252, 0.25)";
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
-  ctx.fillStyle = "#fde68a";
+  ctx.fillStyle = "#f8fafc";
   ctx.font = "700 28px Montserrat, Arial, sans-serif";
   ctx.fillText("ULTIMAS PARTIDAS", x + 22, y + 38);
 
   const yLinhaCabecalho = y + 54;
   const gradienteTopo = ctx.createLinearGradient(x + 20, yLinhaCabecalho, x + largura - 20, yLinhaCabecalho);
-  gradienteTopo.addColorStop(0, "rgba(245, 158, 11, 0.08)");
-  gradienteTopo.addColorStop(0.5, "rgba(245, 158, 11, 0.8)");
-  gradienteTopo.addColorStop(1, "rgba(245, 158, 11, 0.08)");
+  gradienteTopo.addColorStop(0, "rgba(56, 189, 248, 0.08)");
+  gradienteTopo.addColorStop(0.5, "rgba(56, 189, 248, 0.8)");
+  gradienteTopo.addColorStop(1, "rgba(56, 189, 248, 0.08)");
   ctx.fillStyle = gradienteTopo;
   ctx.fillRect(x + 20, yLinhaCabecalho, largura - 40, 2);
 
@@ -1244,9 +1284,11 @@ async function carregarEstatisticas() {
   erroCarregamento.value = "";
 
   try {
+    const modalidadeId = Number(modalidadeSelecionada.value);
     const { data } = await api.get("/estatisticas/jogador", {
       requiresAuth: true,
       silent: true,
+      params: Number.isInteger(modalidadeId) && modalidadeId > 0 ? { modalidadeId } : {},
     });
 
     estatisticas.value = data || null;
@@ -1280,6 +1322,11 @@ async function carregarEstatisticas() {
 onMounted(() => {
   carregarEstatisticas();
 });
+
+watch(modalidadeSelecionada, (novoValor, valorAnterior) => {
+  if (novoValor === valorAnterior) return;
+  carregarEstatisticas();
+});
 </script>
 
 <style scoped>
@@ -1303,6 +1350,48 @@ onMounted(() => {
   display: grid;
   gap: 8px;
   padding: 2px 2px 0;
+}
+
+.filtro-modalidade-card {
+  display: grid;
+  gap: 8px;
+  width: min(320px, 100%);
+  padding: 14px 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+}
+
+.filtro-modalidade-label {
+  color: #475569;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.filtro-modalidade-select {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: #ffffff;
+  color: #0f172a;
+  padding: 0 14px;
+  font: inherit;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.filtro-modalidade-select:focus {
+  border-color: rgba(37, 99, 235, 0.4);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+.filtro-modalidade-select:disabled {
+  opacity: 0.72;
+  cursor: not-allowed;
 }
 
 .titulo-principal {
@@ -1798,6 +1887,13 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   flex: 1 1 auto;
+}
+
+.partida-meta-separador {
+  color: #475569;
+  font-size: 0.88rem;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .partida-data {

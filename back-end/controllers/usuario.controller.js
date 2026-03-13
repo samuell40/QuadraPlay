@@ -245,7 +245,10 @@ async function listarUsuarioTimesController(req, res) {
 async function minhasEstatisticasJogadorController(req, res) {
   try {
     const usuarioId = Number(req.user?.id);
-    const estatisticas = await Usuario.getEstatisticasJogadorVinculado(usuarioId);
+    const modalidadeId = Number(req.query?.modalidadeId);
+    const estatisticas = await Usuario.getEstatisticasJogadorVinculado(usuarioId, {
+      modalidadeId: Number.isInteger(modalidadeId) && modalidadeId > 0 ? modalidadeId : null,
+    });
     return res.status(200).json(estatisticas);
   } catch (err) {
     console.error('Erro ao buscar estatisticas do jogador vinculado:', err);

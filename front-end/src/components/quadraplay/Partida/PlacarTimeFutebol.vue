@@ -99,7 +99,7 @@
           <button type="button" class="btn-close-x" @click="fecharModal">x</button>
         </div>
 
-        <div v-if="carregando" class="loader">Carregando jogadores...</div>
+        <div v-if="carregando" class="loader">{{ textoLoaderEvento }}</div>
 
         <div v-else-if="jogadores.length" class="coluna coluna-evento">
           <div class="busca-evento-wrap">
@@ -111,6 +111,18 @@
             />
           </div>
 
+          <transition name="feedback-local-fade">
+            <div
+              v-if="feedbackEventoModalAtivo"
+              class="acao-feedback-modal"
+              role="status"
+              aria-live="polite"
+            >
+              <span class="acao-feedback-local-spinner" aria-hidden="true"></span>
+              <span>{{ feedbackLocalTexto }}</span>
+            </div>
+          </transition>
+
           <div v-for="jogador in jogadoresFiltradosEvento" :key="jogador.id" class="jogador-card">
             <div class="jogador-info">
               <span v-if="temNumeroJogador(jogador.numero)" class="numero-jogador-badge">{{ jogador.numero }}</span>
@@ -121,9 +133,9 @@
             </div>
 
             <div class="controls">
-              <button @click="alterarEventoJogador(jogador, 'decrement')">-</button>
+              <button @click="alterarEventoJogador(jogador, 'decrement')" :disabled="salvandoEventoJogador">-</button>
               <span class="valor">{{ obterValorEvento(jogador) }}</span>
-              <button @click="alterarEventoJogador(jogador, 'increment')">+</button>
+              <button @click="alterarEventoJogador(jogador, 'increment')" :disabled="salvandoEventoJogador">+</button>
             </div>
           </div>
 
@@ -298,7 +310,8 @@ export default {
       feedbackLocalTipo: '',
       feedbackLocalTexto: '',
       feedbackCampoPendente: '',
-      feedbackValorBase: null
+      feedbackValorBase: null,
+      salvandoEventoJogador: false
     }
   },
 
@@ -328,6 +341,15 @@ export default {
         'modal-finalizada': this.partidaEncerradaGlobal,
         'modal-andamento': this.partidaEmAndamentoGlobal
       }
+    },
+
+    feedbackEventoModalAtivo() {
+      return this.salvandoEventoJogador && this.feedbackLocalTipo === this.tipoEvento && !!this.feedbackLocalTexto
+    },
+
+    textoLoaderEvento() {
+      if (this.feedbackEventoModalAtivo) return this.feedbackLocalTexto
+      return 'Carregando jogadores...'
     },
 
     jogadoresFiltradosEvento() {
@@ -527,7 +549,7 @@ export default {
     },
 
     async alterarEventoJogador(jogador, acao) {
-      if (!this.partidaIdNum) return
+      if (!this.partidaIdNum || this.salvandoEventoJogador) return
 
       const incremento = acao === 'increment' ? 1 : -1
       const payload = { jogadorId: jogador.id, partidaId: this.partidaIdNum }
@@ -537,6 +559,7 @@ export default {
       if (this.tipoEvento === 'vermelho') payload.cartoesVermelhos = incremento
 
       try {
+        this.salvandoEventoJogador = true
         this.iniciarFeedbackLocal(this.campoPorTipoEvento(this.tipoEvento), this.mensagemEventoJogador(acao))
         const res = await api.post('/atuacao', payload)
 
@@ -554,6 +577,8 @@ export default {
         Swal.fire('Erro', error.response?.data?.message || 'Erro ao salvar atuação', 'error')
         this.limparFeedbackLocal()
         await this.carregarJogadores()
+      } finally {
+        this.salvandoEventoJogador = false
       }
     },
 
@@ -1048,6 +1073,21 @@ export default {
   background: linear-gradient(180deg, var(--modal-accent-soft), rgba(255, 255, 255, 0.98));
   padding-bottom: 10px;
   margin-bottom: 6px;
+}
+
+.acao-feedback-modal {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding: 9px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: linear-gradient(180deg, var(--modal-accent-soft), rgba(255, 255, 255, 0.96));
+  color: var(--modal-accent-strong);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 .input-busca-evento {
