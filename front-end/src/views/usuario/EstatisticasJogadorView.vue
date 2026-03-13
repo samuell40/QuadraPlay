@@ -617,6 +617,58 @@ function carregarImagemCanvas(url) {
   });
 }
 
+async function carregarImagemCanvasComFallback(urlPrincipal, urlFallback = "") {
+  const imagemPrincipal = await carregarImagemCanvas(urlPrincipal);
+  if (imagemPrincipal) return imagemPrincipal;
+
+  const fallback = String(urlFallback || "").trim();
+  if (!fallback || fallback === String(urlPrincipal || "").trim()) {
+    return null;
+  }
+
+  return carregarImagemCanvas(fallback);
+}
+
+function normalizarUrlImagemCompartilhamento(url) {
+  const src = String(url || "").trim();
+  if (!src) return "";
+  if (/^(data:|blob:)/i.test(src)) return src;
+  if (/^https?:\/\//i.test(src)) return src;
+  if (/^\/?(assets|img|images)\//i.test(src)) return src;
+
+  const baseApi = String(api?.defaults?.baseURL || "").trim().replace(/\/+$/, "");
+  if (!baseApi) return src;
+
+  if (/^\/uploads\//i.test(src)) return `${baseApi}${src}`;
+  if (/^uploads\//i.test(src)) return `${baseApi}/${src}`;
+  return src;
+}
+
+function obterImagemCompartilhamento(url) {
+  const urlAbsoluta = normalizarUrlImagemCompartilhamento(url);
+
+  if (!/^https?:\/\//i.test(urlAbsoluta)) {
+    return {
+      principal: urlAbsoluta,
+      fallback: urlAbsoluta,
+    };
+  }
+
+  const baseApi = String(api?.defaults?.baseURL || "").trim().replace(/\/+$/, "");
+  if (!baseApi) {
+    return {
+      principal: urlAbsoluta,
+      fallback: urlAbsoluta,
+    };
+  }
+
+  const proxyUrl = `${baseApi}/media/proxy?url=${encodeURIComponent(urlAbsoluta)}`;
+  return {
+    principal: proxyUrl,
+    fallback: urlAbsoluta,
+  };
+}
+
 function baixarImagemBlob(blob, nomeArquivo) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -997,6 +1049,7 @@ async function gerarImagemEstatisticasBlob() {
   }
 
   const partidasCanvas = ultimasPartidas.value.slice(0, 4);
+  const fotoJogadorCompartilhamento = obterImagemCompartilhamento(jogadorAtual?.foto);
   const escudosUrls = Array.from(
     new Set(
       [FOTO_PADRAO_TIME]
@@ -1011,7 +1064,10 @@ async function gerarImagemEstatisticasBlob() {
 
   const [logoMarca, fotoJogador, ...escudosCarregados] = await Promise.all([
     carregarImagemCanvas(logoQuadraPlay),
-    carregarImagemCanvas(jogadorAtual?.foto),
+    carregarImagemCanvasComFallback(
+      fotoJogadorCompartilhamento.principal,
+      fotoJogadorCompartilhamento.fallback
+    ),
     ...escudosUrls.map((url) => carregarImagemCanvas(url)),
   ]);
   const escudosPorUrl = new Map();
