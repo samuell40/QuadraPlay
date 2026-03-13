@@ -304,7 +304,7 @@ import LoadingState from "@/components/loading/LoadingState.vue";
 import api from "@/axios";
 import { useAuthStore } from "@/store";
 import logoQuadraPlay from "@/assets/logo.png";
-import { obterFotoTime } from "@/utils/timeImagem";
+import { FOTO_PADRAO_TIME, obterFotoTime } from "@/utils/timeImagem";
 
 const authStore = useAuthStore();
 
@@ -542,36 +542,6 @@ function formatarDataHoraGeracao() {
   }).format(new Date());
 }
 
-function quebrarTexto(ctx, texto, maxLargura) {
-  const palavras = String(texto || "")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-
-  if (!palavras.length) return ["-"];
-
-  const linhas = [];
-  let linhaAtual = "";
-
-  palavras.forEach((palavra) => {
-    const tentativa = linhaAtual ? `${linhaAtual} ${palavra}` : palavra;
-    if (ctx.measureText(tentativa).width <= maxLargura) {
-      linhaAtual = tentativa;
-      return;
-    }
-    if (linhaAtual) {
-      linhas.push(linhaAtual);
-      linhaAtual = palavra;
-      return;
-    }
-    linhas.push(palavra);
-    linhaAtual = "";
-  });
-
-  if (linhaAtual) linhas.push(linhaAtual);
-  return linhas;
-}
-
 function desenharRetanguloArredondado(ctx, x, y, largura, altura, raio) {
   const r = Math.max(0, Math.min(raio, largura / 2, altura / 2));
   ctx.beginPath();
@@ -614,15 +584,13 @@ function baixarImagemBlob(blob, nomeArquivo) {
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
-function desenharListaCanvas(ctx, opcoes = {}) {
+function desenharSecaoCampanhasCanvas(ctx, opcoes = {}) {
   const {
     x = 0,
     y = 0,
     largura = 0,
     altura = 0,
-    titulo = "",
-    linhas = [],
-    corMarcador = "#38bdf8",
+    campanhas = [],
   } = opcoes;
 
   desenharRetanguloArredondado(ctx, x, y, largura, altura, 20);
@@ -635,10 +603,14 @@ function desenharListaCanvas(ctx, opcoes = {}) {
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
   ctx.fillStyle = "#bfdbfe";
-  ctx.font = "700 28px Montserrat, Arial, sans-serif";
-  ctx.fillText(titulo, x + 22, y + 38);
+  ctx.font = "700 15px Montserrat, Arial, sans-serif";
+  ctx.fillText("CAMPEONATO", x + 22, y + 24);
 
-  const yLinhaCabecalho = y + 54;
+  ctx.fillStyle = "#f8fafc";
+  ctx.font = "700 28px Montserrat, Arial, sans-serif";
+  ctx.fillText("Resumo por campeonato", x + 22, y + 57);
+
+  const yLinhaCabecalho = y + 68;
   const gradienteTopo = ctx.createLinearGradient(x + 20, yLinhaCabecalho, x + largura - 20, yLinhaCabecalho);
   gradienteTopo.addColorStop(0, "rgba(56, 189, 248, 0.08)");
   gradienteTopo.addColorStop(0.5, "rgba(56, 189, 248, 0.8)");
@@ -646,35 +618,109 @@ function desenharListaCanvas(ctx, opcoes = {}) {
   ctx.fillStyle = gradienteTopo;
   ctx.fillRect(x + 20, yLinhaCabecalho, largura - 40, 2);
 
-  const itens = Array.isArray(linhas) ? linhas : [];
+  const itens = Array.isArray(campanhas) ? campanhas.slice(0, 2) : [];
   if (!itens.length) {
     ctx.fillStyle = "#94a3b8";
     ctx.font = "600 22px Montserrat, Arial, sans-serif";
-    ctx.fillText("Sem informaÃ§Ãµes para exibir.", x + 22, y + 100);
+    ctx.fillText("Sem informacoes para exibir.", x + 22, y + 116);
     return;
   }
 
-  let cursorY = y + 90;
-  const limiteY = y + altura - 20;
-  const maxLarguraTexto = largura - 62;
+  const areaTopo = y + 82;
+  const gap = 10;
+  const alturaDisponivel = altura - (areaTopo - y) - 16;
+  const alturaCard = Math.max(86, Math.floor((alturaDisponivel - (gap * (itens.length - 1))) / itens.length));
 
   for (let i = 0; i < itens.length; i += 1) {
-    const linhasQuebradas = quebrarTexto(ctx, `${i + 1}. ${itens[i]}`, maxLarguraTexto).slice(0, 2);
-    const alturaItem = (linhasQuebradas.length * 28) + 14;
-    if ((cursorY + alturaItem) > limiteY) break;
+    const campanha = itens[i] || {};
+    const cardX = x + 16;
+    const cardY = areaTopo + (i * (alturaCard + gap));
+    const cardLargura = largura - 32;
 
-    ctx.beginPath();
-    ctx.arc(x + 26, cursorY - 8, 5, 0, Math.PI * 2);
-    ctx.fillStyle = corMarcador;
+    desenharRetanguloArredondado(ctx, cardX, cardY, cardLargura, alturaCard, 16);
+    ctx.fillStyle = "rgba(248, 250, 252, 0.98)";
     ctx.fill();
+    ctx.strokeStyle = "rgba(191, 219, 254, 0.95)";
+    ctx.lineWidth = 1.1;
+    ctx.stroke();
 
-    ctx.fillStyle = "#e2e8f0";
-    ctx.font = "600 22px Montserrat, Arial, sans-serif";
-    linhasQuebradas.forEach((linha, indiceLinha) => {
-      ctx.fillText(linha, x + 40, cursorY + (indiceLinha * 28));
+    const aproveitamentoTexto = `${formatarInteiro(campanha.aproveitamento)}%`;
+    ctx.font = "800 15px Montserrat, Arial, sans-serif";
+    const pillLargura = Math.max(58, ctx.measureText(aproveitamentoTexto).width + 22);
+    const pillX = cardX + cardLargura - pillLargura - 12;
+    desenharRetanguloArredondado(ctx, pillX, cardY + 12, pillLargura, 28, 999);
+    ctx.fillStyle = "rgba(37, 99, 235, 0.14)";
+    ctx.fill();
+    ctx.fillStyle = "#1d4ed8";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(aproveitamentoTexto, pillX + (pillLargura / 2), cardY + 26);
+
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillStyle = "#0f172a";
+    ctx.font = "700 16px Montserrat, Arial, sans-serif";
+    ctx.fillText(
+      truncarTextoCanvas(ctx, campanha.campeonatoNome || "Campeonato", cardLargura - pillLargura - 44),
+      cardX + 14,
+      cardY + 28
+    );
+
+    const subtitulo = [
+      String(campanha.modalidadeNome || "Modalidade nao informada").trim(),
+      String(campanha.timeNome || "").trim(),
+    ]
+      .filter(Boolean)
+      .join(" | ");
+
+    ctx.fillStyle = "#475569";
+    ctx.font = "500 12px Montserrat, Arial, sans-serif";
+    ctx.fillText(
+      truncarTextoCanvas(ctx, subtitulo || "Time nao informado", cardLargura - 28),
+      cardX + 14,
+      cardY + 48
+    );
+
+    const metricas = [
+      { label: "Partidas", valor: formatarInteiro(campanha.partidas) },
+      { label: "Gols", valor: formatarInteiro(campanha.gols) },
+      { label: "Cart. amar.", valor: formatarInteiro(campanha.cartoesAmarelos) },
+      { label: "Cart. verm.", valor: formatarInteiro(campanha.cartoesVermelhos) },
+      { label: "Aproveit.", valor: aproveitamentoTexto },
+    ];
+
+    const metricasX = cardX + 12;
+    const metricasY = cardY + alturaCard - 40;
+    const gapMetricas = 8;
+    const larguraMetrica = (cardLargura - 24 - (gapMetricas * (metricas.length - 1))) / metricas.length;
+
+    metricas.forEach((metrica, indice) => {
+      const xMetrica = metricasX + (indice * (larguraMetrica + gapMetricas));
+      desenharRetanguloArredondado(ctx, xMetrica, metricasY, larguraMetrica, 30, 10);
+      ctx.fillStyle = "#f8fbff";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(191, 219, 254, 0.8)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.textAlign = "left";
+      ctx.textBaseline = "alphabetic";
+      ctx.fillStyle = "#475569";
+      ctx.font = "500 9px Montserrat, Arial, sans-serif";
+      ctx.fillText(
+        truncarTextoCanvas(ctx, metrica.label, larguraMetrica - 16),
+        xMetrica + 8,
+        metricasY + 11
+      );
+
+      ctx.fillStyle = "#0f172a";
+      ctx.font = "800 14px Montserrat, Arial, sans-serif";
+      ctx.fillText(
+        truncarTextoCanvas(ctx, metrica.valor, larguraMetrica - 16),
+        xMetrica + 8,
+        metricasY + 26
+      );
     });
-
-    cursorY += alturaItem;
   }
 }
 
@@ -696,6 +742,7 @@ function desenharEscudoCanvas(ctx, opcoes = {}) {
     y = 0,
     tamanho = 26,
     imagem = null,
+    imagemFallback = null,
     fallbackTexto = "T",
   } = opcoes;
 
@@ -711,6 +758,8 @@ function desenharEscudoCanvas(ctx, opcoes = {}) {
 
   if (imagem) {
     ctx.drawImage(imagem, x, y, tamanho, tamanho);
+  } else if (imagemFallback) {
+    ctx.drawImage(imagemFallback, x, y, tamanho, tamanho);
   } else {
     const gradiente = ctx.createLinearGradient(x, y, x + tamanho, y + tamanho);
     gradiente.addColorStop(0, "#38bdf8");
@@ -766,6 +815,7 @@ function desenharSecaoPartidasCanvas(ctx, opcoes = {}) {
     altura = 0,
     partidas = [],
     escudosPorUrl = new Map(),
+    escudoPadrao = null,
   } = opcoes;
 
   desenharRetanguloArredondado(ctx, x, y, largura, altura, 20);
@@ -861,6 +911,7 @@ function desenharSecaoPartidasCanvas(ctx, opcoes = {}) {
       y: cursorY + 30,
       tamanho: 24,
       imagem: escudosPorUrl.get(escudoAUrl) || null,
+      imagemFallback: escudoPadrao,
       fallbackTexto: timeANome,
     });
 
@@ -869,6 +920,7 @@ function desenharSecaoPartidasCanvas(ctx, opcoes = {}) {
       y: cursorY + 30,
       tamanho: 24,
       imagem: escudosPorUrl.get(escudoBUrl) || null,
+      imagemFallback: escudoPadrao,
       fallbackTexto: timeBNome,
     });
 
@@ -941,8 +993,11 @@ async function gerarImagemEstatisticasBlob() {
   const partidasCanvas = ultimasPartidas.value.slice(0, 4);
   const escudosUrls = Array.from(
     new Set(
-      partidasCanvas
+      [FOTO_PADRAO_TIME]
+        .concat(
+          partidasCanvas
         .flatMap((partida) => [obterEscudoTime(partida?.timeAFoto), obterEscudoTime(partida?.timeBFoto)])
+        )
         .map((url) => String(url || "").trim())
         .filter(Boolean)
     )
@@ -957,6 +1012,7 @@ async function gerarImagemEstatisticasBlob() {
   escudosUrls.forEach((url, indice) => {
     escudosPorUrl.set(url, escudosCarregados[indice] || null);
   });
+  const escudoPadrao = escudosPorUrl.get(FOTO_PADRAO_TIME) || null;
 
   const gradienteFundo = ctx.createLinearGradient(0, 0, 0, canvas.height);
   gradienteFundo.addColorStop(0, "#06163f");
@@ -1135,18 +1191,12 @@ async function gerarImagemEstatisticasBlob() {
   const secaoCampanhasX = painelX + 34;
   const secaoPartidasX = secaoCampanhasX + secoesLargura + 18;
 
-  const campanhasLinhas = campanhas.value.slice(0, 4).map((campanha) =>
-    `${campanha.campeonatoNome || "Campeonato"} - ${formatarInteiro(campanha.partidas)}j | V/E/D ${formatarInteiro(campanha.vitorias)}/${formatarInteiro(campanha.empates)}/${formatarInteiro(campanha.derrotas)} | ${formatarInteiro(campanha.aproveitamento)}%`
-  );
-
-  desenharListaCanvas(ctx, {
+  desenharSecaoCampanhasCanvas(ctx, {
     x: secaoCampanhasX,
     y: secoesY,
     largura: secoesLargura,
     altura: secoesAltura,
-    titulo: "CAMPEONATO",
-    linhas: campanhasLinhas,
-    corMarcador: "#38bdf8",
+    campanhas: campanhas.value,
   });
 
   desenharSecaoPartidasCanvas(ctx, {
@@ -1156,6 +1206,7 @@ async function gerarImagemEstatisticasBlob() {
     altura: secoesAltura,
     partidas: partidasCanvas,
     escudosPorUrl,
+    escudoPadrao,
   });
 
   return new Promise((resolve, reject) => {
