@@ -222,10 +222,11 @@
                   :key="`partida-${partida.partidaId}`"
                   class="partida-card"
                 >
-                  <p class="partida-campeonato">{{ partida.campeonatoNome }}</p>
-
                   <div class="partida-topo">
-                    <span class="partida-data">{{ formatarData(partida.data) }}</span>
+                    <div class="partida-meta">
+                      <p class="partida-campeonato">{{ partida.campeonatoNome || "Partida avulsa" }}</p>
+                      <span class="partida-data">{{ formatarData(partida.data) }}</span>
+                    </div>
                     <span class="partida-resultado" :class="resultadoClasse(partida.resultado)">
                       <svg
                         v-if="partida.resultado === 'V'"
@@ -1774,9 +1775,18 @@ onMounted(() => {
   align-items: center;
 }
 
+.partida-meta {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+}
+
 .partida-data {
   color: #475569;
   font-size: 0.88rem;
+  white-space: nowrap;
 }
 
 .partida-resultado {
@@ -1789,6 +1799,8 @@ onMounted(() => {
   gap: 6px;
   font-size: 0.78rem;
   font-weight: 800;
+  margin-left: auto;
+  flex: 0 0 auto;
 }
 
 .partida-resultado-icone {
@@ -1814,6 +1826,9 @@ onMounted(() => {
   margin: 0;
   color: #475569;
   font-size: 0.86rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .partida-placar-linha {

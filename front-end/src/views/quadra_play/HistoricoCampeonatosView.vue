@@ -8,7 +8,6 @@
       <div class="conteudo" :class="{ collapsed: sidebarCollapsed }">
         <section class="header-card">
           <div class="header-copy">
-            <span class="section-kicker">Histórico</span>
             <h1 class="title">Campeonatos passados</h1>
             <p class="subtitle">Consulte campeonatos encerrados por ano.</p>
           </div>

@@ -188,7 +188,11 @@
                 class="input-busca-jogador-gerenciar" @click.stop />
 
               <ul>
-                <li v-if="gerenciarJogadoresExistentesFiltradosComBusca.length === 0" class="sem-jogador-gerenciar">
+                <li v-if="gerenciarCarregandoOpcoesExistentes" class="sem-jogador-gerenciar">
+                  Carregando jogadores...
+                </li>
+
+                <li v-else-if="gerenciarJogadoresExistentesFiltradosComBusca.length === 0" class="sem-jogador-gerenciar">
                   Nenhum jogador ou usuário disponível
                 </li>
 
@@ -329,9 +333,11 @@ export default {
       gerenciarJogadorSelecionado: null,
       gerenciarJogadorSelecionadoExistente: null,
       gerenciarUsuariosDisponiveis: [],
+      gerenciarCarregandoUsuariosDisponiveis: false,
       gerenciarUsuarioSelecionado: null,
       gerenciarAbrirDropdownUsuarios: false,
       gerenciarJogadores: [],
+      gerenciarCarregandoJogadoresExistentes: false,
       gerenciarJogadoresSelecionadosExistentes: [],
       gerenciarNumerosUsuariosExistentes: {},
       gerenciarJogadoresSelecionadosRemover: [],
@@ -476,6 +482,9 @@ export default {
         .filter(j => j.times.some(t => t.id === timeIdAtual))
         .filter(j => this.jogadorCombinaBusca(j, this.gerenciarBuscaJogadorRemover));
     },
+    gerenciarCarregandoOpcoesExistentes() {
+      return this.gerenciarCarregandoJogadoresExistentes || this.gerenciarCarregandoUsuariosDisponiveis;
+    },
     dropdownUsuariosStyle() {
       return this.gerenciarDropdownPosicoes.usuarios || {};
     },
@@ -613,6 +622,8 @@ export default {
       this.gerenciarJogadoresSelecionadosExistentes = [];
       this.gerenciarNumerosUsuariosExistentes = {};
       this.gerenciarJogadoresSelecionadosRemover = [];
+      this.gerenciarCarregandoUsuariosDisponiveis = false;
+      this.gerenciarCarregandoJogadoresExistentes = false;
       this.gerenciarAbrirDropdownUsuarios = false;
       this.gerenciarAbrirDropdownJogadores = false;
       this.gerenciarAbrirDropdownRemover = false;
@@ -780,15 +791,19 @@ export default {
     },
     async carregarJogadoresGerenciar() {
       if (!this.time?.modalidadeId) return;
+      this.gerenciarCarregandoJogadoresExistentes = true;
       try {
         const res = await api.get(`/jogadores/${this.time.modalidadeId}`);
         this.gerenciarJogadores = res.data || [];
       } catch (err) {
         console.error(err);
         this.gerenciarJogadores = [];
+      } finally {
+        this.gerenciarCarregandoJogadoresExistentes = false;
       }
     },
     async carregarUsuariosDisponiveisGerenciar() {
+      this.gerenciarCarregandoUsuariosDisponiveis = true;
       try {
         const res = await api.get('/usuarios/resumo');
         this.gerenciarUsuariosDisponiveis = res.data.filter(
@@ -797,6 +812,8 @@ export default {
       } catch (err) {
         console.error(err);
         this.gerenciarUsuariosDisponiveis = [];
+      } finally {
+        this.gerenciarCarregandoUsuariosDisponiveis = false;
       }
     },
     async uploadImagemGerenciar() {

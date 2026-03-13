@@ -352,8 +352,10 @@ export default {
     this._onResize = onResize
     window.addEventListener('scroll', this.atualizarVisibilidadeBotaoTopo, { passive: true })
 
-    await this.carregarQuadras()
-    await this.carregarCampeonatoMaisRecente()
+    await Promise.all([
+      this.carregarQuadras(),
+      this.carregarCampeonatoMaisRecente()
+    ])
   },
 
   beforeUnmount() {
@@ -573,8 +575,10 @@ export default {
         this.rodadas = rodadas
         this.rodadaSelecionada = rodadas.length ? rodadas[0].id : ''
 
-        await this.carregarPlacarPorFase(campeonatoId)
-        await this.carregarPartidasPorRodada()
+        await Promise.all([
+          this.carregarPlacarPorFase(campeonatoId),
+          this.carregarPartidasPorRodada()
+        ])
       } catch (err) {
         console.error('Erro ao carregar fases:', err)
         this.fases = []
