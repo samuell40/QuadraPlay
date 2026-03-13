@@ -207,6 +207,39 @@
               </ul>
             </div>
           </div>
+
+          <div v-if="gerenciarUsuariosSelecionadosExistentes.length > 0" class="usuarios-numeros-gerenciar">
+            <label>Escolha o número para cada usuário selecionado:</label>
+
+            <div
+              v-for="usuario in gerenciarUsuariosSelecionadosExistentes"
+              :key="usuario.chaveOpcao"
+              class="usuario-numero-card-gerenciar"
+            >
+              <div class="usuario-numero-card-topo">
+                <div class="usuario-numero-identificacao">
+                  <img :src="obterFotoComFallback(usuario.foto)" class="avatar" />
+                  <span>{{ formatarInicialMaiuscula(usuario.nome) }}</span>
+                </div>
+                <span class="tag-opcao-usuario">Usuário</span>
+              </div>
+
+              <select
+                :value="obterNumeroUsuarioSelecionado(usuario)"
+                class="dropdown-gerenciar"
+                @change="atualizarNumeroUsuarioExistente(usuario, $event.target.value)"
+              >
+                <option value="">Selecione o número disponível</option>
+                <option
+                  v-for="numero in obterNumerosDisponiveisParaUsuarioExistente(usuario)"
+                  :key="`${usuario.chaveOpcao}-${numero}`"
+                  :value="numero"
+                >
+                  {{ numero }}
+                </option>
+              </select>
+            </div>
+          </div>
         </div>
 
         <div v-if="gerenciarAcaoLocal === 'remover'" class="form-group-gerenciar">
@@ -300,6 +333,7 @@ export default {
       gerenciarAbrirDropdownUsuarios: false,
       gerenciarJogadores: [],
       gerenciarJogadoresSelecionadosExistentes: [],
+      gerenciarNumerosUsuariosExistentes: {},
       gerenciarJogadoresSelecionadosRemover: [],
       gerenciarAbrirDropdownJogadores: false,
       gerenciarAbrirDropdownRemover: false,
@@ -343,6 +377,39 @@ export default {
     gerenciarNumeroJogadorValido() {
       return this.normalizarNumeroJogador(this.gerenciarNumeroJogador) !== null;
     },
+    gerenciarUsuariosSelecionadosExistentes() {
+      return this.gerenciarJogadoresSelecionadosExistentes.filter(
+        item => String(item?.tipoOpcao || '') === 'usuario'
+      );
+    },
+    gerenciarUsuariosSelecionadosExistentesComNumeroValido() {
+      return this.gerenciarUsuariosSelecionadosExistentes.every(usuario => {
+        const chave = this.obterChaveOpcaoExistente(usuario);
+        const numeroSelecionado = this.normalizarNumeroJogador(this.gerenciarNumerosUsuariosExistentes[chave]);
+        if (numeroSelecionado === null) return false;
+        return this.gerenciarNumerosDisponiveisBase.includes(numeroSelecionado);
+      });
+    },
+    gerenciarNumerosDisponiveisBase() {
+      const numerosUsadosNoTime = new Set(
+        this.jogadores
+          .map(jogador => this.normalizarNumeroJogador(jogador?.numero))
+          .filter(numero => numero !== null)
+      );
+      const quantidadeUsuarios = Math.max(this.gerenciarUsuariosSelecionadosExistentes.length, 1);
+      const quantidadeOpcoes = Math.max(99, quantidadeUsuarios + 20);
+      const disponiveis = [];
+      let numeroAtual = 1;
+
+      while (disponiveis.length < quantidadeOpcoes) {
+        if (!numerosUsadosNoTime.has(numeroAtual)) {
+          disponiveis.push(numeroAtual);
+        }
+        numeroAtual += 1;
+      }
+
+      return disponiveis;
+    },
     botaoSalvarGerenciarDesabilitado() {
       if (!this.gerenciarAcaoLocal || this.gerenciarSalvando) return true;
 
@@ -351,7 +418,9 @@ export default {
       }
 
       if (this.gerenciarAcaoLocal === 'adicionarExistente') {
-        return this.gerenciarJogadoresSelecionadosExistentes.length === 0;
+        if (this.gerenciarJogadoresSelecionadosExistentes.length === 0) return true;
+        if (this.gerenciarUsuariosSelecionadosExistentes.length === 0) return false;
+        return !this.gerenciarUsuariosSelecionadosExistentesComNumeroValido;
       }
 
       if (this.gerenciarAcaoLocal === 'remover') {
@@ -542,6 +611,7 @@ export default {
       this.gerenciarJogadorSelecionadoExistente = null;
       this.gerenciarUsuarioSelecionado = null;
       this.gerenciarJogadoresSelecionadosExistentes = [];
+      this.gerenciarNumerosUsuariosExistentes = {};
       this.gerenciarJogadoresSelecionadosRemover = [];
       this.gerenciarAbrirDropdownUsuarios = false;
       this.gerenciarAbrirDropdownJogadores = false;
@@ -613,6 +683,30 @@ export default {
       if (!Number.isInteger(id) || id <= 0) return '';
       return `${tipo}-${id}`;
     },
+    obterNumeroUsuarioSelecionado(usuario) {
+      const chave = this.obterChaveOpcaoExistente(usuario);
+      return this.gerenciarNumerosUsuariosExistentes[chave] ?? '';
+    },
+    obterNumerosDisponiveisParaUsuarioExistente(usuarioAtual) {
+      if (!usuarioAtual) return [];
+      return this.gerenciarNumerosDisponiveisBase;
+    },
+    atualizarNumeroUsuarioExistente(usuario, valor) {
+      const chave = this.obterChaveOpcaoExistente(usuario);
+      if (!chave) return;
+
+      const numeroNormalizado = this.normalizarNumeroJogador(valor);
+      if (numeroNormalizado === null) {
+        delete this.gerenciarNumerosUsuariosExistentes[chave];
+        this.gerenciarNumerosUsuariosExistentes = { ...this.gerenciarNumerosUsuariosExistentes };
+        return;
+      }
+
+      this.gerenciarNumerosUsuariosExistentes = {
+        ...this.gerenciarNumerosUsuariosExistentes,
+        [chave]: numeroNormalizado
+      };
+    },
     normalizarLinhaJogadorMassa(linha) {
       const texto = String(linha || '').trim();
       if (!texto) return null;
@@ -659,6 +753,10 @@ export default {
       );
       if (index !== -1) {
         this.gerenciarJogadoresSelecionadosExistentes.splice(index, 1);
+        if (String(jogador?.tipoOpcao || '') === 'usuario' && this.gerenciarNumerosUsuariosExistentes[chaveJogador] !== undefined) {
+          delete this.gerenciarNumerosUsuariosExistentes[chaveJogador];
+          this.gerenciarNumerosUsuariosExistentes = { ...this.gerenciarNumerosUsuariosExistentes };
+        }
       } else {
         this.gerenciarJogadoresSelecionadosExistentes.push(jogador);
         this.gerenciarJogadorSelecionadoExistente = jogador;
@@ -769,6 +867,7 @@ export default {
       const conflitosNumeroNoTime = [];
       const numerosDuplicadosNaSelecao = new Set();
       const numerosSelecionados = new Set();
+      const usuariosSemNumero = [];
 
       for (const jogador of jogadoresSelecionados) {
         const numeroJogador = this.normalizarNumeroJogador(jogador?.numero);
@@ -788,10 +887,36 @@ export default {
         numerosSelecionados.add(numeroJogador);
       }
 
-      if (conflitosNumeroNoTime.length || numerosDuplicadosNaSelecao.size) {
+      for (const usuario of usuariosSelecionados) {
+        const chaveUsuario = this.obterChaveOpcaoExistente(usuario);
+        const numeroJogador = this.normalizarNumeroJogador(this.gerenciarNumerosUsuariosExistentes[chaveUsuario]);
+
+        if (!numeroJogador) {
+          usuariosSemNumero.push(String(usuario?.nome || 'Usuário').trim());
+          continue;
+        }
+
+        const conflitoNumero = this.obterJogadorComNumeroNoTime(numeroJogador);
+        if (conflitoNumero) {
+          conflitosNumeroNoTime.push(`${numeroJogador} (${conflitoNumero.nome})`);
+          continue;
+        }
+
+        if (numerosSelecionados.has(numeroJogador)) {
+          numerosDuplicadosNaSelecao.add(numeroJogador);
+          continue;
+        }
+
+        numerosSelecionados.add(numeroJogador);
+      }
+
+      if (usuariosSemNumero.length || conflitosNumeroNoTime.length || numerosDuplicadosNaSelecao.size) {
         let mensagem = '';
+        if (usuariosSemNumero.length) {
+          mensagem += `Selecione um número para:\n${usuariosSemNumero.join(', ')}`;
+        }
         if (conflitosNumeroNoTime.length) {
-          mensagem += `Números já usados no time:\n${conflitosNumeroNoTime.join(', ')}`;
+          mensagem += `${mensagem ? '\n\n' : ''}Números já usados no time:\n${conflitosNumeroNoTime.join(', ')}`;
         }
         if (numerosDuplicadosNaSelecao.size) {
           mensagem += `${mensagem ? '\n\n' : ''}Números repetidos na seleção:\n${Array.from(numerosDuplicadosNaSelecao).join(', ')}`;
@@ -808,9 +933,11 @@ export default {
       }
 
       for (const usuario of usuariosSelecionados) {
+        const chaveUsuario = this.obterChaveOpcaoExistente(usuario);
+        const numeroJogador = this.normalizarNumeroJogador(this.gerenciarNumerosUsuariosExistentes[chaveUsuario]);
         await api.post('/adicionar', {
           nome: String(usuario?.nome || '').trim(),
-          numero: null,
+          numero: numeroJogador,
           foto: this.obterFotoComFallback(usuario?.foto),
           timeId: this.time.id,
           usuarioId: Number(usuario?.id),
@@ -1733,6 +1860,46 @@ textarea.dropdown-gerenciar {
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.02em;
+}
+
+.usuarios-numeros-gerenciar {
+  margin-top: 12px;
+  display: grid;
+  gap: 12px;
+}
+
+.usuario-numero-card-gerenciar {
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+}
+
+.usuario-numero-card-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.usuario-numero-identificacao {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.usuario-numero-identificacao .avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 1px solid rgba(59, 130, 246, 0.22);
 }
 
 .selecionado {

@@ -31,8 +31,15 @@
           <p v-if="resumoCampeonato"><strong>Detalhe:</strong> {{ resumoCampeonato }}</p>
         </template>
 
-        <p v-else><strong>Time:</strong> {{ obterNomeTime(agendamento) }}</p>
-        <p v-if="descricaoAgendamento"><strong>Descrição:</strong> {{ descricaoAgendamento }}</p>
+        <template v-else>
+          <p v-if="nomeEscolaAula"><strong>Escola:</strong> {{ nomeEscolaAula }}</p>
+          <p v-else-if="descricaoOutro"><strong>Descrição:</strong> {{ descricaoOutro }}</p>
+          <p v-else><strong>Time:</strong> {{ obterNomeTime(agendamento) }}</p>
+        </template>
+
+        <p v-if="tipoNormalizado !== 'OUTRO' && descricaoAgendamento">
+          <strong>Descrição:</strong> {{ descricaoAgendamento }}
+        </p>
 
         <div v-if="agendamento.motivoRecusa" class="alerta-recusa">
           <strong>Motivo da Recusa:</strong> {{ agendamento.motivoRecusa }}
@@ -45,6 +52,8 @@
 </template>
 
 <script>
+import { obterNomeEscolaAula } from '@/utils/agendamentoExibicao'
+
 export default {
   name: 'DetalheAgendModal',
   props: {
@@ -69,6 +78,18 @@ export default {
     resumoCampeonato() {
       return this.obterResumoCampeonato(this.agendamento)
     },
+    tipoNormalizado() {
+      return String(this.agendamento?.tipo || '').trim().toUpperCase()
+    },
+    nomeEscolaAula() {
+      if (this.tipoNormalizado !== 'AULA') return ''
+      return obterNomeEscolaAula(this.agendamento?.escola)
+    },
+    descricaoOutro() {
+      if (this.tipoNormalizado !== 'OUTRO') return ''
+      const descricao = String(this.agendamento?.descricao || '').trim()
+      return descricao ? this.normalizarTextoExibicao(descricao) : ''
+    },
     descricaoAgendamento() {
       const descricao = String(this.agendamento?.descricao || '').trim()
       return descricao ? this.normalizarTextoExibicao(descricao) : ''
@@ -84,14 +105,14 @@ export default {
       if (ag?.usuario?.nome) return this.normalizarTextoExibicao(ag.usuario.nome)
       if (typeof ag?.usuario === 'string' && ag.usuario.trim()) return this.normalizarTextoExibicao(ag.usuario)
       if (typeof ag?.usuarioNome === 'string' && ag.usuarioNome.trim()) return this.normalizarTextoExibicao(ag.usuarioNome)
-      return 'Usuário desconhecido'
+      return 'Usu\u00e1rio desconhecido'
     },
 
     obterNomeTime(ag) {
       if (ag?.time?.nome) return this.normalizarTextoExibicao(ag.time.nome)
       if (typeof ag?.time === 'string' && ag.time.trim()) return this.normalizarTextoExibicao(ag.time)
       if (typeof ag?.timeNome === 'string' && ag.timeNome.trim()) return this.normalizarTextoExibicao(ag.timeNome)
-      return 'Não vinculado'
+      return 'N\u00e3o vinculado'
     },
 
     ehAgendamentoCampeonato(ag) {

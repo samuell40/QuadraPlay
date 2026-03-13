@@ -1,4 +1,11 @@
 const TIPOS_COM_MODALIDADE = new Set(['TREINO', 'AMISTOSO'])
+const ESCOLAS_AULA = {
+  EEAF: 'Escola Estadual Arist\u00f3fanes Fernandes',
+  EEJAM: 'Escola Estadual Joaquim Adelino de Medeiros',
+  EMFPA: 'Escola Municipal Francisca Pires de Medeiros',
+  CEMEI: 'Centro Municipal de Ensino Infantil Professor Jos\u00e9 Felicio',
+  DANCA: 'Dan\u00e7a'
+}
 
 function normalizarIdentificador(valor) {
   return String(valor || '')
@@ -24,9 +31,16 @@ export function formatarEscolaAulaLabel(escola) {
   const escolaNormalizada = normalizarIdentificador(escola)
   if (!escolaNormalizada) return ''
 
-  if (escolaNormalizada === 'DANCA') return 'Dança'
+  if (escolaNormalizada === 'DANCA') return 'Dan\u00e7a'
 
   return String(escola || '').trim().toUpperCase()
+}
+
+export function obterNomeEscolaAula(escola) {
+  const escolaNormalizada = normalizarIdentificador(escola)
+  if (!escolaNormalizada) return ''
+
+  return ESCOLAS_AULA[escolaNormalizada] || formatarEscolaAulaLabel(escola)
 }
 
 export function obterDescricaoReserva(agendamento) {
