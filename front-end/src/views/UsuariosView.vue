@@ -2439,13 +2439,13 @@ select:focus {
   }
 
   .modal-content.modal-detalhes-user {
-    width: calc(100% - 12px);
-    max-height: calc(100vh - 20px);
+    width: 100%;
+    max-height: 88vh;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    padding: 12px;
-    border-radius: 18px;
+    padding: 10px;
+    border-radius: 22px;
   }
 
   .modal-detalhes-body {
@@ -2454,62 +2454,65 @@ select:focus {
   }
 
   .modal-user-header {
-    padding-bottom: 10px;
-    margin-bottom: 10px;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
   }
 
   .modal-title {
-    font-size: 24px;
+    font-size: 20px;
     line-height: 1.2;
   }
 
   .btn-close-x-user {
-    width: 36px;
-    height: 36px;
-    font-size: 18px;
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
   }
 
   .user-profile {
     flex-direction: row;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
+    padding: 8px;
   }
 
   .user-top-grid {
     grid-template-columns: 1fr;
-    gap: 10px;
+    gap: 8px;
   }
 
   .avatar-wrap {
-    width: 132px;
-    height: 132px;
-    box-shadow: 0 0 0 3px #ebf6ff, 0 0 0 6px rgba(86, 184, 255, 0.35), 0 8px 20px rgba(45, 116, 229, 0.22);
+    width: 84px;
+    height: 84px;
+    box-shadow: 0 0 0 2px #ebf6ff, 0 0 0 4px rgba(86, 184, 255, 0.3), 0 6px 14px rgba(45, 116, 229, 0.2);
   }
 
   .user-name {
-    font-size: 24px;
+    font-size: 19px;
   }
 
   .badge-permissao {
-    font-size: 13px;
-    padding: 8px 12px;
+    font-size: 11px;
+    padding: 6px 10px;
   }
 
   .user-grid {
     grid-template-columns: 1fr;
-    gap: 10px;
+    gap: 8px;
+    margin-top: 8px;
   }
 
   .info-card {
-    border-radius: 16px;
-    padding: 10px;
+    border-radius: 14px;
+    padding: 8px;
   }
 
   .info-row {
     grid-template-columns: 1fr;
-    gap: 6px;
-    padding: 10px;
-    border-radius: 12px;
+    gap: 4px;
+    padding: 8px;
+    border-radius: 10px;
+    margin-bottom: 5px;
   }
 
   .info-actions {
@@ -2518,22 +2521,25 @@ select:focus {
   }
 
   .icon-btn {
-    width: 42px;
-    height: 42px;
+    width: 38px;
+    height: 38px;
   }
 
   .stats-inline {
     grid-template-columns: 1fr;
-    gap: 8px;
+    gap: 6px;
   }
 
   .stats-card .stat {
     flex-wrap: wrap;
+    gap: 4px;
+    padding: 7px 8px;
   }
 
   .btn-fechar-premium {
-    padding: 12px;
-    border-radius: 16px;
+    margin-top: 6px;
+    padding: 10px;
+    border-radius: 14px;
   }
 
   .modal-header-edicao {
@@ -2555,6 +2561,31 @@ select:focus {
 
   select {
     font-size: 14px;
+  }
+}
+
+@media (max-width: 540px) {
+  .modal-content.modal-detalhes-user {
+    max-height: 88vh;
+    padding: 9px;
+  }
+
+  .modal-title {
+    font-size: 18px;
+  }
+
+  .avatar-wrap {
+    width: 76px;
+    height: 76px;
+  }
+
+  .user-name {
+    font-size: 18px;
+  }
+
+  .badge-permissao {
+    padding: 5px 9px;
+    font-size: 11px;
   }
 }
 </style>
