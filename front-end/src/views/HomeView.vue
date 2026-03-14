@@ -99,6 +99,13 @@
 
                       <button class="btn-agendar" :disabled="quadra.interditada"
                         @click="!quadra.interditada && verificarLogin(quadra)">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M7 3v4" />
+                          <path d="M17 3v4" />
+                          <rect x="4" y="5" width="16" height="15" rx="3" ry="3" />
+                          <path d="M4 10h16" />
+                          <path d="m9 14 2 2 4-4" />
+                        </svg>
                         {{ quadra.interditada ? 'Indisponível' : 'Agendar agora' }}
                       </button>
                     </div>
@@ -1407,9 +1414,10 @@ a {
   inset: 0;
   background: linear-gradient(180deg,
     rgba(8, 21, 61, 0.05) 0%,
-    rgba(8, 21, 61, 0.14) 26%,
-    rgba(8, 21, 61, 0.34) 54%,
-    rgba(5, 11, 44, 0.86) 100%);
+    rgba(8, 21, 61, 0.12) 22%,
+    rgba(19, 50, 150, 0.24) 46%,
+    rgba(25, 63, 196, 0.58) 72%,
+    rgba(8, 20, 78, 0.96) 100%);
   z-index: 1;
   pointer-events: none;
 }
@@ -1440,6 +1448,7 @@ a {
   gap: 10px;
   padding: 13px 12px 12px;
   color: #ffffff;
+  background: linear-gradient(180deg, rgba(9, 18, 61, 0) 0%, rgba(16, 37, 118, 0.18) 14%, rgba(18, 52, 172, 0.38) 46%, rgba(10, 23, 86, 0.94) 100%);
 }
 
 .card-copy {
@@ -1489,6 +1498,10 @@ a {
 }
 
 .btn-agendar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   background: linear-gradient(135deg, #3b82f6, #60a5fa);
   color: #ffffff;
   border: 1px solid rgba(191, 219, 254, 0.4);
@@ -1504,6 +1517,17 @@ a {
   align-self: flex-start;
   margin-top: 4px;
   box-shadow: 0 9px 16px rgba(30, 64, 175, 0.32);
+}
+
+.btn-agendar svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+  flex-shrink: 0;
 }
 
 .btn-agendar:hover:not(:disabled) {
