@@ -166,6 +166,18 @@ async function listarUsuariosResumoController(req, res) {
   }
 }
 
+async function resumoPublicoHomeController(req, res) {
+  try {
+    const resumo = await Usuario.getResumoPublicoHome();
+    return res.status(200).json(resumo);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      error: 'Erro ao buscar resumo publico da home.',
+    });
+  }
+}
+
 async function listarPermissoesController(req, res) {
   try {
     const permissoes = await Usuario.listarPermissoes();
@@ -283,6 +295,7 @@ module.exports = {
   excluirMinhaContaController,
   listarUsuariosController,
   listarUsuariosResumoController,
+  resumoPublicoHomeController,
   listarPermissoesController,
   vincularUsuarioTimeController,
   listarUsuarioTimesController,

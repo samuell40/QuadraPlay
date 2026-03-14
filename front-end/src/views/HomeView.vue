@@ -28,6 +28,35 @@
               <img :src="heroLogo" alt="" class="hero-logo" />
             </div>
           </div>
+
+          <div class="hero-metrics" aria-label="Resumo da plataforma">
+            <article v-for="metrica in heroMetricas" :key="metrica.id" class="hero-metric-card">
+              <div class="hero-metric-icon" :class="`hero-metric-icon-${metrica.id}`" aria-hidden="true">
+                <svg v-if="metrica.id === 'quadras'" viewBox="0 0 24 24">
+                  <path d="M3 10.5 12 4l9 6.5" />
+                  <path d="M5 9.5V20h14V9.5" />
+                  <path d="M9 20v-5h6v5" />
+                </svg>
+                <svg v-else-if="metrica.id === 'reservas'" viewBox="0 0 24 24">
+                  <path d="M6 4v4" />
+                  <path d="M18 4v4" />
+                  <path d="M4 9h16" />
+                  <rect x="4" y="6" width="16" height="14" rx="3" ry="3" />
+                </svg>
+                <svg v-else viewBox="0 0 24 24">
+                  <path d="M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1" />
+                  <circle cx="9.5" cy="8" r="3" />
+                  <path d="M20 19v-1a4 4 0 0 0-3-3.87" />
+                  <path d="M15 4.13a3 3 0 0 1 0 5.74" />
+                </svg>
+              </div>
+
+              <div class="hero-metric-copy">
+                <strong>{{ metrica.valor }}</strong>
+                <span>{{ metrica.rotulo }}</span>
+              </div>
+            </article>
+          </div>
         </div>
       </section>
 
@@ -262,6 +291,12 @@ export default {
       timeSelecionadoPartidas: null,
       mostrarBotaoTopo: false,
       isMobile: window.innerWidth <= 768,
+      isLoadingResumoHero: true,
+      resumoHero: {
+        totalQuadras: 0,
+        totalReservas: 0,
+        totalUsuarios: 0,
+      },
       socket: null,
       socketCampeonatoId: null,
       onSocketAtualizacao: null,
@@ -345,6 +380,25 @@ export default {
     partidasHomeTop5() {
       return Array.isArray(this.partidas) ? this.partidas.slice(0, 5) : []
     },
+    heroMetricas() {
+      return [
+        {
+          id: 'quadras',
+          valor: this.formatarNumeroResumo(this.resumoHero.totalQuadras),
+          rotulo: 'quadras cadastradas',
+        },
+        {
+          id: 'reservas',
+          valor: this.formatarNumeroResumo(this.resumoHero.totalReservas),
+          rotulo: 'reservas',
+        },
+        {
+          id: 'usuarios',
+          valor: this.formatarNumeroResumo(this.resumoHero.totalUsuarios),
+          rotulo: 'usuarios cadastrados',
+        },
+      ]
+    },
     temCampeonatoCadastrado() {
       const campeonatoId = Number(this.campeonatoId)
       return Number.isInteger(campeonatoId) && campeonatoId > 0
@@ -364,6 +418,7 @@ export default {
 
     await Promise.all([
       this.carregarQuadras(),
+      this.carregarResumoHero(),
       this.carregarCampeonatoMaisRecente()
     ])
   },
@@ -390,6 +445,33 @@ export default {
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .trim()
+    },
+    formatarNumeroResumo(valor) {
+      if (this.isLoadingResumoHero) {
+        return '...'
+      }
+
+      return new Intl.NumberFormat('pt-BR').format(Number(valor) || 0)
+    },
+    async carregarResumoHero() {
+      this.isLoadingResumoHero = true
+      try {
+        const { data } = await api.get('/public/home/resumo', { silent: true })
+        this.resumoHero = {
+          totalQuadras: Number(data?.totalQuadras) || 0,
+          totalReservas: Number(data?.totalReservas) || 0,
+          totalUsuarios: Number(data?.totalUsuarios) || 0,
+        }
+      } catch (err) {
+        console.error('Erro ao carregar resumo da home:', err)
+        this.resumoHero = {
+          totalQuadras: Array.isArray(this.quadras) ? this.quadras.length : 0,
+          totalReservas: 0,
+          totalUsuarios: 0,
+        }
+      } finally {
+        this.isLoadingResumoHero = false
+      }
     },
     conectarSocket() {
       this.socket = obterSocket()
@@ -934,6 +1016,80 @@ a {
   font-size: 16px;
   line-height: 1.5;
   max-width: 540px;
+}
+
+.hero-metrics {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.hero-metric-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(32, 62, 145, 0.44);
+  border: 1px solid rgba(96, 165, 250, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.hero-metric-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 34px;
+  background: rgba(59, 130, 246, 0.18);
+  color: #bfdbfe;
+}
+
+.hero-metric-icon svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+.hero-metric-icon-reservas {
+  color: #93c5fd;
+}
+
+.hero-metric-icon-usuarios {
+  color: #dbeafe;
+}
+
+.hero-metric-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hero-metric-copy strong {
+  color: #ffffff;
+  font-size: 28px;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+}
+
+.hero-metric-copy span {
+  color: rgba(226, 232, 240, 0.9);
+  font-size: 13px;
+  line-height: 1.25;
+  font-weight: 700;
 }
 
 .hero-copy {
@@ -1673,6 +1829,39 @@ a {
     white-space: normal;
   }
 
+  .hero-metrics {
+    gap: 8px;
+    margin-top: 2px;
+  }
+
+  .hero-metric-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 10px 9px;
+    border-radius: 12px;
+  }
+
+  .hero-metric-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 10px;
+    flex-basis: 28px;
+  }
+
+  .hero-metric-icon svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .hero-metric-copy strong {
+    font-size: 18px;
+  }
+
+  .hero-metric-copy span {
+    font-size: 11px;
+  }
+
   .hero-visual {
     display: flex;
     width: auto;
@@ -1685,7 +1874,7 @@ a {
   .hero-ring {
     width: min(35vw, 150px);
     flex-shrink: 0;
-    transform: translateY(-32px);
+    transform: translateY(-40px);
     box-shadow:
       0 16px 34px rgba(8, 47, 122, 0.38),
       0 0 0 9px rgba(147, 197, 253, 0.1);
@@ -1864,11 +2053,27 @@ a {
 
   .hero-ring {
     width: min(32vw, 128px);
-    transform: translateY(-34px);
+    transform: translateY(-42px);
   }
 
   .hero-subtitle {
     max-width: 200px;
+  }
+
+  .hero-metrics {
+    gap: 6px;
+  }
+
+  .hero-metric-card {
+    padding: 9px 8px 8px;
+  }
+
+  .hero-metric-copy strong {
+    font-size: 16px;
+  }
+
+  .hero-metric-copy span {
+    font-size: 10px;
   }
 
   .card {

@@ -19,6 +19,8 @@ router.get('/usuarios',  controller.listarUsuariosController);
 
 router.get('/usuarios/resumo', controller.listarUsuariosResumoController);
 
+router.get('/public/home/resumo', controller.resumoPublicoHomeController);
+
 router.get('/permissoes',[validarJWT], verificarPermissao.devAdmin, controller.listarPermissoesController);
 
 router.get('/usuarios/:id/times', [validarJWT], controller.listarUsuarioTimesController);

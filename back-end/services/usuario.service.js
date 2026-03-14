@@ -507,6 +507,31 @@ async function getUsuariosResumo() {
   }));
 }
 
+async function getResumoPublicoHome() {
+  const [totalQuadras, totalReservas, totalUsuarios] = await prisma.$transaction([
+    prisma.quadra.count(),
+    prisma.agendamento.count({
+      where: {
+        deletedAt: null,
+        status: { in: ['Pendente', 'Confirmado'] },
+      },
+    }),
+    prisma.usuario.count({
+      where: {
+        ativo: true,
+        deletedAt: null,
+      },
+    }),
+  ]);
+
+  return {
+    totalQuadras,
+    totalReservas,
+    totalUsuarios,
+    atualizadoEm: new Date().toISOString(),
+  };
+}
+
 async function listarPermissoes() {
   return prisma.permissao.findMany({
     orderBy: { id: 'asc' },
@@ -1113,6 +1138,7 @@ module.exports = {
   excluirMinhaConta,
   getUsuarios,
   getUsuariosResumo,
+  getResumoPublicoHome,
   getUsuarioTimesService,
   listarPermissoes,
   vincularUsuarioTime,
