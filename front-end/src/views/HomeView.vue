@@ -6,9 +6,19 @@
         <div class="conteudo-centralizado hero-grid">
           <div class="hero-copy">
             <h1 class="texto">
-              <span class="primeira-linha">Agende sua Quadra</span>
-              <span class="primeira-linha">em <span class="destaque_sublinhado">São Vicente</span></span>
-              <span class="segunda-linha destaque">de forma Rápida e Fácil.</span>
+              <span class="texto-desktop-lines">
+                <span class="primeira-linha">Agende sua Quadra</span>
+                <span class="primeira-linha">em <span class="destaque_sublinhado">São Vicente</span></span>
+                <span class="segunda-linha destaque">de forma Rápida e Fácil.</span>
+              </span>
+
+              <span class="texto-mobile-lines">
+                <span class="linha-mobile">Agende sua</span>
+                <span class="linha-mobile">Quadra</span>
+                <span class="linha-mobile linha-mobile-em">em <span class="destaque_sublinhado">São Vicente</span></span>
+                <span class="linha-mobile">de forma</span>
+                <span class="linha-mobile segunda-linha linha-mobile-rapida">Rápida e Fácil.</span>
+              </span>
             </h1>
             <p class="hero-subtitle">Com o Quadra Play SV, você reserva em poucos cliques.</p>
           </div>
@@ -892,8 +902,17 @@ a {
   transform-origin: left top;
 }
 
+.texto-mobile-lines {
+  display: none;
+}
+
+.texto-desktop-lines {
+  display: block;
+}
+
 .primeira-linha,
-.segunda-linha {
+.segunda-linha,
+.linha-mobile {
   display: block;
 }
 
@@ -1606,18 +1625,27 @@ a {
 
 @media (max-width: 768px) {
   .texto-centro {
-    padding: 22px 14px 36px;
+    padding: 18px 14px 24px;
   }
 
   .texto {
-    font-size: clamp(22px, 7.2vw, 29px);
-    line-height: 1.08;
-    letter-spacing: -0.01em;
+    font-size: clamp(23px, 7vw, 31px);
+    line-height: 0.98;
+    letter-spacing: -0.03em;
     transform: none;
   }
 
-  .primeira-linha:first-child {
-    white-space: normal;
+  .texto-desktop-lines {
+    display: none;
+  }
+
+  .texto-mobile-lines {
+    display: block;
+  }
+
+  .linha-mobile-em,
+  .linha-mobile-rapida {
+    white-space: nowrap;
   }
 
   .conteudo-centralizado {
@@ -1627,20 +1655,21 @@ a {
   }
 
   .hero-grid {
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: start;
-    gap: 12px;
+    grid-template-columns: minmax(0, 1.06fr) minmax(132px, 0.94fr);
+    align-items: center;
+    gap: 10px;
   }
 
   .hero-copy {
     min-width: 0;
+    padding-top: 2px;
   }
 
   .hero-subtitle {
-    margin-top: 8px;
+    margin-top: 10px;
     font-size: 13px;
-    line-height: 1.45;
-    max-width: 100%;
+    line-height: 1.48;
+    max-width: 220px;
     white-space: normal;
   }
 
@@ -1649,16 +1678,19 @@ a {
     width: auto;
     min-height: 0;
     justify-content: flex-end;
-    align-items: flex-start;
+    align-items: center;
   }
 
   .hero-ring {
-    width: min(42vw, 180px);
+    width: min(44vw, 186px);
     flex-shrink: 0;
+    box-shadow:
+      0 16px 34px rgba(8, 47, 122, 0.38),
+      0 0 0 9px rgba(147, 197, 253, 0.1);
   }
 
   .quadras-section {
-    margin-top: -10px;
+    margin-top: -12px;
     padding-bottom: 2px;
   }
 
@@ -1672,14 +1704,14 @@ a {
 
   .quadras-shell {
     width: calc(100% - 28px);
-    padding: 12px 9px 10px;
-    border-radius: 18px;
-    border-width: 4px;
+    padding: 16px 10px 12px;
+    border-radius: 26px;
+    border-width: 5px;
   }
 
   .tit_horario {
-    font-size: 20px;
-    margin: 6px 0 8px;
+    font-size: 19px;
+    margin: 6px 0 10px;
   }
 
   .quadras-subtitle {
@@ -1724,17 +1756,17 @@ a {
     width: 100%;
     max-width: none;
     margin: 0;
-    height: 248px;
-    border-radius: 18px;
+    height: 306px;
+    border-radius: 24px;
   }
 
   .overlay {
     gap: 10px;
-    padding: 16px 14px 14px;
+    padding: 18px 18px 16px;
   }
 
   .nome-quadra {
-    font-size: 19px;
+    font-size: 18px;
   }
 
   .card-copy {
@@ -1747,8 +1779,8 @@ a {
 
   .btn-agendar {
     width: auto;
-    min-width: 136px;
-    height: 36px;
+    min-width: 142px;
+    height: 38px;
     font-size: 12px;
   }
 
@@ -1815,6 +1847,29 @@ a {
   .partidas-wrapper {
     display: flex;
     flex-direction: column;
+  }
+}
+
+@media (max-width: 420px) {
+  .hero-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(122px, 40vw);
+    gap: 8px;
+  }
+
+  .texto {
+    font-size: clamp(21px, 6.8vw, 27px);
+  }
+
+  .hero-ring {
+    width: min(42vw, 164px);
+  }
+
+  .hero-subtitle {
+    max-width: 200px;
+  }
+
+  .card {
+    height: 286px;
   }
 }
 </style>
