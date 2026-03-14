@@ -1836,14 +1836,20 @@ a {
   }
 
   .hero-metric-card {
-    flex-direction: row;
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    grid-template-areas:
+      "icon value"
+      "label label";
     align-items: center;
-    gap: 8px;
+    column-gap: 8px;
+    row-gap: 3px;
     padding: 10px 10px 9px;
     border-radius: 12px;
   }
 
   .hero-metric-icon {
+    grid-area: icon;
     width: 28px;
     height: 28px;
     border-radius: 10px;
@@ -1856,11 +1862,18 @@ a {
   }
 
   .hero-metric-copy strong {
+    grid-area: value;
     font-size: 18px;
   }
 
   .hero-metric-copy span {
+    grid-area: label;
     font-size: 11px;
+    line-height: 1.2;
+  }
+
+  .hero-metric-copy {
+    display: contents;
   }
 
   .hero-visual {
