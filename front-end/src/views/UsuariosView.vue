@@ -1919,13 +1919,13 @@ select:focus {
 
 @media (max-width: 768px) {
   .modal-content.modal-detalhes-user {
-    width: calc(100% - 12px);
-    max-height: calc(100vh - 20px);
+    width: calc(100% - 16px);
+    max-height: calc(100vh - 36px);
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    padding: 12px;
-    border-radius: 18px;
+    padding: 10px;
+    border-radius: 16px;
   }
 
   .modal-detalhes-body {
@@ -1934,66 +1934,94 @@ select:focus {
   }
 
   .modal-user-header {
-    padding-bottom: 10px;
-    margin-bottom: 10px;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
   }
 
   .modal-title {
-    font-size: 24px;
-    line-height: 36px;
+    font-size: 20px;
+    line-height: 1.2;
   }
 
   .btn-close-x-user {
-    width: 36px;
-    height: 36px;
-    font-size: 18px;
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
   }
 
   .user-profile {
     flex-direction: row;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
+    padding: 8px;
   }
 
   .user-top-grid {
     grid-template-columns: 1fr;
-    gap: 10px;
+    gap: 8px;
   }
 
   .avatar-wrap {
-    width: 132px;
-    height: 132px;
-    box-shadow: 0 0 0 3px #ebf6ff, 0 0 0 6px rgba(86, 184, 255, 0.35), 0 8px 20px rgba(45, 116, 229, 0.22);
+    width: 92px;
+    height: 92px;
+    box-shadow: 0 0 0 2px #ebf6ff, 0 0 0 4px rgba(86, 184, 255, 0.32), 0 6px 14px rgba(45, 116, 229, 0.2);
   }
 
   .user-name {
-    font-size: 24px;
+    font-size: 20px;
   }
 
   .user-identity {
     min-width: 0;
+    gap: 6px;
   }
 
   .badge-permissao {
-    font-size: 13px;
-    padding: 8px 12px;
+    font-size: 12px;
+    padding: 6px 10px;
   }
 
   .user-grid {
     grid-template-columns: 1fr;
-    gap: 10px;
+    gap: 8px;
+    margin-top: 8px;
   }
 
   .info-card {
-    border-radius: 16px;
-    padding: 10px;
+    border-radius: 14px;
+    padding: 8px;
+  }
+
+  .card-title {
+    margin-bottom: 4px;
   }
 
   .info-row {
     grid-template-columns: 1fr;
-    gap: 6px;
-    padding: 10px;
-    border-radius: 12px;
+    gap: 4px;
+    padding: 8px;
+    border-radius: 10px;
+    margin-bottom: 5px;
+  }
+
+  .info-label,
+  .info-value {
+    font-size: 13px;
+  }
+
+  .perfil-highlight {
+    padding: 7px 8px;
+    margin-bottom: 5px;
+  }
+
+  .perfil-highlight-title {
+    font-size: 14px;
+    padding-bottom: 4px;
+  }
+
+  .perfil-cadastro {
+    margin-top: 5px;
+    font-size: 13px;
   }
 
   .info-actions {
@@ -2002,22 +2030,67 @@ select:focus {
   }
 
   .icon-btn {
-    width: 42px;
-    height: 42px;
+    width: 38px;
+    height: 38px;
   }
 
   .stats-inline {
     grid-template-columns: 1fr;
-    gap: 8px;
+    gap: 6px;
   }
 
   .stats-card .stat {
-    flex-wrap: wrap;
+    gap: 4px;
+    padding: 7px 8px;
   }
 
   .btn-fechar-premium {
-    padding: 12px;
-    border-radius: 16px;
+    margin-top: 6px;
+    padding: 10px;
+    border-radius: 14px;
+  }
+}
+
+@media (max-width: 540px) {
+  .modal-content.modal-detalhes-user {
+    width: calc(100% - 12px);
+    max-height: calc(100vh - 28px);
+    padding: 9px;
+  }
+
+  .modal-title {
+    font-size: 18px;
+  }
+
+  .user-profile {
+    gap: 8px;
+    padding: 7px;
+  }
+
+  .avatar-wrap {
+    width: 78px;
+    height: 78px;
+  }
+
+  .user-name {
+    font-size: 18px;
+  }
+
+  .badge-permissao {
+    padding: 5px 9px;
+    font-size: 11px;
+  }
+
+  .info-card {
+    padding: 7px;
+  }
+
+  .info-row {
+    padding: 7px;
+  }
+
+  .btn-fechar-premium {
+    padding: 9px;
   }
 }
 @media (max-width: 768px) {
