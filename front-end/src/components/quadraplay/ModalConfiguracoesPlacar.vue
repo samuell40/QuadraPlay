@@ -2273,7 +2273,7 @@ export default {
 
 @media (max-width: 768px) {
   .modal-overlay {
-    align-items: flex-start;
+    align-items: center;
     padding: 10px;
   }
 
@@ -2324,6 +2324,7 @@ export default {
     max-height: calc(100dvh - 20px);
     padding: 16px 14px;
     border-radius: 14px;
+    margin: auto 0;
   }
 
   .modal-times .modal-header {

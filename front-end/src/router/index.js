@@ -23,6 +23,7 @@ import ClassificacaoView from '@/views/quadra_play/ClassificacaoView.vue';
 import MeusAvisosView from '../views/usuario/MeusAvisosView.vue';
 import EstatisticasJogadorView from '../views/usuario/EstatisticasJogadorView.vue';
 import telaInicialView from '@/views/quadra_play/telaInicialView.vue';
+import { obterSessaoAutenticada } from '@/utils/authToken';
 
 const QUADRA_PLAY_LOGIN_KEY = 'quadraPlayLoginAtivo';
 const LAST_AUTH_ROUTE_KEY = 'quadraPlayUltimaRota';
@@ -272,13 +273,7 @@ function podeRestaurarUltimaRota(ultimaRota, contexto = {}) {
 }
 
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('token');
-  let usuario = null;
-  try {
-    usuario = JSON.parse(localStorage.getItem('usuario') || 'null');
-  } catch {
-    usuario = null;
-  }
+  const { token, usuario } = obterSessaoAutenticada();
   const loginQuadraPlayAtivo = localStorage.getItem(QUADRA_PLAY_LOGIN_KEY) === '1';
   const primeiraNavegacao = !Array.isArray(from?.matched) || from.matched.length === 0;
 

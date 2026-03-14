@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { bumpDataVersion } from './services/dataVersion';
+import { limparDadosAutenticacao, obterSessaoAutenticada } from './utils/authToken';
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -15,21 +16,15 @@ export const useAuthStore = defineStore('auth', {
     setAuthData(user, token) {
       this.usuario = user;
       this.token = token;
-      
-      // Salvar no localStorage e nos cookies
+
       localStorage.setItem('token', token);
       localStorage.setItem('usuario', JSON.stringify(user));
       bumpDataVersion('auth-login');
-
     },
     clearAuthData() {
       this.usuario = null;
       this.token = null;
-      // Remover do localStorage e dos cookies
-      localStorage.removeItem('token');
-      localStorage.removeItem('usuario');
-      localStorage.removeItem('quadraPlayLoginAtivo');
-      bumpDataVersion('auth-logout');
+      limparDadosAutenticacao();
     },
     login(user, token) {
       this.setAuthData(user, token);
@@ -38,14 +33,15 @@ export const useAuthStore = defineStore('auth', {
       this.clearAuthData();
     },
     carregarDados() {
-      // Carregar dados do localStorage
-      let token = localStorage.getItem('token');
-      let user = JSON.parse(localStorage.getItem('usuario'));      
-      // Se não encontrar no localStorage, tenta nos cookies
+      const { token, usuario } = obterSessaoAutenticada();
 
-      if (token && user) {
-        this.setAuthData(user, token);
+      if (token && usuario) {
+        this.setAuthData(usuario, token);
+        return;
       }
+
+      this.usuario = null;
+      this.token = null;
     },
   },
 });

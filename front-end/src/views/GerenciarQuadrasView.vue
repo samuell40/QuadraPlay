@@ -14,6 +14,7 @@
               v-if="podeCadastrar"
               type="button"
               class="btn-top-action"
+              :disabled="salvandoCadastro || salvandoEdicao"
               @click="abrirModalCadastro"
             >
               <svg
@@ -119,21 +120,39 @@
               </div>
 
               <div class="card-actions">
-                <button type="button" class="btn-card btn-card-primary" @click="abrirModalEdicao(quadra)">
-                  Editar
+                <button type="button" class="btn-card btn-card-primary" :disabled="quadraAlternandoId === quadra.id" @click="abrirModalEdicao(quadra)">
+                  <span class="btn-inline-content">
+                    <span>{{ quadraAlternandoId === quadra.id ? 'Aguarde...' : 'Editar' }}</span>
+                  </span>
                 </button>
 
-                <button type="button" class="btn-card btn-card-secondary" @click="abrirModalGrade(quadra)">
-                  Horários
+                <button type="button" class="btn-card btn-card-secondary" :disabled="quadraAlternandoId === quadra.id" @click="abrirModalGrade(quadra)">
+                  <span class="btn-inline-content">
+                    <span>{{ quadraAlternandoId === quadra.id ? 'Aguarde...' : 'Horários' }}</span>
+                  </span>
                 </button>
 
                 <button
                   type="button"
                   class="btn-card btn-card-wide"
                   :class="quadra.interditada ? 'btn-card-success' : 'btn-card-danger'"
+                  :disabled="quadraAlternandoId === quadra.id"
                   @click="alternarStatus(quadra)"
                 >
-                  {{ quadra.interditada ? 'Liberar quadra' : 'Fechar quadra' }}
+                  <span class="btn-inline-content">
+                    <span
+                      v-if="quadraAlternandoId === quadra.id"
+                      class="btn-inline-spinner"
+                      aria-hidden="true"
+                    ></span>
+                    <span>
+                      {{
+                        quadraAlternandoId === quadra.id
+                          ? (quadra.interditada ? 'Liberando...' : 'Fechando...')
+                          : (quadra.interditada ? 'Liberar quadra' : 'Fechar quadra')
+                      }}
+                    </span>
+                  </span>
                 </button>
               </div>
             </div>
@@ -141,7 +160,7 @@
         </div>
       </section>
 
-      <div v-if="modalCadastroAberto" class="modal-overlay" @click.self="fecharModalCadastro">
+      <div v-if="modalCadastroAberto" class="modal-overlay" @click.self="!salvandoCadastro && fecharModalCadastro()">
         <div class="modal-content modal-content-cadastro">
           <div class="modal-header">
             <div class="modal-header-copy">
@@ -152,6 +171,7 @@
             <button
               type="button"
               class="btn-close-x-modal"
+              :disabled="salvandoCadastro"
               @click="fecharModalCadastro"
               aria-label="Fechar modal"
             >
@@ -169,6 +189,7 @@
                     v-model="formCadastro.nome"
                     type="text"
                     class="input-estilizado"
+                    :disabled="salvandoCadastro"
                     placeholder="Ex: Arena Juruá"
                     required
                   />
@@ -181,6 +202,7 @@
                     v-model="formCadastro.endereco"
                     type="text"
                     class="input-estilizado"
+                    :disabled="salvandoCadastro"
                     placeholder="Ex: Rua das Flores, 123 - Centro"
                     required
                   />
@@ -201,6 +223,7 @@
                       v-model="formCadastro.modalidadesSelecionadas"
                       type="checkbox"
                       :value="mod.id"
+                      :disabled="salvandoCadastro"
                     />
                     <span>{{ formatarNomeModalidade(mod.nome) }}</span>
                   </label>
@@ -220,13 +243,17 @@
                   class="input-estilizado input-file"
                   @change="handleCadastroFileChange"
                   accept=".jpg, .jpeg, .png"
+                  :disabled="salvandoCadastro"
                   required
                 />
               </div>
 
               <div class="modal-actions modal-actions-single">
                 <button type="submit" class="btn-confirmar" :disabled="salvandoCadastro">
-                  {{ salvandoCadastro ? 'Cadastrando...' : 'Cadastrar unidade' }}
+                  <span class="btn-inline-content">
+                    <span v-if="salvandoCadastro" class="btn-inline-spinner" aria-hidden="true"></span>
+                    <span>{{ salvandoCadastro ? 'Cadastrando...' : 'Cadastrar unidade' }}</span>
+                  </span>
                 </button>
               </div>
             </form>
@@ -234,7 +261,7 @@
         </div>
       </div>
 
-      <div v-if="quadraEditando" class="modal-overlay" @click.self="quadraEditando = null">
+      <div v-if="quadraEditando" class="modal-overlay" @click.self="!salvandoEdicao && fecharModalEdicao()">
         <div class="modal-content">
           <div class="modal-header">
             <div class="modal-header-copy">
@@ -245,7 +272,8 @@
             <button
               type="button"
               class="btn-close-x-modal"
-              @click="quadraEditando = null"
+              :disabled="salvandoEdicao"
+              @click="fecharModalEdicao"
               aria-label="Fechar modal"
             >
               x
@@ -262,6 +290,7 @@
                     v-model="formEdicao.nome"
                     type="text"
                     class="input-estilizado"
+                    :disabled="salvandoEdicao"
                     placeholder="Ex: Arena Juruá"
                     required
                   />
@@ -274,6 +303,7 @@
                     v-model="formEdicao.endereco"
                     type="text"
                     class="input-estilizado"
+                    :disabled="salvandoEdicao"
                     placeholder="Ex: Rua das Flores, 123 - Centro"
                     required
                   />
@@ -294,6 +324,7 @@
                       v-model="formEdicao.modalidadesSelecionadas"
                       type="checkbox"
                       :value="mod.id"
+                      :disabled="salvandoEdicao"
                     />
                     <span>{{ formatarNomeModalidade(mod.nome) }}</span>
                   </label>
@@ -308,11 +339,17 @@
                   class="input-estilizado input-file"
                   @change="handleFileChange"
                   accept=".jpg, .jpeg, .png"
+                  :disabled="salvandoEdicao"
                 />
               </div>
 
               <div class="modal-actions modal-actions-single">
-                <button type="submit" class="btn-confirmar">Confirmar alterações</button>
+                <button type="submit" class="btn-confirmar" :disabled="salvandoEdicao">
+                  <span class="btn-inline-content">
+                    <span v-if="salvandoEdicao" class="btn-inline-spinner" aria-hidden="true"></span>
+                    <span>{{ salvandoEdicao ? 'Salvando...' : 'Confirmar alterações' }}</span>
+                  </span>
+                </button>
               </div>
             </form>
           </div>
@@ -357,6 +394,8 @@ export default {
       formCadastro: { nome: '', endereco: '', imagem: null, modalidadesSelecionadas: [] },
       erroModalidadeCadastro: false,
       salvandoCadastro: false,
+      salvandoEdicao: false,
+      quadraAlternandoId: null,
       quadraParaGrade: null,
       mostrarModalGrade: false
     }
@@ -434,8 +473,11 @@ export default {
     handleResize() {
       this.isMobile = window.innerWidth <= 768
     },
-    async carregarDados() {
-      this.isLoading = true
+    async carregarDados({ silencioso = false } = {}) {
+      if (!silencioso) {
+        this.isLoading = true
+      }
+
       try {
         if (!this.authStore.usuario) {
           this.authStore.carregarDados()
@@ -465,11 +507,14 @@ export default {
           ? 'Não foi possível carregar os dados da quadra.'
           : 'Não foi possível carregar os dados das quadras.', 'error')
       } finally {
-        this.isLoading = false
+        if (!silencioso) {
+          this.isLoading = false
+        }
       }
     },
 
     abrirModalEdicao(quadra) {
+      this.salvandoEdicao = false
       this.quadraEditando = quadra
       this.formEdicao = {
         nome: quadra.nome,
@@ -493,13 +538,20 @@ export default {
       })
     },
 
-    fecharModalCadastro() {
+    fecharModalCadastro(force = false) {
+      if (this.salvandoCadastro && !force) return
       this.modalCadastroAberto = false
       this.erroModalidadeCadastro = false
       this.formCadastro = { nome: '', endereco: '', imagem: null, modalidadesSelecionadas: [] }
       this.$nextTick(() => {
         if (this.$refs.inputImagemCadastro) this.$refs.inputImagemCadastro.value = null
       })
+    },
+
+    fecharModalEdicao(force = false) {
+      if (this.salvandoEdicao && !force) return
+      this.quadraEditando = null
+      this.formEdicao = { nome: '', endereco: '', imagem: null, modalidadesSelecionadas: [] }
     },
 
     abrirModalGrade(quadra) {
@@ -516,6 +568,8 @@ export default {
     },
 
     async cadastrarQuadraModal() {
+      if (this.salvandoCadastro) return
+
       if (this.formCadastro.modalidadesSelecionadas.length === 0) {
         this.erroModalidadeCadastro = true
         return
@@ -550,8 +604,8 @@ export default {
           showConfirmButton: false
         })
 
-        this.fecharModalCadastro()
-        await this.carregarDados()
+        this.fecharModalCadastro(true)
+        await this.carregarDados({ silencioso: true })
       } catch (error) {
         Swal.fire(
           'Erro',
@@ -564,10 +618,14 @@ export default {
     },
 
     async salvarEdicao() {
+      if (this.salvandoEdicao) return
+
       if (this.formEdicao.modalidadesSelecionadas.length === 0) {
         Swal.fire('Aviso', 'É obrigatório selecionar ao menos uma modalidade para a unidade.', 'warning')
         return
       }
+
+      this.salvandoEdicao = true
 
       try {
         let urlImagem = this.quadraEditando.foto
@@ -595,14 +653,18 @@ export default {
           showConfirmButton: false
         })
 
-        this.quadraEditando = null
-        this.carregarDados()
+        this.fecharModalEdicao(true)
+        await this.carregarDados({ silencioso: true })
       } catch (err) {
         Swal.fire('Erro', 'Falha ao salvar alterações.', 'error')
+      } finally {
+        this.salvandoEdicao = false
       }
     },
 
     async alternarStatus(quadra) {
+      if (this.quadraAlternandoId === quadra.id) return
+
       const novoStatus = !quadra.interditada
       const acaoTexto = novoStatus ? 'interditar' : 'liberar'
       const result = await Swal.fire({
@@ -617,12 +679,15 @@ export default {
       })
 
       if (result.isConfirmed) {
+        this.quadraAlternandoId = quadra.id
         try {
           await api.patch(`/quadra/${quadra.id}`, { interditada: novoStatus })
-          this.carregarDados()
+          await this.carregarDados({ silencioso: true })
           Swal.fire('Sucesso', 'Status alterado com sucesso.', 'success')
         } catch (error) {
           Swal.fire('Erro', 'Não foi possível alterar o status.', 'error')
+        } finally {
+          this.quadraAlternandoId = null
         }
       }
     },
@@ -703,9 +768,18 @@ export default {
   transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
-.btn-top-action:hover,
-.btn-confirmar:hover {
+.btn-top-action:hover:not(:disabled),
+.btn-confirmar:hover:not(:disabled) {
   transform: translateY(-1px);
+}
+
+.btn-top-action:disabled,
+.btn-confirmar:disabled,
+.btn-card:disabled,
+.btn-close-x-modal:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .btn-top-action,
@@ -727,6 +801,22 @@ export default {
 
 .btn-label-mobile {
   display: none;
+}
+
+.btn-inline-content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-inline-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #ffffff;
+  animation: spin 0.7s linear infinite;
 }
 
 .btn-top-action-icon {
@@ -996,7 +1086,7 @@ export default {
   transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
 }
 
-.btn-card:hover {
+.btn-card:hover:not(:disabled) {
   transform: translateY(-1px);
 }
 
@@ -1206,7 +1296,7 @@ export default {
   padding: 0;
 }
 
-.btn-close-x-modal:hover {
+.btn-close-x-modal:hover:not(:disabled) {
   background: rgba(239, 68, 68, 0.08);
   border-color: rgba(239, 68, 68, 0.3);
   color: #ef4444;

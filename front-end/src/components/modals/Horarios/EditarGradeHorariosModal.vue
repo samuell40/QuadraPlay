@@ -1,5 +1,5 @@
 <template>
-  <div class="modal-overlay" @click.self="fechar">
+  <div class="modal-overlay" @click.self="!isSaving && fechar()">
     <div class="modal-content">
       <div class="modal-header">
         <div class="modal-copy">
@@ -8,7 +8,7 @@
           <p class="modal-subtitle">{{ quadra.nome }}</p>
         </div>
 
-        <button type="button" class="btn-close-x" @click="fechar" aria-label="Fechar modal">
+        <button type="button" class="btn-close-x" :disabled="isSaving" @click="fechar" aria-label="Fechar modal">
           x
         </button>
       </div>
@@ -210,7 +210,10 @@
 
       <div class="modal-footer">
         <button type="button" class="btn-salvar" @click="salvarGradeCompleta" :disabled="isSaving || isLoading">
-          {{ isSaving ? 'Salvando...' : 'Salvar alteracoes' }}
+          <span class="btn-inline-content">
+            <span v-if="isSaving" class="btn-loading-spinner" aria-hidden="true"></span>
+            <span>{{ isSaving ? 'Salvando...' : 'Salvar alteracoes' }}</span>
+          </span>
         </button>
       </div>
     </div>
@@ -499,10 +502,15 @@ export default {
   padding: 0;
 }
 
-.btn-close-x:hover {
+.btn-close-x:hover:not(:disabled) {
   background: rgba(239, 68, 68, 0.08);
   border-color: rgba(239, 68, 68, 0.3);
   color: #ef4444;
+}
+
+.btn-close-x:disabled,
+.btn-salvar:disabled {
+  cursor: not-allowed;
 }
 
 .modal-body {
@@ -829,6 +837,22 @@ input:checked + .slider:before {
   cursor: not-allowed;
 }
 
+.btn-inline-content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-loading-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #ffffff;
+  animation: girar-botao 0.7s linear infinite;
+}
+
 .lista-horarios {
   display: flex;
   flex-wrap: wrap;
@@ -957,6 +981,12 @@ input:checked + .slider:before {
   align-items: center;
   justify-content: center;
   gap: 14px;
+}
+
+@keyframes girar-botao {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .loader {

@@ -2,6 +2,7 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 import router from './router';
 import { bumpDataVersion } from './services/dataVersion';
+import { limparDadosAutenticacao } from './utils/authToken';
 
 const isDev = import.meta.env.DEV;
 const METODOS_MUTACAO = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
@@ -36,7 +37,7 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     } else if (config.requiresAuth && isDev) {
-      console.warn('Token não encontrado. A requisição autenticada pode falhar.');
+      console.warn('Token nÃ£o encontrado. A requisiÃ§Ã£o autenticada pode falhar.');
     }
 
     return config;
@@ -68,6 +69,9 @@ api.interceptors.response.use(
       const rotaAtualObj = router.currentRoute?.value || {};
       const ehRotaPublica = Boolean(rotaAtualObj?.meta?.public);
       const msgNormalizada = String(msg || '').toLowerCase();
+      const erroTokenExpirado =
+        status === 401 &&
+        msgNormalizada.includes('token expirado');
       const erroTokenAusente =
         (status === 401 || status === 422) &&
         (
@@ -76,23 +80,36 @@ api.interceptors.response.use(
           msgNormalizada.includes('formato de token')
         );
 
+      if (erroTokenExpirado) {
+        limparDadosAutenticacao();
+        Swal.fire({
+          icon: 'warning',
+          title: 'SessÃ£o expirada',
+          text: 'FaÃ§a login novamente para continuar.'
+        });
+        if (router.currentRoute?.value?.name !== 'Home') {
+          router.push({ name: 'Home' });
+        }
+        return Promise.reject(error);
+      }
+
       if (silent) {
         if (isDev) {
-          console.warn('Requisição falhou:', status, msg);
+          console.warn('RequisiÃ§Ã£o falhou:', status, msg);
         }
         return Promise.reject(error);
       }
 
       if (erroTokenAusente && ehRotaPublica) {
         if (isDev) {
-          console.warn('Rota protegida chamada sem token em tela pública:', error.config?.url);
+          console.warn('Rota protegida chamada sem token em tela pÃºblica:', error.config?.url);
         }
         return Promise.reject(error);
       }
 
       if (status === 401) {
-        console.error('Erro de autenticação:', msg);
-        Swal.fire({ icon: 'error', title: 'Erro de autenticação', text: msg });
+        console.error('Erro de autenticaÃ§Ã£o:', msg);
+        Swal.fire({ icon: 'error', title: 'Erro de autenticaÃ§Ã£o', text: msg });
         const rotaAtual = router.currentRoute?.value?.fullPath;
         if (rotaAtual && rotaAtual !== '/NaoAutorizado') {
           router.push({ name: 'NaoAutorizado', query: { redirect: rotaAtual } });
@@ -103,8 +120,8 @@ api.interceptors.response.use(
         console.error('Acesso negado:', msg);
         Swal.fire({ icon: 'error', title: 'Acesso negado', text: msg });
       } else if (status === 422) {
-        console.error('Erro de validação:', msg);
-        Swal.fire({ icon: 'warning', title: 'Erro de validação', text: msg });
+        console.error('Erro de validaÃ§Ã£o:', msg);
+        Swal.fire({ icon: 'warning', title: 'Erro de validaÃ§Ã£o', text: msg });
       } else {
         console.error('Erro da API:', msg);
         Swal.fire({ icon: 'error', title: 'Erro', text: msg });
@@ -112,7 +129,7 @@ api.interceptors.response.use(
     } else {
       if (silent) {
         if (isDev) {
-          console.warn('Requisição sem resposta:', error.message);
+          console.warn('RequisiÃ§Ã£o sem resposta:', error.message);
         }
         return Promise.reject(error);
       }
@@ -120,7 +137,7 @@ api.interceptors.response.use(
       console.error('Erro inesperado:', error.message);
       Swal.fire({
         icon: 'error',
-        title: 'Erro de conexão',
+        title: 'Erro de conexÃ£o',
         text: 'Verifique sua internet e tente novamente.'
       });
     }
