@@ -1863,11 +1863,16 @@ a {
 
   .hero-metric-copy strong {
     grid-area: value;
+    display: block;
+    align-self: center;
     font-size: 18px;
   }
 
   .hero-metric-copy span {
     grid-area: label;
+    display: block;
+    align-self: start;
+    min-height: 2.4em;
     font-size: 11px;
     line-height: 1.2;
   }
