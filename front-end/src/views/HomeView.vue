@@ -1685,7 +1685,7 @@ a {
   .hero-ring {
     width: min(35vw, 150px);
     flex-shrink: 0;
-    transform: translateY(-24px);
+    transform: translateY(-32px);
     box-shadow:
       0 16px 34px rgba(8, 47, 122, 0.38),
       0 0 0 9px rgba(147, 197, 253, 0.1);
@@ -1864,7 +1864,7 @@ a {
 
   .hero-ring {
     width: min(32vw, 128px);
-    transform: translateY(-26px);
+    transform: translateY(-34px);
   }
 
   .hero-subtitle {
