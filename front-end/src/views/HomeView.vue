@@ -389,12 +389,12 @@ export default {
         },
         {
           id: 'reservas',
-          valor: this.formatarNumeroResumo(this.resumoHero.totalReservas),
+          valor: this.formatarNumeroResumo(this.resumoHero.totalReservas, { prefixoMais: true }),
           rotulo: 'reservas',
         },
         {
           id: 'usuarios',
-          valor: this.formatarNumeroResumo(this.resumoHero.totalUsuarios),
+          valor: this.formatarNumeroResumo(this.resumoHero.totalUsuarios, { prefixoMais: true }),
           rotulo: 'usuarios cadastrados',
         },
       ]
@@ -446,12 +446,13 @@ export default {
         .replace(/[\u0300-\u036f]/g, '')
         .trim()
     },
-    formatarNumeroResumo(valor) {
+    formatarNumeroResumo(valor, opcoes = {}) {
       if (this.isLoadingResumoHero) {
         return '...'
       }
 
-      return new Intl.NumberFormat('pt-BR').format(Number(valor) || 0)
+      const numeroFormatado = new Intl.NumberFormat('pt-BR').format(Number(valor) || 0)
+      return opcoes.prefixoMais ? `+${numeroFormatado}` : numeroFormatado
     },
     async carregarResumoHero() {
       this.isLoadingResumoHero = true
