@@ -96,6 +96,17 @@
                     @click="abrirAgendamentoDireto(quadra)"
                   >
                     <span class="btn-agendar-content">
+                      <svg
+                        v-if="quadraEmAberturaId !== quadra.id"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <path d="M7 3v4" />
+                        <path d="M17 3v4" />
+                        <rect x="4" y="5" width="16" height="15" rx="3" ry="3" />
+                        <path d="M4 10h16" />
+                        <path d="m9 14 2 2 4-4" />
+                      </svg>
                       <span
                         v-if="quadraEmAberturaId === quadra.id"
                         class="btn-agendar-spinner"
@@ -862,6 +873,9 @@ body {
 }
 
 .btn-agendar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background-color: #3b82f6;
   color: #ffffff;
   border: none;
@@ -881,6 +895,17 @@ body {
   align-items: center;
   justify-content: center;
   gap: 8px;
+}
+
+.btn-agendar svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+  flex-shrink: 0;
 }
 
 .btn-agendar-spinner {

@@ -102,6 +102,13 @@
                 :disabled="quadra.interditada"
                 @click="!quadra.interditada && abrirAgendamentoDireto(quadra)"
               >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M7 3v4" />
+                  <path d="M17 3v4" />
+                  <rect x="4" y="5" width="16" height="15" rx="3" ry="3" />
+                  <path d="M4 10h16" />
+                  <path d="m9 14 2 2 4-4" />
+                </svg>
                 {{ quadra.interditada ? "Indisponível" : "Agendar agora" }}
               </button>
             </div>
@@ -677,6 +684,10 @@ export default {
 }
 
 .btn-agendar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   background: #3b82f6;
   color: #ffffff;
   border: none;
@@ -689,6 +700,17 @@ export default {
   font-weight: 800;
   transition: background-color 0.2s ease, transform 0.2s ease;
   align-self: flex-start;
+}
+
+.btn-agendar svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+  flex-shrink: 0;
 }
 
 .btn-agendar:hover:not(:disabled) {
