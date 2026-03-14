@@ -1836,8 +1836,8 @@ a {
   }
 
   .hero-metric-card {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
     gap: 8px;
     padding: 10px 10px 9px;
     border-radius: 12px;
