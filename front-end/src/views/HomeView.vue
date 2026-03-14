@@ -1678,12 +1678,14 @@ a {
     width: auto;
     min-height: 0;
     justify-content: flex-end;
-    align-items: center;
+    align-items: flex-start;
+    padding-top: 2px;
   }
 
   .hero-ring {
     width: min(35vw, 150px);
     flex-shrink: 0;
+    transform: translateY(-10px);
     box-shadow:
       0 16px 34px rgba(8, 47, 122, 0.38),
       0 0 0 9px rgba(147, 197, 253, 0.1);
@@ -1862,6 +1864,7 @@ a {
 
   .hero-ring {
     width: min(32vw, 128px);
+    transform: translateY(-12px);
   }
 
   .hero-subtitle {
