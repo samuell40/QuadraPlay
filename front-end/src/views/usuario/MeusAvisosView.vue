@@ -460,11 +460,13 @@ export default {
   justify-content: center;
   gap: 10px;
   min-width: 0;
+  white-space: nowrap;
   transition: transform 0.15s ease, background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .aba-config-aviso > span:first-child {
   min-width: 0;
+  white-space: nowrap;
 }
 
 .aba-config-aviso:hover {
@@ -833,12 +835,16 @@ export default {
   }
 
   .abas-config-container-aviso {
-    grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
+    display: flex;
+    flex-wrap: nowrap;
     gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 2px;
   }
 
   .aba-config-aviso {
-    width: 100%;
+    width: auto;
+    flex: 0 0 auto;
     padding: 10px 8px;
     font-size: 12px;
     gap: 6px;
@@ -846,7 +852,7 @@ export default {
 
   .aba-config-aviso > span:first-child {
     text-align: center;
-    line-height: 1.15;
+    line-height: 1;
   }
 
   .badge-total {

@@ -868,11 +868,13 @@ onBeforeUnmount(() => {
   justify-content: center;
   gap: 8px;
   min-width: 0;
+  white-space: nowrap;
   transition: transform 0.15s ease, background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .aba-config-agendamento > span:first-child {
   min-width: 0;
+  white-space: nowrap;
 }
 
 .aba-config-agendamento:hover {
@@ -1107,12 +1109,16 @@ onBeforeUnmount(() => {
   }
 
   .abas-config-container-agendamento {
-    grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
+    display: flex;
+    flex-wrap: nowrap;
     gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 2px;
   }
 
   .aba-config-agendamento {
-    width: 100%;
+    width: auto;
+    flex: 0 0 auto;
     padding: 10px 8px;
     font-size: 12px;
     gap: 6px;
@@ -1120,7 +1126,7 @@ onBeforeUnmount(() => {
 
   .aba-config-agendamento > span:first-child {
     text-align: center;
-    line-height: 1.15;
+    line-height: 1;
   }
 
   .badge-total {
