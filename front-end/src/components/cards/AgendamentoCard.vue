@@ -64,7 +64,7 @@
     </div>
 
     <div v-if="motivoRecusa" class="motivo-recusa">
-      <span class="motivo-label">Motivo da recusa</span>
+      <span class="motivo-label">{{ motivoLabel }}</span>
       <strong class="motivo-value">{{ motivoRecusa }}</strong>
     </div>
 
@@ -74,6 +74,12 @@
       </button>
       <button type="button" class="btn-action btn-action-secondary" @click="emit('recusar')">
         Recusar
+      </button>
+    </div>
+
+    <div v-else-if="!readonly && podeDesmarcar" class="buttons buttons-single">
+      <button type="button" class="btn-action btn-action-warning" @click="emit('desmarcar')">
+        Desmarcar
       </button>
     </div>
   </article>
@@ -89,7 +95,7 @@ const props = defineProps({
   loading: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['confirmar', 'recusar'])
+const emit = defineEmits(['confirmar', 'recusar', 'desmarcar'])
 
 const statusNormalizado = computed(() => String(props.agendamento?.status || '').trim().toLowerCase())
 
@@ -98,6 +104,7 @@ const statusClass = computed(() => {
     pendente: 'is-pendente',
     confirmado: 'is-confirmado',
     recusado: 'is-recusado',
+    cancelado: 'is-cancelado',
     finalizado: 'is-finalizado',
   }
 
@@ -114,6 +121,9 @@ const solicitanteNome = computed(() => props.agendamento?.solicitanteNome || pro
 const timeNome = computed(() => props.agendamento?.timeNome || props.agendamento?.time || props.agendamento?.time?.nome || 'Não especificado')
 const codigoVerificacao = computed(() => props.agendamento?.codigoVerificacao || 'N/A')
 const motivoRecusa = computed(() => props.agendamento?.motivoRecusa || '')
+const motivoLabel = computed(() =>
+  statusNormalizado.value === 'cancelado' ? 'Motivo do cancelamento' : 'Motivo da recusa',
+)
 const tipoLabel = computed(() => props.agendamento?.tipo || 'Não informado')
 const tipoNormalizado = computed(() => String(props.agendamento?.tipo || '').trim().toLowerCase())
 const permissaoSolicitanteId = computed(() =>
@@ -132,6 +142,7 @@ const descricaoAgendamento = computed(() => {
   return String(props.agendamento?.descricao || '').trim()
 })
 const duracaoLabel = computed(() => `${props.agendamento?.duracao || 0} hora(s)`)
+const podeDesmarcar = computed(() => Boolean(props.agendamento?.podeDesmarcar))
 
 const formatarData = (agendamento) => {
   if (agendamento?.datahora) {
@@ -189,6 +200,10 @@ const horaFormatada = computed(() => formatarHora(props.agendamento))
 
 .card.is-recusado::before {
   background: #dc2626;
+}
+
+.card.is-cancelado::before {
+  background: #f59e0b;
 }
 
 .card.is-recusado {
@@ -307,6 +322,11 @@ const horaFormatada = computed(() => formatarHora(props.agendamento))
   color: #b91c1c;
 }
 
+.status-pill.is-cancelado {
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+}
+
 .status-pill.is-finalizado,
 .status-pill.is-neutro {
   background: rgba(37, 99, 235, 0.12);
@@ -408,8 +428,17 @@ const horaFormatada = computed(() => formatarHora(props.agendamento))
   border-radius: 12px;
 }
 
+.card.is-cancelado .motivo-recusa {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.18);
+}
+
 .motivo-value {
   color: #991b1b;
+}
+
+.card.is-cancelado .motivo-value {
+  color: #92400e;
 }
 
 .card.is-recusado .motivo-value {
@@ -421,6 +450,10 @@ const horaFormatada = computed(() => formatarHora(props.agendamento))
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
+}
+
+.buttons-single {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .btn-action {
@@ -447,6 +480,12 @@ const horaFormatada = computed(() => formatarHora(props.agendamento))
   background: rgba(15, 23, 42, 0.06);
   color: #334155;
   border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.btn-action-warning {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #ffffff;
+  box-shadow: 0 14px 26px rgba(217, 119, 6, 0.22);
 }
 
 .footer-status {

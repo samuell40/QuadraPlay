@@ -2,26 +2,26 @@
   <div class="modal-overlay" @click.self="fecharModal">
     <div class="modal-content">
       <div class="modal-header">
-        <h2 class="modal-titulo">Motivo da Recusa</h2>
+        <h2 class="modal-titulo">{{ titulo }}</h2>
         <button class="btn-close-x" @click="fecharModal" :disabled="loading" aria-label="Fechar modal">
           x
         </button>
       </div>
-      <p class="modal-descricao">Explique porque o agendamento não pode ser aceito:</p>
+      <p class="modal-descricao">{{ descricao }}</p>
 
-      <textarea 
-        v-model="motivo" 
-        class="modal-textarea-fixo" 
-        placeholder="Ex: A quadra passará por manutenção neste horário, por favor escolha outro dia..."
+      <textarea
+        v-model="motivo"
+        class="modal-textarea-fixo"
+        :placeholder="placeholder"
         @input="erro = false"
       ></textarea>
-      
-      <span v-if="erro" class="mensagem-erro">Por favor, informe o motivo da recusa.</span>
+
+      <span v-if="erro" class="mensagem-erro">{{ mensagemErro }}</span>
 
       <div class="modal-actions-container">
-        <button class="modal-btn-confirmar" @click="confirmarRecusa" :disabled="loading">
+        <button class="modal-btn-confirmar" @click="confirmarAcao" :disabled="loading">
           <span v-if="loading" class="loader-btn"></span>
-          <span v-else>Confirmar Recusa</span>
+          <span v-else>{{ textoConfirmar }}</span>
         </button>
       </div>
     </div>
@@ -29,37 +29,62 @@
 </template>
 
 <script setup>
-import { ref, defineProps, defineEmits } from 'vue';
+import { ref, defineProps, defineEmits } from 'vue'
 
 const props = defineProps({
   agendamentoId: {
     type: Number,
-    required: true
+    required: true,
   },
   loading: {
     type: Boolean,
-    default: false
-  }
-});
+    default: false,
+  },
+  titulo: {
+    type: String,
+    default: 'Motivo da Recusa',
+  },
+  descricao: {
+    type: String,
+    default: 'Explique porque o agendamento nao pode ser aceito:',
+  },
+  placeholder: {
+    type: String,
+    default: 'Ex: A quadra passara por manutencao neste horario, por favor escolha outro dia...',
+  },
+  textoConfirmar: {
+    type: String,
+    default: 'Confirmar Recusa',
+  },
+  motivoObrigatorio: {
+    type: Boolean,
+    default: true,
+  },
+  mensagemErro: {
+    type: String,
+    default: 'Por favor, informe o motivo da recusa.',
+  },
+})
 
-const emit = defineEmits(['fechar', 'confirmar']);
+const emit = defineEmits(['fechar', 'confirmar'])
 
-const motivo = ref('');
-const erro = ref(false);
+const motivo = ref('')
+const erro = ref(false)
 
 const fecharModal = () => {
   if (!props.loading) {
-    emit('fechar');
+    emit('fechar')
   }
-};
+}
 
-const confirmarRecusa = () => {
-  if (!motivo.value.trim()) {
-    erro.value = true;
-    return;
+const confirmarAcao = () => {
+  if (props.motivoObrigatorio && !motivo.value.trim()) {
+    erro.value = true
+    return
   }
-  emit('confirmar', { id: props.agendamentoId, motivo: motivo.value });
-};
+
+  emit('confirmar', { id: props.agendamentoId, motivo: motivo.value.trim() })
+}
 </script>
 
 <style scoped>
@@ -99,14 +124,21 @@ const confirmarRecusa = () => {
 }
 
 @keyframes fadeInScale {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .modal-titulo {
   font-size: 26px;
   font-weight: 800;
-  color: #3B82F6;
+  color: #3b82f6;
   margin: 0;
 }
 
@@ -196,9 +228,6 @@ const confirmarRecusa = () => {
   align-items: center;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-}
-
-.modal-btn-confirmar {
   background-color: #1e3a8a;
   color: white;
 }
@@ -223,13 +252,16 @@ const confirmarRecusa = () => {
 }
 
 @keyframes girar {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 640px) {
   .modal-content {
     padding: 24px;
   }
+
   .modal-titulo {
     font-size: 22px;
   }

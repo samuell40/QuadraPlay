@@ -1010,7 +1010,9 @@ export default {
         this.totalAgendamentos = this.agendamentos.length
         this.totalPendentes = this.agendamentos.filter(a => a.status === 'Pendente').length
         this.totalConfirmados = this.agendamentos.filter(a => a.status === 'Confirmado').length
-        this.totalCancelados = this.agendamentos.filter(a => a.status === 'Recusado').length
+        this.totalCancelados = this.agendamentos.filter(
+          a => a.status === 'Recusado' || a.status === 'Cancelado'
+        ).length
 
         this.loading = false
         await nextTick()

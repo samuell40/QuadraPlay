@@ -97,6 +97,7 @@
                 :class="{ finalizado: normalizarStatus(ag.status) === 'finalizado' }"
                 @confirmar="aceitarAgendamento(ag.id)"
                 @recusar="abrirModalRecusa(ag.id)"
+                @desmarcar="abrirModalDesmarcacao(ag.id)"
               />
             </div>
 
@@ -150,6 +151,19 @@
           @fechar="modalRecusaAberto = false"
           @confirmar="processarRecusa"
         />
+
+        <RecusarAgendModal
+          v-if="modalDesmarcacaoAberto"
+          :agendamentoId="idParaDesmarcar"
+          :loading="isDesmarcando"
+          titulo="Desmarcar agendamento"
+          descricao="Se quiser, informe um motivo para o usuario. Esse campo e opcional."
+          placeholder="Ex: precisaremos usar a quadra nesse horario por manutencao interna."
+          textoConfirmar="Salvar desmarcacao"
+          :motivoObrigatorio="false"
+          @fechar="modalDesmarcacaoAberto = false"
+          @confirmar="processarDesmarcacao"
+        />
       </section>
     </div>
   </div>
@@ -184,11 +198,16 @@ const agendamentoSelecionado = ref(null)
 const modalRecusaAberto = ref(false)
 const idParaRecusar = ref(null)
 const isRecusando = ref(false)
+const modalDesmarcacaoAberto = ref(false)
+const idParaDesmarcar = ref(null)
+const isDesmarcando = ref(false)
 const loadingCards = ref([])
 const abaAtiva = ref('pendentes')
 
 const ITENS_POR_PAGINA = 10
 const ANO_ATUAL = new Date().getFullYear()
+const JANELA_DESMARCACAO_MS = 60 * 60 * 1000
+const PERFIS_PODEM_DESMARCAR = new Set([1, 2])
 const podeTrocarQuadra = computed(() => Number(authStore.usuario?.permissaoId) === 1)
 
 const paginasAtuais = ref({
@@ -224,6 +243,17 @@ const obterDataAgendamento = (agendamento) => {
   }
 
   return null
+}
+
+const podeDesmarcarAgendamento = (agendamento) => {
+  const permissaoId = Number(authStore.usuario?.permissaoId)
+  if (!PERFIS_PODEM_DESMARCAR.has(permissaoId)) return false
+  if (normalizarStatus(agendamento?.status) !== 'confirmado') return false
+
+  const dataAgendamento = obterDataAgendamento(agendamento)
+  if (!dataAgendamento) return false
+
+  return dataAgendamento.getTime() - Date.now() >= JANELA_DESMARCACAO_MS
 }
 
 const obterAnoAgendamento = (agendamento) => {
@@ -311,7 +341,7 @@ const getTodosPorTipo = (tipo) => {
     const status = normalizarStatus(agendamento.status)
 
     if (tipo === 'pendentes') return status === 'pendente'
-    if (tipo === 'recusados') return status === 'recusado'
+    if (tipo === 'recusados') return status === 'recusado' || status === 'cancelado'
     if (tipo === 'confirmados') {
       const dataAgendamento = obterDataAgendamento(agendamento)
       return status === 'confirmado' && dataAgendamento && dataAgendamento.getTime() >= hoje.getTime()
@@ -352,7 +382,7 @@ const totalRecusados = computed(() => getTodosPorTipo('recusados').length)
 const abas = computed(() => [
   { id: 'pendentes', label: 'Pendentes', total: totalPendentes.value },
   { id: 'confirmados', label: 'Confirmados', total: totalConfirmados.value },
-  { id: 'recusados', label: 'Recusados', total: totalRecusados.value },
+  { id: 'recusados', label: 'Encerrados', total: totalRecusados.value },
 ])
 
 const nomeQuadraOperacao = computed(() => {
@@ -364,7 +394,7 @@ const tituloAbaAtiva = computed(() => {
   const titulos = {
     pendentes: 'Fila de aprovação das reservas',
     confirmados: 'Agenda validada da quadra',
-    recusados: 'Histórico de recusas recentes',
+    recusados: 'Histórico de encerramentos recentes',
   }
 
   return titulos[abaAtiva.value] || 'Controle operacional das reservas'
@@ -374,7 +404,7 @@ const subtituloAbaAtiva = computed(() => {
   const subtitulos = {
     pendentes: `Revise os pedidos vinculados a ${nomeQuadraOperacao.value} e decida quais horários seguem para confirmação.`,
     confirmados: 'Acompanhe os agendamentos futuros que já estão liberados para operação normal.',
-    recusados: 'Consulte os pedidos encerrados e mantenha o histórico de justificativas sempre acessível.',
+    recusados: 'Consulte recusas e desmarcações administrativas com seus respectivos motivos.',
   }
 
   return subtitulos[abaAtiva.value] || 'Acompanhe os agendamentos vinculados à operação da sua quadra.'
@@ -397,7 +427,7 @@ const tituloEstadoVazio = computed(() => {
   const mensagens = {
     pendentes: 'Nenhum pedido pendente no momento.',
     confirmados: 'Nenhuma reserva futura confirmada.',
-    recusados: 'Nenhum agendamento recusado.',
+    recusados: 'Nenhum agendamento recusado ou desmarcado.',
   }
 
   return mensagens[abaAtiva.value] || 'Nenhum agendamento encontrado.'
@@ -410,8 +440,8 @@ const descricaoEstadoVazio = computed(() => {
 
   const descricoes = {
     pendentes: 'Quando novos pedidos forem enviados para a quadra, eles aparecerão aqui para análise.',
-    confirmados: 'Os agendamentos aprovados para datas futuras ficarão organizados nesta aba.',
-    recusados: 'Os pedidos recusados aparecerão aqui com o motivo informado ao solicitante.',
+    confirmados: 'Os agendamentos aprovados para datas futuras ficarão organizados aqui, inclusive os que ainda podem ser desmarcados.',
+    recusados: 'Os pedidos recusados e os horários desmarcados aparecerão aqui com a justificativa informada.',
   }
 
   return descricoes[abaAtiva.value] || 'Não há itens para exibir nesta etapa.'
@@ -431,6 +461,7 @@ const normalizarAgendamento = (agendamento) => ({
   solicitanteNome: agendamento.usuario?.nome || 'Sem usuário',
   solicitantePermissaoId: Number(agendamento.usuario?.permissaoId ?? 0),
   limiteSemanalAtingido: calcularLimiteSemanalAtingido(agendamento),
+  podeDesmarcar: podeDesmarcarAgendamento(agendamento),
   timeNome: agendamento.time?.nome || 'Não especificado',
   quadraNome: agendamento.quadra?.nome || authStore.usuario?.quadra?.nome || 'Quadra',
   codigoVerificacao: agendamento.codigoVerificacao || 'N/A',
@@ -521,6 +552,11 @@ const abrirModalRecusa = (id) => {
   modalRecusaAberto.value = true
 }
 
+const abrirModalDesmarcacao = (id) => {
+  idParaDesmarcar.value = id
+  modalDesmarcacaoAberto.value = true
+}
+
 const processarRecusa = async ({ id, motivo }) => {
   isRecusando.value = true
   loadingCards.value.push(id)
@@ -540,6 +576,33 @@ const processarRecusa = async ({ id, motivo }) => {
     Swal.fire('Erro', 'Falha ao recusar agendamento.', 'error')
   } finally {
     isRecusando.value = false
+    loadingCards.value = loadingCards.value.filter((item) => item !== id)
+  }
+}
+
+const processarDesmarcacao = async ({ id, motivo }) => {
+  isDesmarcando.value = true
+  loadingCards.value.push(id)
+
+  try {
+    const { data } = await api.patch(`/agendamento/${id}/desmarcar`, { motivoRecusa: motivo })
+    agendamentos.value = agendamentos.value.map((agendamento) =>
+      agendamento.id === id
+        ? { ...agendamento, ...data, status: data?.status || 'Cancelado', motivoRecusa: data?.motivoRecusa || '' }
+        : agendamento,
+    )
+    modalDesmarcacaoAberto.value = false
+    normalizarPaginas()
+    Swal.fire('Desmarcado', 'O usuário será notificado por email.', 'success')
+  } catch (error) {
+    console.error(error)
+    Swal.fire(
+      'Erro',
+      error?.response?.data?.error || 'Falha ao desmarcar o agendamento.',
+      'error',
+    )
+  } finally {
+    isDesmarcando.value = false
     loadingCards.value = loadingCards.value.filter((item) => item !== id)
   }
 }
