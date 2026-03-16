@@ -102,6 +102,7 @@ model Agendamento {
   motivoRecusa      String?
   deletedAt         DateTime?
   fixo              Boolean         @default(false)
+  avisoEncerramentoFixoEnviadoEm DateTime?
   encaixe           Boolean         @default(false)
   limiteSemanalAtingido Boolean     @default(false)
   usuario           Usuario?        @relation(fields: [usuarioId], references: [id])

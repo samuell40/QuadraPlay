@@ -1,5 +1,8 @@
 const prisma = require("../lib/prisma");
-const { enviarEmailStatusAgendamento } = require("./email.service");
+const {
+  enviarEmailStatusAgendamento,
+  enviarEmailEncerramentoAgendamentoFixo,
+} = require("./email.service");
 const { startOfWeek, endOfWeek, addMinutes } = require("date-fns");
 
 const INCLUDE_AGENDAMENTO_LISTAGEM = {
@@ -15,8 +18,14 @@ const ID_PERMISSAO_ADMINISTRADOR = 2;
 const ID_PERMISSAO_USUARIO = 3;
 const ID_PERMISSAO_MESARIO = 4;
 const ID_PERMISSAO_TREINADOR = 5;
+const STATUS_AGENDAMENTO_ATIVOS = ["Pendente", "Confirmado"];
 const INTERVALO_RECUSA_VENCIDOS_MS = 60 * 1000;
+const INTERVALO_AVISO_ENCERRAMENTO_FIXO_MS = 6 * 60 * 60 * 1000;
+const JANELA_ULTIMA_SEMANA_FIXO_MS = 7 * 24 * 60 * 60 * 1000;
+const JANELA_MINIMA_DESMARCACAO_CONFIRMADO_MS = 60 * 60 * 1000;
 let ultimoProcessamentoRecusaVencidos = 0;
+let ultimoProcessamentoAvisoEncerramentoFixo = 0;
+let processamentoAvisoEncerramentoFixoEmAndamento = false;
 
 const PERFIS_COM_REGRAS_AGENDAMENTO = new Set([
   ID_PERMISSAO_USUARIO,
@@ -71,6 +80,42 @@ const obterDataHoraAgendamento = (agendamento) => {
   return null;
 };
 
+const normalizarTextoSerieFixa = (valor) =>
+  String(valor || "")
+    .trim()
+    .toUpperCase();
+
+const obterDiaSemanaAgendamento = (agendamento) => {
+  const data = obterDataHoraAgendamento(agendamento);
+  return data instanceof Date && !Number.isNaN(data.getTime()) ? data.getDay() : null;
+};
+
+const obterChaveSerieAgendamentoFixo = (agendamento) => {
+  const tipo = normalizarTextoSerieFixa(agendamento?.tipo);
+  const escola = normalizarTextoSerieFixa(agendamento?.escola);
+  const descricao = normalizarTextoSerieFixa(agendamento?.descricao);
+  const usuarioId = Number(agendamento?.usuarioId || 0) || 0;
+  const quadraId = Number(agendamento?.quadraId || 0) || 0;
+  const modalidadeId = Number(agendamento?.modalidadeId || 0) || 0;
+  const timeId = Number(agendamento?.timeId || 0) || 0;
+  const duracao = Number(agendamento?.duracao || 1) || 1;
+  const hora = Number(agendamento?.hora || 0) || 0;
+  const diaSemana = Number(obterDiaSemanaAgendamento(agendamento) ?? -1);
+
+  return [
+    usuarioId,
+    quadraId,
+    modalidadeId,
+    timeId,
+    tipo,
+    escola,
+    descricao,
+    hora,
+    duracao,
+    diaSemana,
+  ].join("|");
+};
+
 const obterChaveDataHora = (data) => {
   if (!(data instanceof Date) || Number.isNaN(data.getTime())) return "";
 
@@ -80,6 +125,22 @@ const obterChaveDataHora = (data) => {
   const hora = String(data.getHours()).padStart(2, "0");
   const minuto = String(data.getMinutes()).padStart(2, "0");
   return `${ano}-${mes}-${dia} ${hora}:${minuto}`;
+};
+
+const podeDesmarcarAgendamentoConfirmado = (agendamento, referencia = new Date()) => {
+  if (String(agendamento?.status || "").trim().toLowerCase() !== "confirmado") {
+    return false;
+  }
+
+  const dataHoraAgendamento = obterDataHoraAgendamento(agendamento);
+  if (!(dataHoraAgendamento instanceof Date) || Number.isNaN(dataHoraAgendamento.getTime())) {
+    return false;
+  }
+
+  return (
+    dataHoraAgendamento.getTime() - referencia.getTime() >=
+    JANELA_MINIMA_DESMARCACAO_CONFIRMADO_MS
+  );
 };
 
 const normalizarHorarioGrade = (valor) => {
@@ -136,7 +197,7 @@ const contarHorariosDisponiveisNoDia = async ({ quadraId, dataInicio }) => {
         mes,
         dia,
         deletedAt: null,
-        status: { not: "Recusado" },
+        status: { in: STATUS_AGENDAMENTO_ATIVOS },
       },
       select: {
         hora: true,
@@ -473,7 +534,7 @@ const listarAgendamentosOcupadosService = async (
     where: {
       quadraId,
       deletedAt: null,
-      status: { not: "Recusado" },
+      status: { in: STATUS_AGENDAMENTO_ATIVOS },
       ano,
       mes,
       dia,
@@ -835,7 +896,8 @@ const criarAgendamentoService = async ({
       ano: anoCalc,
       mes: mesCalc,
       dia: diaCalc,
-      status: { not: "Recusado" },
+      deletedAt: null,
+      status: { in: STATUS_AGENDAMENTO_ATIVOS },
     },
   });
 
@@ -923,6 +985,62 @@ const cancelarAgendamentoService = async (id) => {
   return true;
 };
 
+const desmarcarAgendamentoService = async (
+  id,
+  usuarioResponsavel = {},
+  motivoRecusa = null,
+) => {
+  if (!id) throw { status: 400, message: "ID do agendamento obrigatorio." };
+
+  const permissaoId = Number(usuarioResponsavel?.permissaoId);
+  const quadraResponsavelId = Number(usuarioResponsavel?.quadraId);
+  const podeDesmarcar =
+    permissaoId === ID_PERMISSAO_DESENVOLVEDOR ||
+    permissaoId === ID_PERMISSAO_ADMINISTRADOR;
+
+  if (!podeDesmarcar) {
+    throw {
+      status: 403,
+      message: "Sem permissao para desmarcar agendamentos confirmados.",
+    };
+  }
+
+  const agendamento = await prisma.agendamento.findUnique({
+    where: { id: Number(id) },
+    include: { usuario: true, quadra: true, modalidade: true, time: true },
+  });
+
+  if (!agendamento || agendamento.deletedAt) {
+    throw { status: 404, message: "Agendamento nao encontrado." };
+  }
+
+  if (permissaoId === ID_PERMISSAO_ADMINISTRADOR) {
+    if (!Number.isInteger(quadraResponsavelId) || quadraResponsavelId <= 0) {
+      throw {
+        status: 403,
+        message: "Administrador sem quadra vinculada para desmarcacao.",
+      };
+    }
+
+    if (Number(agendamento.quadraId) !== quadraResponsavelId) {
+      throw {
+        status: 403,
+        message: "Voce nao pode desmarcar agendamentos de outra quadra.",
+      };
+    }
+  }
+
+  if (!podeDesmarcarAgendamentoConfirmado(agendamento)) {
+    throw {
+      status: 400,
+      message:
+        "Esse agendamento so pode ser desmarcado ate 1 hora antes do horario marcado.",
+    };
+  }
+
+  return atualizarAgendamentoService(id, "Cancelado", motivoRecusa);
+};
+
 const atualizarAgendamentoService = async (id, status, motivoRecusa = null) => {
   if (!id || !status)
     throw { status: 400, message: "ID e status sÃ£o obrigatÃ³rios." };
@@ -934,16 +1052,19 @@ const atualizarAgendamentoService = async (id, status, motivoRecusa = null) => {
   if (!agendamento)
     throw { status: 404, message: "Agendamento nÃ£o encontrado." };
 
+  const statusNormalizado = String(status || "").trim();
+  const aceitaMotivo = ["Recusado", "Cancelado"].includes(statusNormalizado);
+  const motivoNormalizado = String(motivoRecusa || "").trim();
   const justificativa =
-    status === "Recusado" && !motivoRecusa
+    statusNormalizado === "Recusado" && !motivoNormalizado
       ? "O administrador da quadra nÃ£o informou um motivo especÃ­fico."
-      : motivoRecusa;
+      : motivoNormalizado || null;
 
   const atualizado = await prisma.agendamento.update({
     where: { id: Number(id) },
     data: {
       status,
-      motivoRecusa: status === "Recusado" ? justificativa : null,
+      motivoRecusa: aceitaMotivo ? justificativa : null,
     },
     include: { usuario: true, quadra: true, modalidade: true, time: true },
   });
@@ -1076,6 +1197,118 @@ const recusarAgendamentosVencidos = async () => {
   ultimoProcessamentoRecusaVencidos = agora.getTime();
 };
 
+const processarAvisosEncerramentoAgendamentosFixos = async (
+  { forcar = false } = {},
+) => {
+  const agora = new Date();
+
+  if (processamentoAvisoEncerramentoFixoEmAndamento) {
+    return 0;
+  }
+
+  if (
+    !forcar &&
+    agora.getTime() - ultimoProcessamentoAvisoEncerramentoFixo <
+      INTERVALO_AVISO_ENCERRAMENTO_FIXO_MS
+  ) {
+    return 0;
+  }
+
+  processamentoAvisoEncerramentoFixoEmAndamento = true;
+
+  try {
+    const agendamentosFixos = await prisma.agendamento.findMany({
+      where: {
+        fixo: true,
+        deletedAt: null,
+        status: { in: ["Confirmado", "Pendente"] },
+      },
+      include: INCLUDE_AGENDAMENTO_LISTAGEM,
+      orderBy: [
+        { ano: "asc" },
+        { mes: "asc" },
+        { dia: "asc" },
+        { hora: "asc" },
+      ],
+    });
+
+    const seriesPorChave = new Map();
+
+    for (const agendamento of agendamentosFixos) {
+      const dataHora = obterDataHoraAgendamento(agendamento);
+      if (!(dataHora instanceof Date) || Number.isNaN(dataHora.getTime())) continue;
+      if (dataHora.getTime() < agora.getTime()) continue;
+
+      const chaveSerie = obterChaveSerieAgendamentoFixo(agendamento);
+      const serieAtual =
+        seriesPorChave.get(chaveSerie) ||
+        {
+          itens: [],
+          possuiAvisoEnviado: false,
+          ultimoAgendamento: null,
+          ultimoDataHora: null,
+        };
+
+      serieAtual.itens.push(agendamento);
+      serieAtual.possuiAvisoEnviado =
+        serieAtual.possuiAvisoEnviado ||
+        Boolean(agendamento?.avisoEncerramentoFixoEnviadoEm);
+
+      if (
+        !serieAtual.ultimoDataHora ||
+        dataHora.getTime() > serieAtual.ultimoDataHora.getTime()
+      ) {
+        serieAtual.ultimoDataHora = dataHora;
+        serieAtual.ultimoAgendamento = agendamento;
+      }
+
+      seriesPorChave.set(chaveSerie, serieAtual);
+    }
+
+    let totalEnvios = 0;
+
+    for (const serie of seriesPorChave.values()) {
+      if (serie.possuiAvisoEnviado) continue;
+      if (!serie.ultimoAgendamento?.usuario?.email) continue;
+      if (!(serie.ultimoDataHora instanceof Date)) continue;
+
+      const diferencaMs = serie.ultimoDataHora.getTime() - agora.getTime();
+      if (diferencaMs < 0 || diferencaMs > JANELA_ULTIMA_SEMANA_FIXO_MS) {
+        continue;
+      }
+
+      try {
+        await enviarEmailEncerramentoAgendamentoFixo({
+          agendamento: serie.ultimoAgendamento,
+          dataEncerramento: serie.ultimoDataHora,
+          quantidadeHorariosRestantes: serie.itens.length,
+        });
+
+        await prisma.agendamento.updateMany({
+          where: {
+            id: { in: serie.itens.map((item) => Number(item.id)).filter(Boolean) },
+          },
+          data: {
+            avisoEncerramentoFixoEnviadoEm: agora,
+          },
+        });
+
+        totalEnvios += 1;
+      } catch (error) {
+        console.error(
+          "[agendamento-fixo] Erro ao enviar aviso de encerramento:",
+          error?.message || error,
+        );
+      }
+    }
+
+    ultimoProcessamentoAvisoEncerramentoFixo = agora.getTime();
+    return totalEnvios;
+  } finally {
+    processamentoAvisoEncerramentoFixoEmAndamento = false;
+  }
+};
+
 const atualizarAgendamentosFixosService = async (agendamentos, usuarioId) => {
   if (!agendamentos || agendamentos.length === 0) {
     throw { status: 400, message: "Lista de agendamentos vazia." };
@@ -1194,8 +1427,10 @@ module.exports = {
   listarAgendamentosOcupadosService,
   listarAgendamentosConfirmadosSemanaService,
   atualizarAgendamentoService,
+  desmarcarAgendamentoService,
   atualizarAgendamentosFixosService,
   listarModalidadesPorQuadraService,
   listarAgendamentosPorTimeService,
   recusarAgendamentosVencidos,
+  processarAvisosEncerramentoAgendamentosFixos,
 };

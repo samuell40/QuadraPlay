@@ -8,6 +8,7 @@
   listarAgendamentosConfirmadosSemanaService,
   cancelarAgendamentoService,
   atualizarAgendamentoService,
+  desmarcarAgendamentoService,
   atualizarAgendamentosFixosService,
   listarModalidadesPorQuadraService,
   listarAgendamentosPorTimeService,
@@ -253,6 +254,20 @@ const recusarAgendamentoController = async (req, res) => {
   }
 };
 
+const desmarcarAgendamentoController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { motivoRecusa } = req.body;
+    const agendamento = await desmarcarAgendamentoService(id, req.user, motivoRecusa);
+    return res.status(200).json(agendamento);
+  } catch (err) {
+    console.error(err);
+    return res
+      .status(err.status || 500)
+      .json({ error: err.message || "Erro ao desmarcar agendamento." });
+  }
+};
+
 const listarModalidadesPorQuadraController = async (req, res) => {
   try {
     const { quadraId } = req.params;
@@ -302,6 +317,7 @@ module.exports = {
   cancelarAgendamentoController,
   aceitarAgendamentoController,
   recusarAgendamentoController,
+  desmarcarAgendamentoController,
   listarModalidadesPorQuadraController,
   listarAgendamentosPorTimeController,
 };

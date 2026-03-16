@@ -12,6 +12,7 @@ const {
   cancelarAgendamentoController,
   aceitarAgendamentoController,
   recusarAgendamentoController,
+  desmarcarAgendamentoController,
   listarModalidadesPorQuadraController,
   listarAgendamentosPorTimeController
 } = require('../controllers/agendamento.controller');
@@ -56,6 +57,7 @@ router.patch('/agendamento/:id/aceitar', [validarJWT], aceitarAgendamentoControl
 
 // Recusar um agendamento
 router.patch('/agendamento/:id/recusar', [validarJWT], recusarAgendamentoController);
+router.patch('/agendamento/:id/desmarcar', [validarJWT], desmarcarAgendamentoController);
 
 // Rota específica para salvar o lote de agendamentos fixos (substituindo os anteriores)
 router.post('/agendamentos/fixos', [validarJWT], atualizarAgendamentosFixosController);

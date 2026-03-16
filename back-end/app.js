@@ -8,6 +8,9 @@ dotenv.config();
 const passport = require("./auth/passport");
 const prisma = require('./lib/prisma');
 const { iniciarSocket } = require('./socket');
+const {
+  processarAvisosEncerramentoAgendamentosFixos,
+} = require('./services/agendamento.service');
 
 // Rotas
 const authRoutes = require("./routes/auth.router");
@@ -239,12 +242,30 @@ app.post("/upload", upload.single("file"), async (req, res) => {
 
 // Inicializa o servidor
 const PORT = process.env.PORT || 3000;
+const INTERVALO_PROCESSAMENTO_AVISO_FIXO_MS = 6 * 60 * 60 * 1000;
+
+const intervaloAvisoEncerramentoFixo = setInterval(() => {
+  processarAvisosEncerramentoAgendamentosFixos().catch((error) => {
+    console.error(
+      '[agendamento-fixo] Erro ao processar avisos de encerramento:',
+      error?.message || error,
+    );
+  });
+}, INTERVALO_PROCESSAMENTO_AVISO_FIXO_MS);
+
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
+  processarAvisosEncerramentoAgendamentosFixos({ forcar: true }).catch((error) => {
+    console.error(
+      '[agendamento-fixo] Erro no processamento inicial de avisos:',
+      error?.message || error,
+    );
+  });
 });
 
 async function encerrarServidor(signal) {
   console.log(`${signal} recebido. Encerrando servidor...`);
+  clearInterval(intervaloAvisoEncerramentoFixo);
 
   server.close(async () => {
     await prisma.$disconnect();

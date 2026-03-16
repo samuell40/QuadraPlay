@@ -400,6 +400,26 @@ function formatarHoraAgendamento(hora) {
   return `${String(hora).padStart(2, '0')}:00`;
 }
 
+function formatarHoraCurta(data) {
+  if (!data) return '';
+
+  const date = new Date(data);
+  if (Number.isNaN(date.getTime())) return '';
+
+  try {
+    return date.toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'America/Fortaleza',
+    });
+  } catch (error) {
+    return date.toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+}
+
 function parseJsonSafe(content) {
   try {
     return JSON.parse(content);
@@ -722,8 +742,14 @@ async function enviarEmailVinculoTreinador(usuario, time) {
 }
 
 async function enviarEmailStatusAgendamento(agendamento) {
-  const confirmado = agendamento.status === 'Confirmado';
-  const statusFormatado = confirmado ? 'confirmado' : 'recusado';
+  const statusNormalizado = String(agendamento?.status || '').trim().toLowerCase();
+  const confirmado = statusNormalizado === 'confirmado';
+  const cancelado = statusNormalizado === 'cancelado';
+  const statusFormatado = confirmado
+    ? 'confirmado'
+    : cancelado
+      ? 'cancelado'
+      : 'recusado';
   const nomeUsuario = String(agendamento?.usuario?.nome || 'Usuario').trim();
   const emailUsuario = String(agendamento?.usuario?.email || '').trim();
   const nomeQuadra = String(agendamento?.quadra?.nome || 'quadra selecionada').trim();
@@ -736,7 +762,7 @@ async function enviarEmailStatusAgendamento(agendamento) {
     console.warn('[email] Agendamento sem email do usuario. Envio de status ignorado.');
     return;
   }
-  const blocoStatus = confirmado
+  let blocoStatus = confirmado
     ? renderCallout({
         tone: 'success',
         title: 'Horário reservado',
@@ -751,10 +777,32 @@ async function enviarEmailStatusAgendamento(agendamento) {
           : 'A solicitação não foi aprovada. Consulte outros horários disponíveis na plataforma.',
       });
 
+  if (cancelado) {
+    blocoStatus = renderCallout({
+      tone: agendamento.motivoRecusa ? 'warning' : 'brand',
+      title: agendamento.motivoRecusa ? 'Motivo da desmarcacao' : 'Agendamento desmarcado',
+      content: agendamento.motivoRecusa
+        ? toHtmlLines(agendamento.motivoRecusa)
+        : 'A administracao da quadra precisou desmarcar esse horario. Acesse a plataforma para escolher outra data.',
+    });
+  }
+
+  const tituloEmail = confirmado
+    ? 'Seu agendamento foi confirmado'
+    : cancelado
+      ? 'Seu agendamento foi desmarcado'
+      : 'Seu agendamento foi recusado';
+  const assuntoEmail = confirmado
+    ? 'Agendamento confirmado'
+    : cancelado
+      ? 'Agendamento desmarcado'
+      : 'Agendamento recusado';
+  const statusCard = confirmado ? 'Confirmado' : cancelado ? 'Cancelado' : 'Recusado';
+
   const html = createEmailLayout({
     preheader: `Seu agendamento foi ${statusFormatado}`,
     eyebrow: 'Atualização de agendamento',
-    title: confirmado ? 'Seu agendamento foi confirmado' : 'Seu agendamento foi recusado',
+    title: tituloEmail,
     recipientName: nomeUsuario,
     introHtml: renderParagraph(
       `Analisamos sua solicitação e o agendamento na quadra ${strong(nomeQuadra)}${contextoModalidade} foi ${strong(statusFormatado)}.`
@@ -765,7 +813,7 @@ async function enviarEmailStatusAgendamento(agendamento) {
         { label: 'Modalidade', value: nomeModalidade },
         { label: 'Data', value: formatarDataAgendamento(agendamento) },
         { label: 'Horário', value: formatarHoraAgendamento(agendamento.hora) },
-        { label: 'Status', value: confirmado ? 'Confirmado' : 'Recusado' },
+        { label: 'Status', value: statusCard },
       ]) + blocoStatus,
     ctaLabel: 'Ver meus agendamentos',
     ctaUrl: buildAppUrl('/meusagendamentos'),
@@ -775,9 +823,73 @@ async function enviarEmailStatusAgendamento(agendamento) {
 
   return enviarEmail({
     to: emailUsuario,
-    subject: buildSubject(
-      confirmado ? 'Agendamento confirmado' : 'Agendamento recusado'
-    ),
+    subject: buildSubject(assuntoEmail),
+    html,
+  });
+}
+
+async function enviarEmailEncerramentoAgendamentoFixo({
+  agendamento,
+  dataEncerramento,
+  quantidadeHorariosRestantes = 0,
+}) {
+  const nomeUsuario = String(agendamento?.usuario?.nome || 'Usuario').trim();
+  const emailUsuario = String(agendamento?.usuario?.email || '').trim();
+  const nomeQuadra = String(agendamento?.quadra?.nome || 'quadra selecionada').trim();
+  const nomeModalidade = String(agendamento?.modalidade?.nome || '').trim();
+  const nomeTime = String(agendamento?.time?.nome || '').trim();
+  const tipoAgendamento = String(agendamento?.tipo || 'Agendamento fixo').trim();
+  const dataFinalFormatada = formatarDataCurta(dataEncerramento);
+  const horaFinalFormatada = formatarHoraCurta(dataEncerramento);
+  const restantes = Math.max(0, Number(quantidadeHorariosRestantes) || 0);
+  const resumoRestante = restantes > 1
+    ? `Restam ${strong(restantes)} horarios confirmados nesta ultima semana.`
+    : 'Resta apenas um horario confirmado antes do encerramento.';
+
+  if (!emailUsuario) {
+    console.warn('[email] Agendamento fixo sem email do usuario. Envio de encerramento ignorado.');
+    return;
+  }
+
+  const detalhes = [
+    { label: 'Quadra', value: nomeQuadra },
+    { label: 'Tipo', value: tipoAgendamento },
+    { label: 'Modalidade', value: nomeModalidade || '-' },
+    { label: 'Time', value: nomeTime || '-' },
+    { label: 'Ultimo horario', value: dataFinalFormatada && horaFinalFormatada
+      ? `${dataFinalFormatada} as ${horaFinalFormatada}`
+      : dataFinalFormatada || '-' },
+  ];
+
+  const html = createEmailLayout({
+    preheader: 'Seu agendamento fixo esta entrando na ultima semana',
+    eyebrow: 'Agendamento fixo',
+    title: 'Seu agendamento fixo esta sendo encerrado',
+    recipientName: nomeUsuario,
+    introHtml:
+      renderParagraph(
+        `Seu horario fixo na quadra ${strong(nomeQuadra)} entra agora na ${strong('ultima semana')} e o encerramento esta previsto para ${strong(`${dataFinalFormatada}${horaFinalFormatada ? ` as ${horaFinalFormatada}` : ''}`)}.`
+      ) +
+      renderParagraph(
+        'Se quiser renovar a reserva, acesse a tela de Meus Agendamentos e solicite um novo periodo.',
+        { size: 15, color: '#475569', marginBottom: 0 }
+      ),
+    sectionsHtml:
+      renderDetailCard('Resumo do agendamento fixo', detalhes) +
+      renderCallout({
+        tone: 'warning',
+        title: 'Renovacao manual',
+        content: `${resumoRestante} Para continuar com o horario fixo, faca a renovacao pela plataforma.`,
+      }),
+    ctaLabel: 'Abrir meus agendamentos',
+    ctaUrl: buildAppUrl('/meusagendamentos'),
+    footerNote:
+      'Este aviso e enviado apenas quando o agendamento fixo entra na ultima semana cadastrada.',
+  });
+
+  return enviarEmail({
+    to: emailUsuario,
+    subject: buildSubject('Seu agendamento fixo esta sendo encerrado'),
     html,
   });
 }
@@ -829,5 +941,6 @@ module.exports = {
   enviarEmailVinculoMesarioCampeonato,
   enviarEmailVinculoTreinador,
   enviarEmailStatusAgendamento,
+  enviarEmailEncerramentoAgendamentoFixo,
   enviarEmailNovoAviso,
 };
