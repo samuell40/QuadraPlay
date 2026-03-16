@@ -595,10 +595,10 @@ const criarAgendamentoService = async ({
   const descricaoNormalizada = String(descricao || "").trim();
   const escolaAula = tipoUpper === "AULA" ? escolaUpper : null;
   const descricaoOutro = tipoUpper === "OUTRO" ? descricaoNormalizada : null;
-  const exigeModalidade =
-    Boolean(fixo) || tipoUpper === "TREINO" || tipoUpper === "AMISTOSO";
-  const tipoPermiteEncaixe =
+  const tipoUsaContextoEsportivo =
     tipoUpper === "TREINO" || tipoUpper === "AMISTOSO";
+  const exigeModalidade = tipoUsaContextoEsportivo;
+  const tipoPermiteEncaixe = tipoUsaContextoEsportivo;
 
   if (!usuarioId || !quadraId || (exigeModalidade && !modalidadeIdCalculada && !timeIdNum)) {
     throw {
@@ -625,6 +625,14 @@ const criarAgendamentoService = async ({
     throw {
       status: 400,
       message: "Descricao do agendamento deve ter no maximo 250 caracteres.",
+    };
+  }
+
+  if (timeIdNum && !tipoUsaContextoEsportivo) {
+    throw {
+      status: 400,
+      message:
+        "Time so pode ser informado para agendamentos do tipo TREINO ou AMISTOSO.",
     };
   }
 
@@ -1074,34 +1082,68 @@ const atualizarAgendamentosFixosService = async (agendamentos, usuarioId) => {
   }
 
   const primeiro = agendamentos[0];
-  const timeId = primeiro.timeId;
-  const anoRef = primeiro.ano;
-  const mesRef = primeiro.mes;
-  const diaRef = primeiro.dia;
+  const usuarioIdNum = Number(usuarioId);
+  const timeId = primeiro.timeId ? Number(primeiro.timeId) : null;
+  const quadraId = primeiro.quadraId ? Number(primeiro.quadraId) : null;
+  const modalidadeId = primeiro.modalidadeId ? Number(primeiro.modalidadeId) : null;
+  const tipoRef = String(primeiro.tipo || "TREINO").toUpperCase().trim();
+  const anoRef = Number(primeiro.ano);
+  const mesRef = Number(primeiro.mes);
+  const diaRef = Number(primeiro.dia);
 
-  if (!timeId) {
+  if (!Number.isInteger(quadraId) || quadraId <= 0) {
+    throw {
+      status: 400,
+      message: "Quadra nao identificada para agendamento fixo.",
+    };
+  }
+
+  if (!Number.isInteger(anoRef) || !Number.isInteger(mesRef) || !Number.isInteger(diaRef)) {
+    throw {
+      status: 400,
+      message: "Data de referencia invalida para agendamento fixo.",
+    };
+  }
+
+  if (false) {
     throw {
       status: 400,
       message: "Time nÃ£o identificado para agendamento fixo.",
     };
   }
 
-  await validarAgendamentoPorTimeParaUsuario({
-    usuarioId,
-    timeId,
-  });
+  if (timeId) {
+    await validarAgendamentoPorTimeParaUsuario({
+      usuarioId,
+      timeId,
+    });
+  }
+
+  const filtroSubstituicao = {
+    usuarioId: usuarioIdNum,
+    quadraId,
+    fixo: true,
+    tipo: tipoRef,
+    status: { in: ["Pendente", "Confirmado"] },
+    OR: [
+      { ano: { gt: anoRef } },
+      { ano: anoRef, mes: { gt: mesRef } },
+      { ano: anoRef, mes: mesRef, dia: { gte: diaRef } },
+    ],
+  };
+
+  if (timeId) {
+    filtroSubstituicao.timeId = timeId;
+  } else {
+    filtroSubstituicao.timeId = null;
+  }
+
+  if (!timeId && Number.isInteger(modalidadeId) && modalidadeId > 0) {
+    filtroSubstituicao.modalidadeId = modalidadeId;
+  }
 
   await prisma.agendamento.deleteMany({
-    where: {
-      timeId: Number(timeId),
-      fixo: true,
-      status: { in: ["Pendente", "Confirmado"] },
-      OR: [
-        { ano: { gt: anoRef } },
-        { ano: anoRef, mes: { gt: mesRef } },
-        { ano: anoRef, mes: mesRef, dia: { gte: diaRef } },
-      ],
-    },
+    where: filtroSubstituicao,
   });
 
   const resultados = [];
@@ -1117,6 +1159,8 @@ const atualizarAgendamentosFixosService = async (agendamentos, usuarioId) => {
         hora: ag.hora,
         duracao: ag.duracao,
         tipo: ag.tipo,
+        escola: ag.escola ?? null,
+        descricao: ag.descricao ?? null,
         quadraId: ag.quadraId,
         modalidadeId: ag.modalidadeId,
         timeId: ag.timeId,

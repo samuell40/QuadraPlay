@@ -2091,6 +2091,19 @@ textarea.dropdown-gerenciar {
     padding: 0 12px;
   }
 
+  .sem-dados-acoes {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    overflow-x: visible;
+    padding-bottom: 0;
+  }
+
+  .btn-sem-dados-acao {
+    width: 100%;
+    white-space: normal;
+  }
+
   .modal-overlay-gerenciar {
     align-items: flex-start;
     padding: 16px 10px;

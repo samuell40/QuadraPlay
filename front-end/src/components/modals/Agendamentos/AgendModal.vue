@@ -139,6 +139,17 @@
         </div>
 
         <div v-else class="modo-fixo-container">
+          <div class="campo mb-3">
+            <label><strong>Tipo de agendamento:</strong></label>
+            <select v-model="tipo" class="form-select">
+              <option disabled value="">Selecione</option>
+              <option value="TREINO">Treino - 24h de antecedência</option>
+              <option value="AMISTOSO">Amistoso - 7 dias de antecedência</option>
+              <option value="EVENTO">Evento - 180 dias de antecedência</option>
+              <option value="AULA">Aula - 24h de antecedência</option>
+              <option value="OUTRO">Outro - 24h de antecedência</option>
+            </select>
+          </div>
           <div v-if="exigeTimeTreinador" class="campo mb-3">
             <label><strong>Time:</strong></label>
             <div class="select-wrapper">
@@ -162,13 +173,35 @@
               </select>
             </div>
           </div>
+          <div v-if="tipoUpper === 'AULA'" class="campo mb-3">
+            <label><strong>Escola:</strong></label>
+            <div class="select-wrapper">
+              <select v-model="escolaSelecionada" class="form-select">
+                <option disabled :value="null">Selecione a escola</option>
+                <option v-for="escola in escolasAula" :key="escola.codigo" :value="escola.codigo">
+                  {{ escola.codigo }} - {{ escola.nome }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div v-if="tipoUpper === 'OUTRO'" class="campo mb-3">
+            <label><strong>Descrição do agendamento:</strong></label>
+            <textarea
+              v-model="descricaoOutro"
+              class="form-textarea"
+              rows="3"
+              maxlength="250"
+              placeholder="Descreva o motivo do agendamento"
+            ></textarea>
+          </div>
           <div class="info-box">
-            <p><strong>Treino Fixo:</strong> Selecione até <strong>2 dias</strong> da semana. O sistema agendará
+            <p><strong>Agendamento Fixo:</strong> Selecione até <strong>2 dias</strong> da semana. O sistema agendará
               automaticamente para as próximas 5 semanas.</p>
           </div>
 
           <div class="campo mb-3" v-if="exibirDuracao">
-            <label><strong>Duração dos treinos:</strong></label>
+            <label><strong>Duração da reserva:</strong></label>
             <select v-model="duracao" class="form-select">
               <option disabled value="">Duração</option>
               <option value="1">1 hora</option>
@@ -292,8 +325,7 @@ export default {
       return [1, 2, 5].includes(Number(this.authStore.usuario?.permissaoId));
     },
     podeAgendarFixo() {
-      const p = this.authStore.usuario?.permissaoId;
-      return p === 1 || p === 2 || p === 5;
+      return [1, 2, 3, 5].includes(Number(this.authStore.usuario?.permissaoId));
     },
     tipoUpper() {
       return String(this.tipo || '').toUpperCase().trim();
@@ -306,12 +338,10 @@ export default {
     },
     exigeTimeTreinador() {
       if (!this.podeSelecionarTime) return false;
-      if (this.modoAgendamento === 'fixo') return true;
       return this.tipoUpper === 'TREINO' || this.tipoUpper === 'AMISTOSO';
     },
     exigeModalidade() {
       if (this.podeSelecionarTime) return false;
-      if (this.modoAgendamento === 'fixo') return true;
       return this.tipoUpper === 'TREINO' || this.tipoUpper === 'AMISTOSO';
     },
     modalidadePadronizada() {
@@ -621,6 +651,9 @@ export default {
         return true;
       }
       else if (this.modoAgendamento === 'fixo') {
+        if (!this.tipo) return false;
+        if (this.tipoUpper === 'AULA' && !this.obterEscolaAulaParaAgendamento()) return false;
+        if (this.tipoUpper === 'OUTRO' && !this.obterDescricaoOutroParaAgendamento()) return false;
         if (this.diasFixosSelecionados.length === 0) return false;
         const todos = this.diasFixosSelecionados.every(dia => {
           const val = this.horariosFixos[dia];
@@ -695,6 +728,9 @@ export default {
       const agora = new Date();
       const agendamentosParaCriar = [];
       const duracaoFinal = this.exibirDuracao ? parseInt(this.duracao) : 1;
+      const tipoAgendamento = this.tipoUpper;
+      const escolaAgendamento = this.obterEscolaAulaParaAgendamento();
+      const descricaoAgendamento = this.obterDescricaoOutroParaAgendamento();
 
       const invalido = this.diasFixosSelecionados.some(dia => {
         const h = this.horariosFixos[dia];
@@ -735,7 +771,9 @@ export default {
             hora: horaInt,
             datahora: dataIso.toISOString(),
             duracao: duracaoFinal,
-            tipo: 'TREINO',
+            tipo: tipoAgendamento,
+            escola: escolaAgendamento,
+            descricao: descricaoAgendamento,
             fixo: true
           });
         }
