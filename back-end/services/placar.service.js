@@ -298,7 +298,10 @@ function montarConfiguracaoClassificacao(campeonato, timeIdsCampeonato = []) {
       campeonato?.regras?.colunasClassificacao,
       campeonato?.modalidade?.nome
     ),
-    grupos: hidratarConfiguracaoGrupos(campeonato?.regras?.grupos, timeIdsCampeonato)
+    grupos: hidratarConfiguracaoGrupos(campeonato?.regras?.grupos, timeIdsCampeonato),
+    exibirPorGrupos: typeof campeonato?.regras?.exibirClassificacaoPorGrupo === 'boolean'
+      ? campeonato.regras.exibirClassificacaoPorGrupo
+      : true
   };
 }
 
@@ -363,14 +366,21 @@ async function listarPlacarPorCampeonato(campeonatoId) {
   });
 }
 
-async function salvarOrdemClassificacao(campeonatoId, novaOrdem = null, colunasVisiveis = null, gruposConfig = undefined) {
+async function salvarOrdemClassificacao(
+  campeonatoId,
+  novaOrdem = null,
+  colunasVisiveis = null,
+  gruposConfig = undefined,
+  exibirPorGrupos = undefined
+) {
   const id = Number(campeonatoId);
   const atualizarOrdem = Array.isArray(novaOrdem);
   const atualizarColunas = Array.isArray(colunasVisiveis);
   const atualizarGrupos = gruposConfig === null || (!!gruposConfig && typeof gruposConfig === 'object' && !Array.isArray(gruposConfig));
+  const atualizarExibicaoPorGrupos = typeof exibirPorGrupos === 'boolean';
 
-  if (!atualizarOrdem && !atualizarColunas && !atualizarGrupos) {
-    throw new Error('Informe ao menos ordem, colunas ou grupos para atualizar.');
+  if (!atualizarOrdem && !atualizarColunas && !atualizarGrupos && !atualizarExibicaoPorGrupos) {
+    throw new Error('Informe ao menos ordem, colunas, grupos ou exibirPorGrupos para atualizar.');
   }
 
   const campeonatoAtual = await prisma.campeonato.findUnique({
@@ -400,7 +410,7 @@ async function salvarOrdemClassificacao(campeonatoId, novaOrdem = null, colunasV
     dataUpdate.ordemClassificacao = normalizarOrdemClassificacao(novaOrdem, campeonatoAtual.modalidade?.nome);
   }
 
-  if (atualizarColunas || atualizarGrupos) {
+  if (atualizarColunas || atualizarGrupos || atualizarExibicaoPorGrupos) {
     const regrasBase = normalizarRegrasCampeonato(campeonatoAtual.regras, campeonatoAtual.modalidade?.nome);
     const regrasAtualizadas = { ...regrasBase };
 
@@ -415,6 +425,10 @@ async function salvarOrdemClassificacao(campeonatoId, novaOrdem = null, colunasV
       regrasAtualizadas.grupos = gruposConfig === null
         ? null
         : normalizarConfiguracaoGrupos(gruposConfig, timeIdsCampeonato);
+    }
+
+    if (atualizarExibicaoPorGrupos) {
+      regrasAtualizadas.exibirClassificacaoPorGrupo = exibirPorGrupos;
     }
 
     dataUpdate.regras = regrasAtualizadas;
@@ -447,12 +461,16 @@ async function salvarOrdemClassificacao(campeonatoId, novaOrdem = null, colunasV
     ? campeonato.times.map(item => Number(item.timeId))
     : timeIdsCampeonato;
   const gruposFinal = hidratarConfiguracaoGrupos(campeonato.regras?.grupos, timeIdsAtualizados);
+  const exibirPorGruposFinal = typeof campeonato.regras?.exibirClassificacaoPorGrupo === 'boolean'
+    ? campeonato.regras.exibirClassificacaoPorGrupo
+    : true;
 
   if (!atualizarOrdem) {
     return {
       ordem: ordemFinal,
       colunas: colunasFinal,
-      grupos: gruposFinal
+      grupos: gruposFinal,
+      exibirPorGrupos: exibirPorGruposFinal
     };
   }
 
@@ -586,6 +604,7 @@ async function salvarOrdemClassificacao(campeonatoId, novaOrdem = null, colunasV
     ordem: ordemFinal,
     colunas: colunasFinal,
     grupos: gruposFinal,
+    exibirPorGrupos: exibirPorGruposFinal,
     placares: placares.map((p, index) => ({
       id: p.id,
       timeId: p.timeId,

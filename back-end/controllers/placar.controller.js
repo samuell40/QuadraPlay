@@ -43,17 +43,19 @@ async function listarPlacarPorCampeonatoController(req, res) {
 async function salvarOrdemController(req, res) {
   try {
     const { campeonatoId } = req.params
-    const { ordem, colunas, grupos } = req.body
+    const { ordem, colunas, grupos, exibirPorGrupos } = req.body
     const corpoTemGrupos = Object.prototype.hasOwnProperty.call(req.body || {}, 'grupos')
+    const corpoTemExibirPorGrupos = Object.prototype.hasOwnProperty.call(req.body || {}, 'exibirPorGrupos')
 
     const temOrdem = Array.isArray(ordem)
     const temColunas = Array.isArray(colunas)
     const gruposValidos = grupos === null || (!!grupos && typeof grupos === 'object' && !Array.isArray(grupos))
+    const exibirPorGruposValido = typeof exibirPorGrupos === 'boolean'
 
-    if (!temOrdem && !temColunas && !corpoTemGrupos) {
+    if (!temOrdem && !temColunas && !corpoTemGrupos && !corpoTemExibirPorGrupos) {
 
       return res.status(400).json({
-        erro: "ordem, colunas e/ou grupos devem ser enviados em formato valido"
+        erro: "ordem, colunas, grupos e/ou exibirPorGrupos devem ser enviados em formato valido"
       })
 
     }
@@ -64,11 +66,18 @@ async function salvarOrdemController(req, res) {
       })
     }
 
+    if (corpoTemExibirPorGrupos && !exibirPorGruposValido) {
+      return res.status(400).json({
+        erro: "exibirPorGrupos deve ser um boolean"
+      })
+    }
+
     const resultado = await placarService.salvarOrdemClassificacao(
       campeonatoId,
       temOrdem ? ordem : null,
       temColunas ? colunas : null,
-      corpoTemGrupos ? grupos : undefined
+      corpoTemGrupos ? grupos : undefined,
+      corpoTemExibirPorGrupos ? exibirPorGrupos : undefined
     )
 
     emitirAtualizacaoCampeonato({
@@ -97,7 +106,8 @@ async function listarOrdemClassificacaoController(req, res) {
       campeonatoId,
       ordem: configuracao?.ordem || [],
       colunas: configuracao?.colunas || [],
-      grupos: configuracao?.grupos || null
+      grupos: configuracao?.grupos || null,
+      exibirPorGrupos: typeof configuracao?.exibirPorGrupos === 'boolean' ? configuracao.exibirPorGrupos : true
     });
   } catch (error) {
     console.error(error);

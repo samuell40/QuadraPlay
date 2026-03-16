@@ -84,6 +84,7 @@
                 class="grupo-toggle grupo-toggle-mobile-only"
                 :class="{ ativo: exibirClassificacaoPorGrupo }"
                 :aria-pressed="exibirClassificacaoPorGrupo ? 'true' : 'false'"
+                :disabled="salvandoExibicaoGrupos"
                 @click="alternarExibicaoGrupos"
               >
                 <span class="grupo-toggle-label grupo-toggle-label-desktop">Classificação por Grupo</span>
@@ -102,6 +103,7 @@
             class="grupo-toggle grupo-toggle-desktop-only"
             :class="{ ativo: exibirClassificacaoPorGrupo }"
             :aria-pressed="exibirClassificacaoPorGrupo ? 'true' : 'false'"
+            :disabled="salvandoExibicaoGrupos"
             @click="alternarExibicaoGrupos"
           >
             <span class="grupo-toggle-label grupo-toggle-label-desktop">Classificação por Grupo</span>
@@ -199,8 +201,6 @@ import {
 } from '@/services/socket'
 import { ordenarPartidasPorStatusEDataDesc } from '@/utils/partidaOrdenacao'
 
-const CLASSIFICACAO_GRUPOS_VISIVEL_PREFIX = 'classificacao-grupos-visivel'
-
 export default {
   name: 'ClassificacaoView',
   components: {
@@ -239,7 +239,8 @@ export default {
       socketTimerPlacar: null,
       socketTimerPartidas: null,
       usuario: null,
-      gerandoMataMata: false
+      gerandoMataMata: false,
+      salvandoExibicaoGrupos: false
     }
   },
 
@@ -606,45 +607,38 @@ export default {
       this.modalGrupos = true
     },
 
-    alternarExibicaoGrupos() {
-      if (!this.temGruposDefinidos) return
-      this.exibirClassificacaoPorGrupo = !this.exibirClassificacaoPorGrupo
-      this.persistirPreferenciaExibicaoGrupos(this.exibirClassificacaoPorGrupo)
-    },
+    async alternarExibicaoGrupos() {
+      if (!this.temGruposDefinidos || !this.campeonato?.id || this.salvandoExibicaoGrupos) return
 
-    obterChavePreferenciaExibicaoGrupos() {
-      const campeonatoId = Number(this.campeonato?.id)
-      const faseId = Number(this.faseSelecionada)
+      const valorAnterior = this.exibirClassificacaoPorGrupo
+      const proximoValor = !valorAnterior
 
-      if (!Number.isFinite(campeonatoId) || campeonatoId <= 0) return ''
-      if (!Number.isFinite(faseId) || faseId <= 0) return ''
-
-      return `${CLASSIFICACAO_GRUPOS_VISIVEL_PREFIX}:${campeonatoId}:${faseId}`
-    },
-
-    obterPreferenciaExibicaoGrupos() {
-      const chave = this.obterChavePreferenciaExibicaoGrupos()
-      if (!chave) return null
-
-      try {
-        const valor = localStorage.getItem(chave)
-        if (valor === '1') return true
-        if (valor === '0') return false
-      } catch (error) {
-        return null
+      this.salvandoExibicaoGrupos = true
+      this.exibirClassificacaoPorGrupo = proximoValor
+      this.campeonato = {
+        ...(this.campeonato || {}),
+        regras: {
+          ...(this.campeonato?.regras || {}),
+          exibirClassificacaoPorGrupo: proximoValor
+        }
       }
 
-      return null
-    },
-
-    persistirPreferenciaExibicaoGrupos(exibir) {
-      const chave = this.obterChavePreferenciaExibicaoGrupos()
-      if (!chave) return
-
       try {
-        localStorage.setItem(chave, exibir ? '1' : '0')
+        await api.put(`/campeonatos/${this.campeonato.id}/classificacao/ordem`, {
+          exibirPorGrupos: proximoValor
+        })
       } catch (error) {
-        // Sem persistencia, mantem comportamento atual.
+        this.exibirClassificacaoPorGrupo = valorAnterior
+        this.campeonato = {
+          ...(this.campeonato || {}),
+          regras: {
+            ...(this.campeonato?.regras || {}),
+            exibirClassificacaoPorGrupo: valorAnterior
+          }
+        }
+        await Swal.fire('Erro', 'Nao foi possivel atualizar a exibicao por grupos.', 'error')
+      } finally {
+        this.salvandoExibicaoGrupos = false
       }
     },
 
@@ -689,19 +683,23 @@ export default {
       }
     },
 
-    atualizarGruposClassificacao(grupos) {
+    atualizarGruposClassificacao(grupos, exibirPorGrupos = undefined) {
       const tinhaGruposDefinidos = Array.isArray(this.gruposClassificacao?.grupos)
         && this.gruposClassificacao.grupos.length > 0
 
       this.gruposClassificacao = grupos && typeof grupos === 'object' ? grupos : null
       const temGruposDefinidos = Array.isArray(this.gruposClassificacao?.grupos)
         && this.gruposClassificacao.grupos.length > 0
-      const preferenciaExibicao = this.obterPreferenciaExibicaoGrupos()
+      const exibirPorGruposResolvido = typeof exibirPorGrupos === 'boolean'
+        ? exibirPorGrupos
+        : (typeof this.campeonato?.regras?.exibirClassificacaoPorGrupo === 'boolean'
+            ? this.campeonato.regras.exibirClassificacaoPorGrupo
+            : undefined)
 
       if (!temGruposDefinidos) {
         this.exibirClassificacaoPorGrupo = false
-      } else if (typeof preferenciaExibicao === 'boolean') {
-        this.exibirClassificacaoPorGrupo = preferenciaExibicao
+      } else if (typeof exibirPorGruposResolvido === 'boolean') {
+        this.exibirClassificacaoPorGrupo = exibirPorGruposResolvido
       } else if (!tinhaGruposDefinidos) {
         this.exibirClassificacaoPorGrupo = true
       }
@@ -710,7 +708,10 @@ export default {
         ...(this.campeonato || {}),
         regras: {
           ...(this.campeonato?.regras || {}),
-          grupos: this.gruposClassificacao
+          grupos: this.gruposClassificacao,
+          exibirClassificacaoPorGrupo: temGruposDefinidos
+            ? this.exibirClassificacaoPorGrupo
+            : false
         }
       }
     },
@@ -722,9 +723,10 @@ export default {
         const { data } = await api.get(`/ordem/classificacao/${this.campeonato.id}`)
         const colunas = Array.isArray(data?.colunas) ? data.colunas : []
         const grupos = data?.grupos && typeof data.grupos === 'object' ? data.grupos : null
+        const exibirPorGrupos = typeof data?.exibirPorGrupos === 'boolean' ? data.exibirPorGrupos : undefined
 
         this.atualizarColunasClassificacao(colunas)
-        this.atualizarGruposClassificacao(grupos)
+        this.atualizarGruposClassificacao(grupos, exibirPorGrupos)
       } catch (err) {
         console.error('Erro ao carregar configurações da classificação:', err)
       }

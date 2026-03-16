@@ -171,6 +171,7 @@
               :show-glossary="false"
               :colunas-visiveis="colunasClassificacaoHome"
               :grupos-config="gruposClassificacao"
+              :exibir-por-grupos="exibirClassificacaoPorGrupoHome"
               theme="navegacao"
               compact-mobile-no-scroll
               @time-click="abrirModalPartidasTime"
@@ -380,6 +381,11 @@ export default {
     },
     colunasClassificacaoHome() {
       return ['pontuacao', 'jogos', 'vitorias', 'derrotas']
+    },
+    exibirClassificacaoPorGrupoHome() {
+      return typeof this.campeonatoAtual?.regras?.exibirClassificacaoPorGrupo === 'boolean'
+        ? this.campeonatoAtual.regras.exibirClassificacaoPorGrupo
+        : true
     },
     placarHomeTop5() {
       return Array.isArray(this.placar) ? this.placar.slice(0, 5) : []
@@ -750,6 +756,7 @@ export default {
         const { data } = await api.get(`/ordem/classificacao/${campeonatoId}`, { silent: true })
         const colunas = Array.isArray(data?.colunas) ? data.colunas : []
         const grupos = data?.grupos && typeof data.grupos === 'object' ? data.grupos : null
+        const exibirPorGrupos = typeof data?.exibirPorGrupos === 'boolean' ? data.exibirPorGrupos : true
 
         this.gruposClassificacao = grupos
 
@@ -758,7 +765,8 @@ export default {
           regras: {
             ...(this.campeonatoAtual?.regras || {}),
             colunasClassificacao: colunas,
-            grupos
+            grupos,
+            exibirClassificacaoPorGrupo: exibirPorGrupos
           }
         }
       } catch (err) {

@@ -91,6 +91,7 @@
                 :loading="timesPlacar === null" :modalidade="modalidadeNormalizada"
                 :colunas-visiveis="colunasClassificacaoVisiveis"
                 :grupos-config="gruposClassificacao"
+                :exibir-por-grupos="exibirClassificacaoPorGrupo"
                 empty-text="Nenhum placar encontrado para este campeonato."
                 @time-click="abrirModalPartidasTime"
               />
@@ -247,6 +248,11 @@ export default {
       return Array.isArray(this.campeonatoSelecionado?.regras?.colunasClassificacao)
         ? this.campeonatoSelecionado.regras.colunasClassificacao
         : []
+    },
+    exibirClassificacaoPorGrupo() {
+      return typeof this.campeonatoSelecionado?.regras?.exibirClassificacaoPorGrupo === 'boolean'
+        ? this.campeonatoSelecionado.regras.exibirClassificacaoPorGrupo
+        : true
     },
 
     isVolei() {
@@ -573,6 +579,7 @@ export default {
         const { data } = await api.get(`/ordem/classificacao/${campeonatoId}`, { silent: true })
         const colunas = Array.isArray(data?.colunas) ? data.colunas : []
         const grupos = data?.grupos && typeof data.grupos === 'object' ? data.grupos : null
+        const exibirPorGrupos = typeof data?.exibirPorGrupos === 'boolean' ? data.exibirPorGrupos : true
 
         this.gruposClassificacao = grupos
 
@@ -583,7 +590,8 @@ export default {
             regras: {
               ...(campeonato.regras || {}),
               colunasClassificacao: colunas,
-              grupos
+              grupos,
+              exibirClassificacaoPorGrupo: exibirPorGrupos
             }
           }
         })
