@@ -1109,30 +1109,31 @@ onBeforeUnmount(() => {
   }
 
   .abas-config-container-agendamento {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 8px;
-    overflow-x: auto;
-    padding-bottom: 2px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
   }
 
   .aba-config-agendamento {
-    width: auto;
-    flex: 0 0 auto;
-    padding: 10px 8px;
-    font-size: 12px;
-    gap: 6px;
+    width: 100%;
+    padding: 10px 6px;
+    font-size: 10px;
+    gap: 4px;
+    overflow: hidden;
   }
 
   .aba-config-agendamento > span:first-child {
     text-align: center;
     line-height: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .badge-total {
-    min-width: 22px;
-    height: 20px;
-    font-size: 10px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    font-size: 9px;
   }
 
   .section-agendamento {
