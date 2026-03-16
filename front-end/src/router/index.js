@@ -18,7 +18,7 @@ import GerenciartimesView from '@/views/quadra_play/GerenciartimesView.vue';
 import GerenciarEquipesCampeonatoView from '@/views/quadra_play/GerenciarEquipesCampeonatoView.vue';
 import HistoricoCampeonatosView from '@/views/quadra_play/HistoricoCampeonatosView.vue';
 import TimesHomeView from '@/views/TimesView.vue';
-import DetalharCampeonatosView from '@/views/quadra_play/DetalharCampeonatosView.vue';
+import ConfiguracoesCampeonatoView from '@/views/quadra_play/configuracoesCampeonatoView.vue';
 import ClassificacaoView from '@/views/quadra_play/ClassificacaoView.vue';
 import MeusAvisosView from '../views/usuario/MeusAvisosView.vue';
 import EstatisticasJogadorView from '../views/usuario/EstatisticasJogadorView.vue';
@@ -202,7 +202,7 @@ const routes = [
   {
     path: '/detalharcampeonatos',
     name: 'Detalhar_Campeonatos',
-    component: DetalharCampeonatosView,
+    component: ConfiguracoesCampeonatoView,
     meta: { requiresAuth: true, roles: [1, 2], requiresQuadraPlayLogin: true },
   },
   {

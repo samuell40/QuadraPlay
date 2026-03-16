@@ -32,7 +32,7 @@
           <div>
             <span class="section-kicker">Cadastro</span>
             <h2>Informações do campeonato</h2>
-            <a>Atualize nome, imagem, quadra vinculada e data de encerramento.</a>
+            <a>Atualize nome, imagem e quadra vinculada. A data de encerramento acompanha a agenda.</a>
           </div>
         </div>
 
@@ -64,7 +64,17 @@
 
           <div class="regra-item">
             <label class="regra-label">Data de finalização</label>
-            <input v-model="formEdicao.dataFim" class="regra-select" type="date" />
+            <button
+              type="button"
+              class="regra-help"
+              aria-label="Ver como alterar a data de finalização"
+              @click="mostrarAjudaDataFinalizacao"
+            >
+              !
+            </button>
+            <div class="regra-valor">
+              {{ formEdicao.dataFim ? formatarDataResumo(formEdicao.dataFim) : 'Definida automaticamente pela agenda' }}
+            </div>
           </div>
         </div>
 
@@ -338,7 +348,7 @@ import { useCampeonatoStore } from '@/storecampeonato'
 import { grupoModalidade, opcoesNumericas, opcoesSuspensao, regrasPadrao} from '@/utils/campeonatoRegras'
 
 export default {
-  name: 'GerenciarCampeonatosView',
+  name: 'ConfiguracoesCampeonatoView',
   components: { SidebarCampeonato, NavBarQuadras, LoadingState, AgendaCampeonatoEditor },
 
   data() {
@@ -623,6 +633,15 @@ export default {
     formatarDataParaInput(data) {
       if (!data) return ''
       return new Date(data).toISOString().slice(0, 10)
+    },
+    mostrarAjudaDataFinalizacao() {
+      Swal.fire({
+        icon: 'info',
+        title: 'Data de finalização',
+        text: 'Para alterar essa data, ajuste a agenda base do campeonato logo abaixo e salve os horários. O sistema usa o último horário cadastrado como encerramento do campeonato.',
+        confirmButtonText: 'Entendi',
+        confirmButtonColor: '#1d4ed8'
+      })
     },
     obterLabelRegra(campo) {
       const valor = this.formRegras?.[campo.key]
@@ -1480,6 +1499,7 @@ a {
 }
 
 .regra-item {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -1494,6 +1514,37 @@ a {
   font-size: 14px;
   color: #0f172a;
   font-weight: 700;
+}
+
+.regra-help {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  min-width: 18px;
+  min-height: 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(37, 99, 235, 0.35);
+  background: #eff6ff;
+  color: #1d4ed8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.regra-help:hover {
+  background: #dbeafe;
+}
+
+.regra-help:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.35);
+  outline-offset: 2px;
 }
 
 .regra-select {
