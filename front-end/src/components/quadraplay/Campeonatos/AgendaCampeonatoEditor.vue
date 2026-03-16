@@ -13,7 +13,11 @@
       </div>
 
       <button type="button" class="btn-save btn-save-secondary" @click="adicionarDataAgenda">
-        Adicionar data
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="btn-save-icon" viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M8 7a.5.5 0 0 1 .5.5V9H10a.5.5 0 0 1 0 1H8.5v1.5a.5.5 0 0 1-1 0V10H6a.5.5 0 0 1 0-1h1.5V7.5A.5.5 0 0 1 8 7"/>
+          <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z"/>
+        </svg>
+        <span>Adicionar data</span>
       </button>
     </div>
 
@@ -138,7 +142,11 @@
           >
 
           <button type="button" class="btn-add" :disabled="!novoHorarioInputAgenda" @click="adicionarHorarioAgenda">
-            Adicionar
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="btn-save-icon" viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71z"/>
+              <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0"/>
+            </svg>
+            <span>Adicionar</span>
           </button>
         </div>
 
@@ -618,10 +626,18 @@ export default {
   background: #2563eb;
   color: #fff;
   font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .btn-save-secondary {
   align-self: flex-end;
+}
+
+.btn-save-icon {
+  flex: 0 0 auto;
 }
 
 .tab-btn {
