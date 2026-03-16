@@ -443,7 +443,7 @@ export default {
     },
 
     abasUsuarios() {
-      const ordemAbas = ['desenvolvedores', 'administradores', 'usuarios', 'treinadores']
+      const ordemAbas = ['usuarios', 'desenvolvedores', 'administradores', 'treinadores']
       const permissaoLogado = this.permissaoLogadoId
 
       let abasVisiveis = ordemAbas
@@ -741,6 +741,23 @@ export default {
       }
     },
 
+    obterDescricaoPermissao(id, fallback = '') {
+      const permissaoId = Number(id)
+      const permissaoEncontrada = this.permissoes.find(p => Number(p.id) === permissaoId)
+      if (permissaoEncontrada?.descricao) return permissaoEncontrada.descricao
+      if (fallback) return fallback
+
+      const mapa = {
+        1: 'Desenvolvedor',
+        2: 'Administrador',
+        3: 'Usuário',
+        4: 'Mesário',
+        5: 'Treinador',
+      }
+
+      return mapa[permissaoId] || 'Permissão'
+    },
+
     async salvarEdicao() {
       this.isSalvando = true
       try {
@@ -786,6 +803,33 @@ export default {
             title: 'Atenção',
             text: 'Selecione um time para o treinador.',
           })
+          return
+        }
+
+        const permissaoAtualId = Number(this.usuarioSelecionado?.permissaoId)
+        const permissaoNovaId = Number(this.form.permissaoId)
+        const permissaoAtualLabel = this.obterDescricaoPermissao(
+          permissaoAtualId,
+          this.usuarioSelecionado?.permissao?.descricao || ''
+        )
+        const permissaoNovaLabel = this.obterDescricaoPermissao(permissaoNovaId)
+        const alterandoPermissao = permissaoAtualId !== permissaoNovaId
+
+        const confirmacao = await Swal.fire({
+          icon: 'question',
+          title: alterandoPermissao ? 'Confirmar alteração de permissão?' : 'Confirmar atualização?',
+          text: alterandoPermissao
+            ? `Deseja alterar ${this.usuarioSelecionado?.nome || 'este usuário'} de ${permissaoAtualLabel} para ${permissaoNovaLabel}?`
+            : `Deseja salvar as alterações de acesso de ${this.usuarioSelecionado?.nome || 'este usuário'}?`,
+          showCancelButton: true,
+          confirmButtonText: 'Sim, salvar',
+          cancelButtonText: 'Voltar',
+          confirmButtonColor: '#1E3A8A',
+          cancelButtonColor: '#94a3b8',
+          reverseButtons: true,
+        })
+
+        if (!confirmacao.isConfirmed) {
           return
         }
 

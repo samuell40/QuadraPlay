@@ -534,6 +534,22 @@ export default {
         desenharLegenda(margemX + 108, y, cores.emptyBg, cores.emptyText, 'Sem grade')
       }
 
+      const desenharResumoSuperior = (y) => {
+        desenharLegendaAbaixoDaGrade(y)
+
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(7.2)
+        doc.setTextColor(...cores.muted)
+        doc.text(
+          'Internet: LOGIN METODAO | SENHA desafio2022 | Horarios sujeitos a alteracoes com aviso previo.',
+          pageWidth - margemX,
+          y,
+          { align: 'right' }
+        )
+      }
+
+      void desenharInformacoesExtras
+
       const desenharRodape = (paginaAtual, totalPaginas) => {
         doc.setDrawColor(...cores.border)
         doc.line(margemX, pageHeight - 8.5, pageWidth - margemX, pageHeight - 8.5)
@@ -608,16 +624,30 @@ export default {
       )
 
       const diasAtivos = gradeMontada.value.length
+      const totalSlots = maxSlots.value
+      const layoutCompacto = diasAtivos >= 6 || totalSlots >= 15
+      const layoutMuitoCompacto = diasAtivos >= 7 || totalSlots >= 18
       const larguraUtilPagina = pageWidth - margemX * 2
-      const larguraColunaHora = 12
+      const larguraColunaHora = layoutMuitoCompacto ? 9 : layoutCompacto ? 10 : 12
       const larguraTotalHoras = diasAtivos * larguraColunaHora
-      const espacoParaTimes = Math.max(larguraUtilPagina - larguraTotalHoras, diasAtivos * 18)
+      const espacoParaTimes = Math.max(
+        larguraUtilPagina - larguraTotalHoras,
+        diasAtivos * (layoutMuitoCompacto ? 14 : layoutCompacto ? 16 : 18)
+      )
       const larguraColunaTime = diasAtivos > 0 ? espacoParaTimes / diasAtivos : 0
+      const limiteTruncagemReserva = layoutMuitoCompacto ? 14 : layoutCompacto ? 18 : 22
+      const inicioTabelaY = 43
+      const margemInferiorTabela = 16
+      const fonteTabela = layoutMuitoCompacto ? 5.6 : layoutCompacto ? 6.2 : 6.9
+      const paddingTabela = layoutMuitoCompacto ? 0.7 : layoutCompacto ? 0.9 : 1.1
       const estilosColunas = {}
       const totalColunasTabela = diasAtivos * 2
 
       for (let i = 0; i < totalColunasTabela; i++) {
-        estilosColunas[i] = { cellWidth: i % 2 === 0 ? larguraColunaHora : larguraColunaTime }
+        estilosColunas[i] = {
+          cellWidth: i % 2 === 0 ? larguraColunaHora : larguraColunaTime,
+          overflow: 'ellipsize',
+        }
       }
 
       const head1 = diasSemanaHeader.value.map((dia) => ({
@@ -629,11 +659,11 @@ export default {
       const head2 = []
       for (let i = 0; i < diasAtivos; i++) {
         head2.push({
-          content: 'Hora',
+          content: layoutCompacto ? 'Hr' : 'Hora',
           styles: { halign: 'center', fillColor: cores.surface, textColor: cores.muted, fontStyle: 'bold' }
         })
         head2.push({
-          content: 'Reserva',
+          content: layoutMuitoCompacto ? 'Res.' : 'Reserva',
           styles: { halign: 'center', fillColor: cores.surface, textColor: cores.muted, fontStyle: 'bold' }
         })
       }
@@ -645,7 +675,7 @@ export default {
           const slot = gradeMontada.value[d][i]
           if (slot) {
             row.push(slot.horario)
-            row.push(slot.ocupado ? truncarTextoPdf(slot.texto, 26) : PDF_STATUS_DISPONIVEL)
+            row.push(slot.ocupado ? truncarTextoPdf(slot.texto, limiteTruncagemReserva) : PDF_STATUS_DISPONIVEL)
           } else {
             row.push('--')
             row.push(PDF_STATUS_SEM_GRADE)
@@ -654,9 +684,7 @@ export default {
         body.push(row)
       }
 
-      let paginaLegenda = 1
-      let posicaoLegendaY = 0
-      let posicaoInformacoesY = 0
+      desenharResumoSuperior(37.8)
 
       if (diasAtivos === 0) {
         doc.setFillColor(...cores.surface)
@@ -677,24 +705,22 @@ export default {
           69
         )
 
-        posicaoLegendaY = 89
-        posicaoInformacoesY = 95
       } else {
         autoTable(doc, {
           head: [head1, head2],
           body,
-          startY: 45,
+          startY: inicioTabelaY,
           theme: 'grid',
-          margin: { left: margemX, right: margemX, top: 18, bottom: 38 },
+          margin: { left: margemX, right: margemX, top: 18, bottom: margemInferiorTabela },
           columnStyles: estilosColunas,
           styles: {
-            fontSize: 7.2,
-            cellPadding: 1.4,
+            fontSize: fonteTabela,
+            cellPadding: paddingTabela,
             valign: 'middle',
             halign: 'center',
             lineColor: cores.border,
             lineWidth: 0.15,
-            overflow: 'linebreak',
+            overflow: 'ellipsize',
             textColor: cores.text,
           },
           didParseCell: (data) => {
@@ -705,14 +731,14 @@ export default {
               data.cell.styles.fillColor = cores.primary
               data.cell.styles.textColor = cores.white
               data.cell.styles.fontStyle = 'bold'
-              data.cell.styles.minCellHeight = 8
+              data.cell.styles.minCellHeight = layoutMuitoCompacto ? 5.2 : layoutCompacto ? 6 : 7
             }
 
             if (data.section === 'head' && data.row.index === 1) {
               data.cell.styles.fillColor = cores.surface
               data.cell.styles.textColor = cores.muted
               data.cell.styles.fontStyle = 'bold'
-              data.cell.styles.minCellHeight = 6
+              data.cell.styles.minCellHeight = layoutMuitoCompacto ? 4.1 : layoutCompacto ? 4.7 : 5.4
             }
 
             if (data.section === 'body') {
@@ -742,15 +768,7 @@ export default {
           }
         })
 
-        paginaLegenda = doc.getNumberOfPages()
-        doc.setPage(paginaLegenda)
-        posicaoLegendaY = Math.min((doc.lastAutoTable?.finalY || 45) + 7, pageHeight - 32)
-        posicaoInformacoesY = posicaoLegendaY + 9
       }
-
-      doc.setPage(paginaLegenda)
-      desenharLegendaAbaixoDaGrade(posicaoLegendaY)
-      desenharInformacoesExtras(posicaoInformacoesY)
 
       const totalPaginas = doc.getNumberOfPages()
       for (let pagina = 1; pagina <= totalPaginas; pagina++) {
