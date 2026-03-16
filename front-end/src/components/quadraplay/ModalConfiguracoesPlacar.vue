@@ -166,7 +166,7 @@
       </section>
 
       <div class="botoes botoes-modal-times">
-        <button class="btn-save" :disabled="salvandoFase" @click="criarFase">
+        <button class="btn-save" :disabled="botaoCriarFaseDesabilitado" @click="criarFase">
           <span class="btn-save-content">
             <span v-if="salvandoFase" class="btn-save-spinner" aria-hidden="true"></span>
             <svg
@@ -375,6 +375,9 @@ export default {
     },
     podeConfigurarTabelaClassificacao() {
       return !this.campeonatoEhEliminatorias
+    },
+    botaoCriarFaseDesabilitado() {
+      return this.salvandoFase || this.timesSelecionados.length === 0
     },
     colunasDisponiveis() {
       return getColunasClassificacaoPorModalidade(this.campeonato?.modalidade?.nome)
@@ -2073,6 +2076,13 @@ export default {
 
 .btn-save {
   background-color: #3b82f6;
+}
+
+.btn-save:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+  filter: saturate(0.3);
+  box-shadow: none;
 }
 
 .btn-save-content {

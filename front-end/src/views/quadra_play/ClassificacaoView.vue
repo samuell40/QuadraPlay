@@ -199,6 +199,8 @@ import {
 } from '@/services/socket'
 import { ordenarPartidasPorStatusEDataDesc } from '@/utils/partidaOrdenacao'
 
+const CLASSIFICACAO_GRUPOS_VISIVEL_PREFIX = 'classificacao-grupos-visivel'
+
 export default {
   name: 'ClassificacaoView',
   components: {
@@ -607,6 +609,43 @@ export default {
     alternarExibicaoGrupos() {
       if (!this.temGruposDefinidos) return
       this.exibirClassificacaoPorGrupo = !this.exibirClassificacaoPorGrupo
+      this.persistirPreferenciaExibicaoGrupos(this.exibirClassificacaoPorGrupo)
+    },
+
+    obterChavePreferenciaExibicaoGrupos() {
+      const campeonatoId = Number(this.campeonato?.id)
+      const faseId = Number(this.faseSelecionada)
+
+      if (!Number.isFinite(campeonatoId) || campeonatoId <= 0) return ''
+      if (!Number.isFinite(faseId) || faseId <= 0) return ''
+
+      return `${CLASSIFICACAO_GRUPOS_VISIVEL_PREFIX}:${campeonatoId}:${faseId}`
+    },
+
+    obterPreferenciaExibicaoGrupos() {
+      const chave = this.obterChavePreferenciaExibicaoGrupos()
+      if (!chave) return null
+
+      try {
+        const valor = localStorage.getItem(chave)
+        if (valor === '1') return true
+        if (valor === '0') return false
+      } catch (error) {
+        return null
+      }
+
+      return null
+    },
+
+    persistirPreferenciaExibicaoGrupos(exibir) {
+      const chave = this.obterChavePreferenciaExibicaoGrupos()
+      if (!chave) return
+
+      try {
+        localStorage.setItem(chave, exibir ? '1' : '0')
+      } catch (error) {
+        // Sem persistencia, mantem comportamento atual.
+      }
     },
 
     normalizarTexto(valor) {
@@ -657,9 +696,12 @@ export default {
       this.gruposClassificacao = grupos && typeof grupos === 'object' ? grupos : null
       const temGruposDefinidos = Array.isArray(this.gruposClassificacao?.grupos)
         && this.gruposClassificacao.grupos.length > 0
+      const preferenciaExibicao = this.obterPreferenciaExibicaoGrupos()
 
       if (!temGruposDefinidos) {
         this.exibirClassificacaoPorGrupo = false
+      } else if (typeof preferenciaExibicao === 'boolean') {
+        this.exibirClassificacaoPorGrupo = preferenciaExibicao
       } else if (!tinhaGruposDefinidos) {
         this.exibirClassificacaoPorGrupo = true
       }
