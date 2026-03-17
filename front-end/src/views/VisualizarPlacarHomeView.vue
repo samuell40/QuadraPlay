@@ -711,6 +711,8 @@ a {
     linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(255, 255, 255, 0.96)),
     #ffffff;
   box-shadow: 0 16px 34px rgba(37, 99, 235, 0.08);
+}
+
 .partidas-info-icon {
   width: 50px;
   height: 50px;
