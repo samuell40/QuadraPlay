@@ -16,6 +16,8 @@ model Usuario {
   foto        String?   @db.VarChar(2048)
   quadraId    Int?
   ativo       Boolean   @default(true)
+  notificarPartidasAoVivo Boolean @default(true)
+  notificarNovosAgendamentos Boolean @default(false)
   deletedAt   DateTime?
   createdAt   DateTime? @default(now())
   quadra               Quadra?          @relation(fields: [quadraId], references: [id])

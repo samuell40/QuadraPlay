@@ -1,7 +1,11 @@
 const {
   obterChavePublicaPush,
   assinarPushUsuario,
-  removerAssinaturaPushUsuario
+  removerAssinaturaPushUsuario,
+  obterPreferenciaPushPartidasAoVivoUsuario,
+  atualizarPreferenciaPushPartidasAoVivoUsuario,
+  obterPreferenciaPushNovosAgendamentosUsuario,
+  atualizarPreferenciaPushNovosAgendamentosUsuario
 } = require('../services/push-notification.service');
 
 function escaparXml(valor = '') {
@@ -164,6 +168,82 @@ async function desassinarPushController(req, res) {
   }
 }
 
+async function obterPreferenciaPushNovosAgendamentosController(req, res) {
+  try {
+    const usuarioId = Number(req.user?.id || 0);
+
+    if (!usuarioId) {
+      return res.status(401).json({ error: 'Usuario nao autenticado.' });
+    }
+
+    const preferencia = await obterPreferenciaPushNovosAgendamentosUsuario(usuarioId);
+    return res.status(200).json(preferencia);
+  } catch (error) {
+    return res.status(Number(error?.statusCode || 400)).json({
+      error: error?.message || 'Nao foi possivel carregar a preferencia de notificacao.'
+    });
+  }
+}
+
+async function obterPreferenciaPushPartidasAoVivoController(req, res) {
+  try {
+    const usuarioId = Number(req.user?.id || 0);
+
+    if (!usuarioId) {
+      return res.status(401).json({ error: 'Usuario nao autenticado.' });
+    }
+
+    const preferencia = await obterPreferenciaPushPartidasAoVivoUsuario(usuarioId);
+    return res.status(200).json(preferencia);
+  } catch (error) {
+    return res.status(Number(error?.statusCode || 400)).json({
+      error: error?.message || 'Nao foi possivel carregar a preferencia de notificacao.'
+    });
+  }
+}
+
+async function atualizarPreferenciaPushNovosAgendamentosController(req, res) {
+  try {
+    const usuarioId = Number(req.user?.id || 0);
+
+    if (!usuarioId) {
+      return res.status(401).json({ error: 'Usuario nao autenticado.' });
+    }
+
+    const preferencia = await atualizarPreferenciaPushNovosAgendamentosUsuario(
+      usuarioId,
+      req.body?.enabled
+    );
+
+    return res.status(200).json(preferencia);
+  } catch (error) {
+    return res.status(Number(error?.statusCode || 400)).json({
+      error: error?.message || 'Nao foi possivel atualizar a preferencia de notificacao.'
+    });
+  }
+}
+
+async function atualizarPreferenciaPushPartidasAoVivoController(req, res) {
+  try {
+    const usuarioId = Number(req.user?.id || 0);
+
+    if (!usuarioId) {
+      return res.status(401).json({ error: 'Usuario nao autenticado.' });
+    }
+
+    const preferencia = await atualizarPreferenciaPushPartidasAoVivoUsuario(
+      usuarioId,
+      req.body?.enabled
+    );
+
+    return res.status(200).json(preferencia);
+  } catch (error) {
+    return res.status(Number(error?.statusCode || 400)).json({
+      error: error?.message || 'Nao foi possivel atualizar a preferencia de notificacao.'
+    });
+  }
+}
+
 function renderizarBannerPushController(req, res) {
   const svg = montarBannerPushSvg({
     provedor: req.query?.provedor,
@@ -186,5 +266,9 @@ module.exports = {
   obterChavePublicaPushController,
   assinarPushController,
   desassinarPushController,
+  obterPreferenciaPushPartidasAoVivoController,
+  atualizarPreferenciaPushPartidasAoVivoController,
+  obterPreferenciaPushNovosAgendamentosController,
+  atualizarPreferenciaPushNovosAgendamentosController,
   renderizarBannerPushController
 };

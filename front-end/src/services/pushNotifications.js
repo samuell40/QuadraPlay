@@ -2,6 +2,8 @@ import api from '@/axios'
 
 const ROTA_CHAVE_PUBLICA = '/notificacoes/push/public-key'
 const ROTA_ASSINAR = '/notificacoes/push/subscribe'
+const CHAVE_PREFERENCIA_LOCAL_PARTIDAS = 'quadraplay:notificarPartidasAoVivo'
+export const EVENTO_PREFERENCIA_PUSH_PARTIDAS = 'push:preferencia-partidas'
 
 let inicializacaoEmAndamento = null
 
@@ -49,6 +51,10 @@ async function garantirPermissaoNotificacao() {
   }
 
   return Notification.permission
+}
+
+export async function solicitarPermissaoNotificacaoNativa() {
+  return garantirPermissaoNotificacao()
 }
 
 async function obterChavePublicaVapid() {
@@ -107,6 +113,30 @@ export async function inicializarNotificacoesPush() {
     })
 
   return inicializacaoEmAndamento
+}
+
+export function lerPreferenciaLocalNotificacaoPartidasAoVivo() {
+  if (typeof window === 'undefined') return true
+
+  const valor = String(window.localStorage.getItem(CHAVE_PREFERENCIA_LOCAL_PARTIDAS) || '').trim()
+  if (!valor) return true
+  return valor !== '0'
+}
+
+export function salvarPreferenciaLocalNotificacaoPartidasAoVivo(enabled, options = {}) {
+  const ativo = Boolean(enabled)
+
+  if (typeof window === 'undefined') return ativo
+
+  window.localStorage.setItem(CHAVE_PREFERENCIA_LOCAL_PARTIDAS, ativo ? '1' : '0')
+
+  if (options.broadcast !== false) {
+    window.dispatchEvent(new CustomEvent(EVENTO_PREFERENCIA_PUSH_PARTIDAS, {
+      detail: { enabled: ativo }
+    }))
+  }
+
+  return ativo
 }
 
 export async function removerAssinaturaPushLocal() {

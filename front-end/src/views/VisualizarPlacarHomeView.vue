@@ -10,6 +10,54 @@
             Acompanhe classificação, partidas e destaques dos campeonatos em um único painel.
           </a>
         </div>
+
+        <div class="partidas-alert-card" :class="{ ativo: preferenciaNotificacaoPartidasAoVivo }">
+          <div class="partidas-alert-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path
+                d="M12 3.75a4.5 4.5 0 0 0-4.5 4.5v1.136c0 .646-.214 1.274-.61 1.786l-1.238 1.603A1.75 1.75 0 0 0 7.037 15.5h9.926a1.75 1.75 0 0 0 1.385-2.725l-1.238-1.603a2.997 2.997 0 0 1-.61-1.786V8.25a4.5 4.5 0 0 0-4.5-4.5Z"
+                stroke="currentColor"
+                stroke-width="1.7"
+              />
+              <path
+                d="M9.75 18a2.25 2.25 0 0 0 4.5 0"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+              />
+            </svg>
+          </div>
+
+          <div class="partidas-alert-copy">
+            <span class="partidas-alert-kicker">Alertas</span>
+            <strong class="partidas-alert-title">Partidas ao vivo</strong>
+            <p class="partidas-alert-description">{{ descricaoPreferenciaNotificacaoPartidas }}</p>
+          </div>
+
+          <div class="partidas-alert-actions">
+            <span class="partidas-alert-status" :class="{ ativo: preferenciaNotificacaoPartidasAoVivo }">
+              {{ statusPreferenciaNotificacaoPartidas }}
+            </span>
+
+            <button
+              type="button"
+              class="partidas-alert-button"
+              :class="{ ativo: preferenciaNotificacaoPartidasAoVivo }"
+              :disabled="carregandoPreferenciaNotificacaoPartidasAoVivo || salvandoPreferenciaNotificacaoPartidasAoVivo"
+              @click="alternarPreferenciaNotificacaoPartidasAoVivo"
+            >
+              {{
+                carregandoPreferenciaNotificacaoPartidasAoVivo
+                  ? 'Carregando...'
+                  : salvandoPreferenciaNotificacaoPartidasAoVivo
+                    ? 'Salvando...'
+                    : preferenciaNotificacaoPartidasAoVivo
+                      ? 'Desativar alertas'
+                      : 'Ativar alertas'
+              }}
+            </button>
+          </div>
+        </div>
       </div>
 
       <div v-if="isLoading" class="loader-container-centralizado">
@@ -187,6 +235,7 @@
 
 <script>
 import api from '@/axios'
+import Swal from 'sweetalert2'
 import NavBarHome from '@/components/NavBarHome.vue'
 import Footer from '@/components/Footer.vue'
 import LoadingState from '@/components/loading/LoadingState.vue'
@@ -199,6 +248,13 @@ import {
   inscreverCampeonatoSocket,
   desinscreverCampeonatoSocket
 } from '@/services/socket'
+import {
+  inicializarNotificacoesPush,
+  lerPreferenciaLocalNotificacaoPartidasAoVivo,
+  salvarPreferenciaLocalNotificacaoPartidasAoVivo,
+  solicitarPermissaoNotificacaoNativa
+} from '@/services/pushNotifications'
+import { useAuthStore } from '@/store'
 import { ordenarPartidasPorStatusEDataDesc } from '@/utils/partidaOrdenacao'
 
 export default {
@@ -218,6 +274,10 @@ export default {
       partidasInicializadas: false,
       mostrarModalPartidasTime: false,
       timeSelecionadoPartidas: null,
+      authStore: useAuthStore(),
+      preferenciaNotificacaoPartidasAoVivo: lerPreferenciaLocalNotificacaoPartidasAoVivo(),
+      carregandoPreferenciaNotificacaoPartidasAoVivo: false,
+      salvandoPreferenciaNotificacaoPartidasAoVivo: false,
       timesPlacar: null,
       isLoading: false,
       artilharia: [],
@@ -328,6 +388,44 @@ export default {
       if (this.nomeFaseSelecionada) aartes.push(this.nomeFaseSelecionada)
       if (this.nomeRodadaSelecionada) aartes.push(this.nomeRodadaSelecionada)
       return aartes.join(' | ')
+    },
+
+    usuarioAutenticado() {
+      return Boolean(this.authStore?.token)
+    },
+
+    statusPreferenciaNotificacaoPartidas() {
+      return this.preferenciaNotificacaoPartidasAoVivo ? 'Alertas ativos' : 'Alertas pausados'
+    },
+
+    descricaoPreferenciaNotificacaoPartidas() {
+      if (this.usuarioAutenticado && this.preferenciaNotificacaoPartidasAoVivo) {
+        return 'Você receberá push e alertas locais quando novas partidas forem criadas ou atualizadas.'
+      }
+
+      if (this.usuarioAutenticado) {
+        return 'Ative para receber push quando houver criação de partidas, início de jogo e mudanças importantes no placar.'
+      }
+
+      if (this.preferenciaNotificacaoPartidasAoVivo) {
+        return 'Os alertas locais deste navegador estão ativos enquanto você acompanha o placar.'
+      }
+
+      return 'Ative para receber alertas locais neste navegador enquanto estiver acompanhando as partidas.'
+    }
+  },
+
+  watch: {
+    usuarioAutenticado: {
+      immediate: true,
+      handler(autenticado) {
+        if (autenticado) {
+          this.carregarPreferenciaNotificacaoPartidasAoVivo()
+          return
+        }
+
+        this.preferenciaNotificacaoPartidasAoVivo = lerPreferenciaLocalNotificacaoPartidasAoVivo()
+      }
     }
   },
 
@@ -343,6 +441,101 @@ export default {
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .trim()
+    },
+
+    aplicarPreferenciaNotificacaoPartidasAoVivo(enabled, options = {}) {
+      const ativo = Boolean(enabled)
+      this.preferenciaNotificacaoPartidasAoVivo = ativo
+
+      if (options.persistirLocal !== false) {
+        salvarPreferenciaLocalNotificacaoPartidasAoVivo(ativo, {
+          broadcast: options.broadcast !== false
+        })
+      }
+    },
+
+    async carregarPreferenciaNotificacaoPartidasAoVivo() {
+      if (!this.usuarioAutenticado) return
+
+      this.carregandoPreferenciaNotificacaoPartidasAoVivo = true
+
+      try {
+        const { data } = await api.get('/notificacoes/push/partidas/preferencia', { silent: true })
+        this.aplicarPreferenciaNotificacaoPartidasAoVivo(Boolean(data?.enabled))
+      } catch (error) {
+        console.error('Erro ao carregar a preferencia de notificacao de partidas:', error)
+      } finally {
+        this.carregandoPreferenciaNotificacaoPartidasAoVivo = false
+      }
+    },
+
+    async alternarPreferenciaNotificacaoPartidasAoVivo() {
+      if (
+        this.carregandoPreferenciaNotificacaoPartidasAoVivo ||
+        this.salvandoPreferenciaNotificacaoPartidasAoVivo
+      ) {
+        return
+      }
+
+      const habilitar = !this.preferenciaNotificacaoPartidasAoVivo
+
+      if (habilitar) {
+        const permissao = await solicitarPermissaoNotificacaoNativa()
+
+        if (permissao !== 'granted') {
+          Swal.fire({
+            icon: 'info',
+            title: 'Ative as notificações do navegador',
+            text: 'Permita notificações para receber os alertas das partidas.',
+          })
+          return
+        }
+      }
+
+      this.salvandoPreferenciaNotificacaoPartidasAoVivo = true
+
+      try {
+        let pushAtivo = false
+
+        if (habilitar && this.usuarioAutenticado) {
+          pushAtivo = await inicializarNotificacoesPush()
+        }
+
+        if (this.usuarioAutenticado) {
+          const { data } = await api.patch(
+            '/notificacoes/push/partidas/preferencia',
+            { enabled: habilitar },
+            { silent: true },
+          )
+
+          this.aplicarPreferenciaNotificacaoPartidasAoVivo(Boolean(data?.enabled))
+        } else {
+          this.aplicarPreferenciaNotificacaoPartidasAoVivo(habilitar)
+        }
+
+        const mensagemAtivo = this.usuarioAutenticado
+          ? pushAtivo
+            ? 'Você receberá push e alertas locais quando houver atualização importante nas partidas.'
+            : 'Os alertas locais foram ativados neste navegador. Se o push do sistema não estiver disponível, você continuará recebendo avisos enquanto estiver no site.'
+          : 'Os alertas locais deste navegador foram ativados para esta página.'
+
+        Swal.fire(
+          this.preferenciaNotificacaoPartidasAoVivo ? 'Alertas ativados' : 'Alertas pausados',
+          this.preferenciaNotificacaoPartidasAoVivo
+            ? mensagemAtivo
+            : 'As notificações de partidas foram desativadas neste navegador.',
+          'success',
+        )
+      } catch (error) {
+        console.error('Erro ao atualizar a preferencia de notificacao de partidas:', error)
+        Swal.fire(
+          'Erro',
+          error?.response?.data?.error || 'Não foi possível atualizar a preferência de notificação.',
+          'error',
+        )
+      } finally {
+        this.salvandoPreferenciaNotificacaoPartidasAoVivo = false
+      }
     },
 
     conectarSocket() {
@@ -647,6 +840,9 @@ a {
 }
 
 .header {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
   margin-bottom: 12px;
 }
 
@@ -667,6 +863,131 @@ a {
   color: #475569;
   font-size: 15px;
   line-height: 1.45;
+}
+
+.partidas-alert-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 24px;
+  border: 1px solid rgba(37, 99, 235, 0.16);
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(255, 255, 255, 0.96)),
+    #ffffff;
+  box-shadow: 0 16px 34px rgba(37, 99, 235, 0.08);
+}
+
+.partidas-alert-card.ativo {
+  border-color: rgba(37, 99, 235, 0.24);
+  box-shadow: 0 20px 38px rgba(37, 99, 235, 0.12);
+}
+
+.partidas-alert-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #2563eb, #60a5fa);
+  color: #ffffff;
+  box-shadow: 0 16px 28px rgba(37, 99, 235, 0.2);
+}
+
+.partidas-alert-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.partidas-alert-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.partidas-alert-kicker {
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.partidas-alert-title {
+  color: #0f172a;
+  font-size: 18px;
+  line-height: 1.1;
+}
+
+.partidas-alert-description {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.partidas-alert-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.partidas-alert-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.14);
+  color: #475569;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.partidas-alert-status.ativo {
+  background: rgba(5, 150, 105, 0.12);
+  color: #059669;
+}
+
+.partidas-alert-button {
+  border: none;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: #0f172a;
+  color: #ffffff;
+  box-shadow: 0 14px 24px rgba(15, 23, 42, 0.16);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.partidas-alert-button.ativo {
+  background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+  color: #0f172a;
+  box-shadow: 0 12px 22px rgba(148, 163, 184, 0.18);
+}
+
+.partidas-alert-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.partidas-alert-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 .aainel-alacar {
@@ -1001,6 +1322,39 @@ a {
   .page-subtitle {
     font-size: 14px;
     line-height: 1.55;
+  }
+
+  .partidas-alert-card {
+    grid-template-columns: 1fr;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px;
+    border-radius: 20px;
+  }
+
+  .partidas-alert-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 16px;
+  }
+
+  .partidas-alert-title {
+    font-size: 16px;
+  }
+
+  .partidas-alert-description {
+    font-size: 12px;
+  }
+
+  .partidas-alert-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .partidas-alert-button,
+  .partidas-alert-status {
+    width: 100%;
   }
 
   .painel-card {

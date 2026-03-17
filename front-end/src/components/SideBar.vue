@@ -41,16 +41,16 @@
 
         <section v-if="!isPermissao4" class="sidebar-section">
           <button type="button" class="sidebar-category-header" :class="{
-            open: openCategory === 'agendamentos',
+            open: true,
             'is-active': isCategoryActive('agendamentos'),
-          }" @click="toggleCategory('agendamentos')" :aria-expanded="String(openCategory === 'agendamentos')">
+          }" @click="toggleCategory('agendamentos')" aria-expanded="true">
             <span>Agendamentos</span>
             <svg class="category-chevron" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M8 10l4 4 4-4" />
             </svg>
           </button>
 
-          <div v-show="openCategory === 'agendamentos'" class="sidebar-links">
+          <div class="sidebar-links">
             <router-link to="/agendamentos" class="nav-link" :class="{ active: isActive('/agendamentos') }"
               @click="closeSidebar">
               <span class="nav-icon" aria-hidden="true">
@@ -188,6 +188,10 @@ export default {
       }
     },
     toggleCategory(category) {
+      if (category === "agendamentos") {
+        return;
+      }
+
       this.openCategory = this.openCategory === category ? null : category;
 
       if (this.openCategory) {

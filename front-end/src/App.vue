@@ -17,13 +17,17 @@
 </template>
 
 <script>
+import api from '@/axios'
 import {
   EVENTO_NOTIFICACAO_PARTIDA_AO_VIVO,
   obterSocket
 } from '@/services/socket'
 import {
+  EVENTO_PREFERENCIA_PUSH_PARTIDAS,
   inicializarNotificacoesPush,
-  removerAssinaturaPushLocal
+  lerPreferenciaLocalNotificacaoPartidasAoVivo,
+  removerAssinaturaPushLocal,
+  salvarPreferenciaLocalNotificacaoPartidasAoVivo
 } from '@/services/pushNotifications'
 import {
   getDataVersion,
@@ -43,8 +47,10 @@ export default {
       onSocketConnectError: null,
       onSocketDisconnect: null,
       onSocketAny: null,
+      onPreferenciaPushPartidasEvent: null,
       notificacoesNativasPorPartida: {},
       pushNotificacoesAtivas: false,
+      preferenciaNotificacaoPartidasAoVivo: lerPreferenciaLocalNotificacaoPartidasAoVivo(),
       keepAliveRouteNames: [],
       routeRevisionMap: {},
       routeDirtyMap: {},
@@ -57,8 +63,10 @@ export default {
   mounted() {
     this.inicializarCacheRotas()
     this.unsubscribeDataVersion = subscribeDataVersion(this.onDataVersionChange)
+    this.registrarListenerPreferenciaNotificacaoPartidas()
     this.conectarSocketNotificacoes()
     this.inicializarPushNotificacoes()
+    this.carregarPreferenciaNotificacaoPartidasAoVivo()
   },
 
   beforeUnmount() {
@@ -66,6 +74,7 @@ export default {
       this.unsubscribeDataVersion()
       this.unsubscribeDataVersion = null
     }
+    this.removerListenerPreferenciaNotificacaoPartidas()
     this.desconectarSocketNotificacoes()
   },
 
@@ -142,14 +151,107 @@ export default {
       const motivo = String(detail?.reason || '').toLowerCase()
       if (motivo === 'auth-login') {
         this.inicializarPushNotificacoes()
+        this.carregarPreferenciaNotificacaoPartidasAoVivo()
       }
       if (motivo === 'auth-logout') {
         this.limparAssinaturaPushLocal()
+        this.carregarPreferenciaNotificacaoPartidasAoVivo()
       }
     },
 
     async inicializarPushNotificacoes() {
       this.pushNotificacoesAtivas = await inicializarNotificacoesPush()
+    },
+
+    registrarListenerPreferenciaNotificacaoPartidas() {
+      if (typeof window === 'undefined') return
+
+      if (!this.onPreferenciaPushPartidasEvent) {
+        this.onPreferenciaPushPartidasEvent = (event) => {
+          this.aplicarPreferenciaNotificacaoPartidasAoVivo(event?.detail?.enabled, {
+            persistirLocal: false,
+            fecharNotificacoes: true
+          })
+        }
+      }
+
+      window.addEventListener(
+        EVENTO_PREFERENCIA_PUSH_PARTIDAS,
+        this.onPreferenciaPushPartidasEvent
+      )
+    },
+
+    removerListenerPreferenciaNotificacaoPartidas() {
+      if (typeof window === 'undefined' || !this.onPreferenciaPushPartidasEvent) return
+
+      window.removeEventListener(
+        EVENTO_PREFERENCIA_PUSH_PARTIDAS,
+        this.onPreferenciaPushPartidasEvent
+      )
+      this.onPreferenciaPushPartidasEvent = null
+    },
+
+    usuarioAutenticado() {
+      if (typeof window === 'undefined') return false
+      return Boolean(window.localStorage.getItem('token'))
+    },
+
+    fecharNotificacoesNativasPartidas() {
+      Object.values(this.notificacoesNativasPorPartida || {}).forEach((notificacao) => {
+        try {
+          if (notificacao && typeof notificacao.close === 'function') {
+            notificacao.close()
+          }
+        } catch (error) {
+          if (SOCKET_DEBUG) {
+            console.warn('[notificacao] erro ao fechar notificação nativa:', error)
+          }
+        }
+      })
+
+      this.notificacoesNativasPorPartida = {}
+    },
+
+    aplicarPreferenciaNotificacaoPartidasAoVivo(enabled, options = {}) {
+      const ativo = Boolean(enabled)
+      this.preferenciaNotificacaoPartidasAoVivo = ativo
+
+      if (options.persistirLocal !== false) {
+        salvarPreferenciaLocalNotificacaoPartidasAoVivo(ativo, {
+          broadcast: options.broadcast !== false
+        })
+      }
+
+      if (!ativo && options.fecharNotificacoes) {
+        this.fecharNotificacoesNativasPartidas()
+      }
+    },
+
+    async carregarPreferenciaNotificacaoPartidasAoVivo() {
+      const preferenciaLocal = lerPreferenciaLocalNotificacaoPartidasAoVivo()
+
+      if (!this.usuarioAutenticado()) {
+        this.aplicarPreferenciaNotificacaoPartidasAoVivo(preferenciaLocal, {
+          persistirLocal: false,
+          fecharNotificacoes: !preferenciaLocal
+        })
+        return
+      }
+
+      try {
+        const { data } = await api.get('/notificacoes/push/partidas/preferencia', {
+          silent: true
+        })
+
+        this.aplicarPreferenciaNotificacaoPartidasAoVivo(Boolean(data?.enabled), {
+          fecharNotificacoes: !data?.enabled
+        })
+      } catch (error) {
+        this.aplicarPreferenciaNotificacaoPartidasAoVivo(preferenciaLocal, {
+          persistirLocal: false,
+          fecharNotificacoes: !preferenciaLocal
+        })
+      }
     },
 
     async limparAssinaturaPushLocal() {
@@ -375,6 +477,7 @@ export default {
         console.log('[socket] notificação ao vivo recebida:', partida)
       }
 
+      if (!this.preferenciaNotificacaoPartidasAoVivo) return
       if (this.pushNotificacoesAtivas) return
       this.notificarPartidaAoVivoNoSistema(partida)
     }

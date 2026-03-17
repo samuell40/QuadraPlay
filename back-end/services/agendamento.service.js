@@ -3,6 +3,9 @@ const {
   enviarEmailStatusAgendamento,
   enviarEmailEncerramentoAgendamentoFixo,
 } = require("./email.service");
+const {
+  atualizarNotificacoesPushFilaAgendamentosPendentes,
+} = require("./push-notification.service");
 const { startOfWeek, endOfWeek, addMinutes } = require("date-fns");
 
 const INCLUDE_AGENDAMENTO_LISTAGEM = {
@@ -133,6 +136,47 @@ const obterInicioDoDia = (referencia = new Date()) => {
   const inicioDoDia = new Date(referencia);
   inicioDoDia.setHours(0, 0, 0, 0);
   return inicioDoDia;
+};
+
+const atualizarNotificacaoFilaPendentesQuadra = async (
+  quadraId,
+  { renotify = false } = {},
+) => {
+  const quadraIdNum = Number(quadraId || 0);
+  if (!Number.isInteger(quadraIdNum) || quadraIdNum <= 0) return;
+
+  try {
+    await atualizarNotificacoesPushFilaAgendamentosPendentes({
+      quadraId: quadraIdNum,
+      renotify,
+    });
+  } catch (error) {
+    console.warn(
+      "[push] Falha ao atualizar notificacoes de agendamentos pendentes:",
+      error?.message || error,
+    );
+  }
+};
+
+const atualizarNotificacaoFilaPendentesPorQuadras = async (
+  quadraIds = [],
+  { renotify = false } = {},
+) => {
+  const idsUnicos = [
+    ...new Set(
+      (Array.isArray(quadraIds) ? quadraIds : [])
+        .map((valor) => Number(valor || 0))
+        .filter((valor) => Number.isInteger(valor) && valor > 0),
+    ),
+  ];
+
+  if (!idsUnicos.length) return;
+
+  await Promise.allSettled(
+    idsUnicos.map((quadraId) =>
+      atualizarNotificacaoFilaPendentesQuadra(quadraId, { renotify }),
+    ),
+  );
 };
 
 const podeDesmarcarAgendamentoConfirmado = (agendamento, referencia = new Date()) => {
@@ -968,11 +1012,18 @@ const criarAgendamentoService = async ({
   const agendamento = await prisma.agendamento.create({
     data: dadosAgendamento,
     include: {
+      quadra: true,
       modalidade: true,
       usuario: { include: { times: { include: { time: true } } } },
       time: true,
     },
   });
+
+  if (String(agendamento?.status || "").trim().toLowerCase() === "pendente") {
+    await atualizarNotificacaoFilaPendentesQuadra(agendamento?.quadraId, {
+      renotify: true,
+    });
+  }
 
   return {
     ...agendamento,
@@ -990,7 +1041,12 @@ const cancelarAgendamentoService = async (id) => {
     throw { status: 404, message: "Agendamento nÃ£o encontrado." };
 
   await prisma.agendamento.delete({ where: { id: Number(id) } });
-  return true;
+
+  if (String(agendamento?.status || "").trim().toLowerCase() === "pendente") {
+    await atualizarNotificacaoFilaPendentesQuadra(agendamento?.quadraId);
+  }
+
+  return agendamento;
 };
 
 const desmarcarAgendamentoService = async (
@@ -1076,6 +1132,14 @@ const atualizarAgendamentoService = async (id, status, motivoRecusa = null) => {
     },
     include: { usuario: true, quadra: true, modalidade: true, time: true },
   });
+
+  const statusAnterior = String(agendamento?.status || "").trim().toLowerCase();
+  const statusAtual = String(atualizado?.status || "").trim().toLowerCase();
+  if (statusAnterior === "pendente" || statusAtual === "pendente") {
+    await atualizarNotificacaoFilaPendentesQuadra(atualizado?.quadraId, {
+      renotify: statusAtual === "pendente",
+    });
+  }
 
   try {
     await enviarEmailStatusAgendamento(atualizado);
@@ -1179,28 +1243,41 @@ const recusarAgendamentosVencidos = async () => {
   const dia = agora.getDate();
   const hora = agora.getHours();
 
-  await prisma.agendamento.updateMany({
-    where: {
-      status: "Pendente",
-      deletedAt: null,
-      OR: [
-        { datahora: { lt: agora } },
-        {
-          datahora: null,
-          OR: [
-            { ano: { lt: ano } },
-            { ano, mes: { lt: mes } },
-            { ano, mes, dia: { lt: dia } },
-            { ano, mes, dia, hora: { lt: hora } },
-          ],
-        },
-      ],
+  const filtroVencidos = {
+    status: "Pendente",
+    deletedAt: null,
+    OR: [
+      { datahora: { lt: agora } },
+      {
+        datahora: null,
+        OR: [
+          { ano: { lt: ano } },
+          { ano, mes: { lt: mes } },
+          { ano, mes, dia: { lt: dia } },
+          { ano, mes, dia, hora: { lt: hora } },
+        ],
+      },
+    ],
+  };
+
+  const agendamentosVencidos = await prisma.agendamento.findMany({
+    where: filtroVencidos,
+    select: {
+      quadraId: true,
     },
+  });
+
+  await prisma.agendamento.updateMany({
+    where: filtroVencidos,
     data: {
       status: "Recusado",
       motivoRecusa: "Prazo de confirmacao expirado (Data passada)",
     },
   });
+
+  await atualizarNotificacaoFilaPendentesPorQuadras(
+    agendamentosVencidos.map((item) => item?.quadraId),
+  );
 
   ultimoProcessamentoRecusaVencidos = agora.getTime();
 };

@@ -12,4 +12,28 @@ router.post('/notificacoes/push/subscribe', [validarJWT], controller.assinarPush
 
 router.post('/notificacoes/push/unsubscribe', [validarJWT], controller.desassinarPushController);
 
+router.get(
+  '/notificacoes/push/partidas/preferencia',
+  [validarJWT],
+  controller.obterPreferenciaPushPartidasAoVivoController
+);
+
+router.patch(
+  '/notificacoes/push/partidas/preferencia',
+  [validarJWT],
+  controller.atualizarPreferenciaPushPartidasAoVivoController
+);
+
+router.get(
+  '/notificacoes/push/agendamentos/preferencia',
+  [validarJWT],
+  controller.obterPreferenciaPushNovosAgendamentosController
+);
+
+router.patch(
+  '/notificacoes/push/agendamentos/preferencia',
+  [validarJWT],
+  controller.atualizarPreferenciaPushNovosAgendamentosController
+);
+
 module.exports = router;

@@ -3,6 +3,24 @@ const prisma = require('../lib/prisma');
 
 let configuracaoTentada = false;
 let pushHabilitado = false;
+const ID_PERMISSAO_DESENVOLVEDOR = 1;
+const ID_PERMISSAO_ADMINISTRADOR = 2;
+const TAG_AGENDAMENTOS_PENDENTES_GLOBAL = 'agendamentos-pendentes-global';
+const TAG_PREFIX_NOTIFICACAO_PARTIDA = 'partida-live-';
+const PERFIS_PODEM_RECEBER_NOTIFICACAO_AGENDAMENTO = new Set([
+  ID_PERMISSAO_DESENVOLVEDOR,
+  ID_PERMISSAO_ADMINISTRADOR
+]);
+
+function tagNotificacaoAgendamentosPendentesQuadra(quadraId) {
+  return `agendamentos-pendentes-quadra-${Number(quadraId || 0) || 0}`;
+}
+
+function criarErroPush(message, statusCode = 400) {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  return error;
+}
 
 function obterChavePublicaPush() {
   return String(process.env.VAPID_PUBLIC_KEY || '').trim();
@@ -132,6 +150,72 @@ function montarPayloadNotificacaoPartida(payload = {}) {
   };
 }
 
+function montarPayloadFecharNotificacaoPush(tag, url = '/agendamentos') {
+  return {
+    closeTagOnly: true,
+    tag: String(tag || '').trim(),
+    data: {
+      url
+    }
+  };
+}
+
+function montarPayloadFecharNotificacoesPushPorPrefixo(prefixo, url = '/visualizarplacarhome') {
+  return {
+    closeTagPrefix: String(prefixo || '').trim(),
+    data: {
+      url
+    }
+  };
+}
+
+function montarTituloFilaAgendamentosPendentes(quantidade = 0) {
+  const total = Math.max(0, Number(quantidade || 0));
+  return total === 1
+    ? 'Ha 1 agendamento aguardando aprovacao'
+    : `Ha ${total} agendamentos aguardando aprovacao`;
+}
+
+function montarPayloadNotificacaoAgendamentosPendentes({
+  quantidade = 0,
+  escopo = 'global',
+  quadraId = null,
+  quadraNome = '',
+  renotify = true
+} = {}) {
+  const total = Math.max(0, Number(quantidade || 0));
+  const escopoNormalizado = String(escopo || 'global').trim().toLowerCase();
+  const nomeQuadra = String(quadraNome || '').trim();
+  const quadraIdNum = Number(quadraId || 0) || null;
+  const tag = escopoNormalizado === 'quadra' && quadraIdNum
+    ? tagNotificacaoAgendamentosPendentesQuadra(quadraIdNum)
+    : TAG_AGENDAMENTOS_PENDENTES_GLOBAL;
+  const body = escopoNormalizado === 'quadra'
+    ? `Pendentes na quadra ${nomeQuadra || 'vinculada'}. Toque para revisar na tela de agendamentos.`
+    : 'Pendentes em todas as quadras. Toque para revisar na tela de agendamentos.';
+
+  return {
+    title: montarTituloFilaAgendamentosPendentes(total),
+    body,
+    icon: '/ico.png',
+    badge: '/ico.png',
+    tag,
+    renotify: Boolean(renotify),
+    requireInteraction: true,
+    silent: !renotify,
+    actions: [
+      { action: 'abrir_agendamentos', title: 'Abrir agendamentos' }
+    ],
+    data: {
+      tipo: 'AGENDAMENTOS_PENDENTES',
+      quantidade: total,
+      escopo: escopoNormalizado,
+      quadraId: quadraIdNum,
+      url: '/agendamentos'
+    }
+  };
+}
+
 function validarAssinatura(subscription = {}) {
   const endpoint = String(subscription?.endpoint || '').trim();
   const p256dh = String(subscription?.keys?.p256dh || '').trim();
@@ -188,13 +272,84 @@ async function removerAssinaturaPushUsuario(usuarioId, endpoint = '') {
   });
 }
 
-async function enviarNotificacaoPushParaPartidas(payload = {}) {
-  const partidaId = Number(payload?.partidaId || 0);
-  if (!partidaId) return;
+async function obterUsuarioElegivelPushNovosAgendamentos(usuarioId) {
+  const idUsuario = Number(usuarioId || 0);
+
+  if (!idUsuario) {
+    throw criarErroPush('Usuario invalido para atualizar a preferencia.', 400);
+  }
+
+  const usuario = await prisma.usuario.findUnique({
+    where: { id: idUsuario },
+    select: {
+      id: true,
+      ativo: true,
+      deletedAt: true,
+      permissaoId: true,
+      quadraId: true,
+      notificarNovosAgendamentos: true
+    }
+  });
+
+  if (!usuario || !usuario.ativo || usuario.deletedAt) {
+    throw criarErroPush('Usuario nao encontrado para essa preferencia.', 404);
+  }
+
+  if (!PERFIS_PODEM_RECEBER_NOTIFICACAO_AGENDAMENTO.has(Number(usuario.permissaoId))) {
+    throw criarErroPush('Perfil sem acesso a notificacoes de novos agendamentos.', 403);
+  }
+
+  if (
+    Number(usuario.permissaoId) === ID_PERMISSAO_ADMINISTRADOR &&
+    !(Number(usuario.quadraId || 0) > 0)
+  ) {
+    throw criarErroPush('Administrador sem quadra vinculada para receber alertas.', 400);
+  }
+
+  return usuario;
+}
+
+async function obterUsuarioElegivelPushPartidasAoVivo(usuarioId) {
+  const idUsuario = Number(usuarioId || 0);
+
+  if (!idUsuario) {
+    throw criarErroPush('Usuario invalido para atualizar a preferencia.', 400);
+  }
+
+  const usuario = await prisma.usuario.findUnique({
+    where: { id: idUsuario },
+    select: {
+      id: true,
+      ativo: true,
+      deletedAt: true,
+      notificarPartidasAoVivo: true
+    }
+  });
+
+  if (!usuario || !usuario.ativo || usuario.deletedAt) {
+    throw criarErroPush('Usuario nao encontrado para essa preferencia.', 404);
+  }
+
+  return usuario;
+}
+
+function tagFilaAgendamentosPorUsuario(usuario = {}) {
+  const permissaoId = Number(usuario?.permissaoId || 0);
+  if (permissaoId === ID_PERMISSAO_DESENVOLVEDOR) {
+    return TAG_AGENDAMENTOS_PENDENTES_GLOBAL;
+  }
+
+  return tagNotificacaoAgendamentosPendentesQuadra(usuario?.quadraId);
+}
+
+async function enviarPayloadPushParaUsuario(usuarioId, payload = {}, options = {}) {
+  const idUsuario = Number(usuarioId || 0);
+  if (!idUsuario) return;
   if (!configurarPushSePossivel()) return;
 
   const subscriptions = await prisma.pushSubscription.findMany({
     where: {
+      usuarioId: idUsuario,
       usuario: {
         ativo: true,
         deletedAt: null
@@ -210,37 +365,254 @@ async function enviarNotificacaoPushParaPartidas(payload = {}) {
 
   if (!subscriptions.length) return;
 
-  const mensagem = JSON.stringify(montarPayloadNotificacaoPartida(payload));
+  const envios = subscriptions.map((item) =>
+    enviarPayloadPushParaAssinatura(item, payload, options)
+  );
+  await Promise.allSettled(envios);
+}
 
-  const envios = subscriptions.map(async (item) => {
-    const assinatura = {
-      endpoint: item.endpoint,
-      keys: {
-        p256dh: item.p256dh,
-        auth: item.auth
-      }
-    };
+async function obterPreferenciaPushNovosAgendamentosUsuario(usuarioId) {
+  const usuario = await obterUsuarioElegivelPushNovosAgendamentos(usuarioId);
 
-    try {
-      await webpush.sendNotification(assinatura, mensagem, {
-        TTL: 120,
-        urgency: 'high'
-      });
-    } catch (error) {
-      const statusCode = Number(error?.statusCode || 0);
-      if (statusCode === 404 || statusCode === 410) {
-        await prisma.pushSubscription.deleteMany({
-          where: { endpoint: item.endpoint }
-        });
-        return;
-      }
+  return {
+    enabled: Boolean(usuario.notificarNovosAgendamentos)
+  };
+}
 
-      console.warn(
-        '[push] falha ao enviar notificacao:',
-        statusCode || '-',
-        error?.message || error
-      );
+async function obterPreferenciaPushPartidasAoVivoUsuario(usuarioId) {
+  const usuario = await obterUsuarioElegivelPushPartidasAoVivo(usuarioId);
+
+  return {
+    enabled: Boolean(usuario.notificarPartidasAoVivo)
+  };
+}
+
+async function atualizarPreferenciaPushNovosAgendamentosUsuario(usuarioId, enabled = false) {
+  const usuario = await obterUsuarioElegivelPushNovosAgendamentos(usuarioId);
+  const habilitado = Boolean(enabled);
+
+  const atualizado = await prisma.usuario.update({
+    where: { id: usuario.id },
+    data: {
+      notificarNovosAgendamentos: habilitado
+    },
+    select: {
+      id: true,
+      permissaoId: true,
+      quadraId: true,
+      notificarNovosAgendamentos: true
     }
+  });
+
+  if (habilitado) {
+    if (Number(atualizado.permissaoId) === ID_PERMISSAO_DESENVOLVEDOR) {
+      await atualizarNotificacoesPushFilaAgendamentosPendentes({ renotify: false });
+    } else {
+      await atualizarNotificacoesPushFilaAgendamentosPendentes({
+        quadraId: atualizado.quadraId,
+        renotify: false
+      });
+    }
+  } else {
+    await enviarPayloadPushParaUsuario(
+      atualizado.id,
+      montarPayloadFecharNotificacaoPush(tagFilaAgendamentosPorUsuario(atualizado)),
+      { TTL: 120, urgency: 'normal' }
+    );
+  }
+
+  return {
+    enabled: Boolean(atualizado.notificarNovosAgendamentos)
+  };
+}
+
+async function atualizarPreferenciaPushPartidasAoVivoUsuario(usuarioId, enabled = true) {
+  const usuario = await obterUsuarioElegivelPushPartidasAoVivo(usuarioId);
+  const habilitado = Boolean(enabled);
+
+  const atualizado = await prisma.usuario.update({
+    where: { id: usuario.id },
+    data: {
+      notificarPartidasAoVivo: habilitado
+    },
+    select: {
+      id: true,
+      notificarPartidasAoVivo: true
+    }
+  });
+
+  if (!habilitado) {
+    await enviarPayloadPushParaUsuario(
+      atualizado.id,
+      montarPayloadFecharNotificacoesPushPorPrefixo(TAG_PREFIX_NOTIFICACAO_PARTIDA),
+      { TTL: 120, urgency: 'normal' }
+    );
+  }
+
+  return {
+    enabled: Boolean(atualizado.notificarPartidasAoVivo)
+  };
+}
+
+async function enviarPayloadPushParaAssinatura(item = {}, payload = {}, options = {}) {
+  const assinatura = {
+    endpoint: item.endpoint,
+    keys: {
+      p256dh: item.p256dh,
+      auth: item.auth
+    }
+  };
+
+  try {
+    await webpush.sendNotification(assinatura, JSON.stringify(payload), {
+      TTL: Number(options?.TTL || 120),
+      urgency: String(options?.urgency || 'high')
+    });
+  } catch (error) {
+    const statusCode = Number(error?.statusCode || 0);
+    if (statusCode === 404 || statusCode === 410) {
+      await prisma.pushSubscription.deleteMany({
+        where: { endpoint: item.endpoint }
+      });
+      return;
+    }
+
+    console.warn(
+      '[push] falha ao enviar notificacao:',
+      statusCode || '-',
+      error?.message || error
+    );
+  }
+}
+
+async function enviarNotificacaoPushParaPartidas(payload = {}) {
+  const partidaId = Number(payload?.partidaId || 0);
+  if (!partidaId) return;
+  if (!configurarPushSePossivel()) return;
+
+  const subscriptions = await prisma.pushSubscription.findMany({
+    where: {
+      usuario: {
+        ativo: true,
+        deletedAt: null,
+        notificarPartidasAoVivo: true
+      }
+    },
+    select: {
+      id: true,
+      endpoint: true,
+      p256dh: true,
+      auth: true
+    }
+  });
+
+  if (!subscriptions.length) return;
+
+  const notificacao = montarPayloadNotificacaoPartida(payload);
+  const envios = subscriptions.map((item) => enviarPayloadPushParaAssinatura(item, notificacao));
+  await Promise.allSettled(envios);
+}
+
+async function atualizarNotificacoesPushFilaAgendamentosPendentes({
+  quadraId = null,
+  renotify = false
+} = {}) {
+  const quadraIdNum = Number(quadraId || 0) || null;
+  if (!configurarPushSePossivel()) return;
+
+  const filtrosUsuarios = [
+    { permissaoId: ID_PERMISSAO_DESENVOLVEDOR }
+  ];
+
+  if (quadraIdNum) {
+    filtrosUsuarios.push({
+      permissaoId: ID_PERMISSAO_ADMINISTRADOR,
+      quadraId: quadraIdNum
+    });
+  }
+
+  const subscriptions = await prisma.pushSubscription.findMany({
+    where: {
+      usuario: {
+        ativo: true,
+        deletedAt: null,
+        notificarNovosAgendamentos: true,
+        OR: filtrosUsuarios
+      }
+    },
+    select: {
+      id: true,
+      endpoint: true,
+      p256dh: true,
+      auth: true,
+      usuario: {
+        select: {
+          id: true,
+          permissaoId: true,
+          quadraId: true,
+          notificarNovosAgendamentos: true,
+          quadra: {
+            select: { nome: true }
+          }
+        }
+      }
+    }
+  });
+
+  if (!subscriptions.length) return;
+
+  const possuiDesenvolvedores = subscriptions.some(
+    (item) => Number(item?.usuario?.permissaoId) === ID_PERMISSAO_DESENVOLVEDOR
+  );
+  const possuiAdministradores = quadraIdNum
+    ? subscriptions.some(
+      (item) =>
+        Number(item?.usuario?.permissaoId) === ID_PERMISSAO_ADMINISTRADOR &&
+        Number(item?.usuario?.quadraId) === quadraIdNum
+    )
+    : false;
+
+  const [totalGlobal, totalQuadra] = await Promise.all([
+    possuiDesenvolvedores
+      ? prisma.agendamento.count({
+        where: {
+          status: 'Pendente',
+          deletedAt: null
+        }
+      })
+      : Promise.resolve(0),
+    possuiAdministradores
+      ? prisma.agendamento.count({
+        where: {
+          status: 'Pendente',
+          deletedAt: null,
+          quadraId: quadraIdNum
+        }
+      })
+      : Promise.resolve(0)
+  ]);
+
+  const envios = subscriptions.map((item) => {
+    const permissaoId = Number(item?.usuario?.permissaoId);
+    const ehDesenvolvedor = permissaoId === ID_PERMISSAO_DESENVOLVEDOR;
+    const quantidade = ehDesenvolvedor ? totalGlobal : totalQuadra;
+    const tag = ehDesenvolvedor
+      ? TAG_AGENDAMENTOS_PENDENTES_GLOBAL
+      : tagNotificacaoAgendamentosPendentesQuadra(item?.usuario?.quadraId);
+    const payload = quantidade > 0
+      ? montarPayloadNotificacaoAgendamentosPendentes({
+        quantidade,
+        escopo: ehDesenvolvedor ? 'global' : 'quadra',
+        quadraId: ehDesenvolvedor ? null : item?.usuario?.quadraId,
+        quadraNome: ehDesenvolvedor ? '' : item?.usuario?.quadra?.nome,
+        renotify
+      })
+      : montarPayloadFecharNotificacaoPush(tag);
+
+    return enviarPayloadPushParaAssinatura(item, payload, {
+      TTL: 120,
+      urgency: renotify ? 'high' : 'normal'
+    });
   });
 
   await Promise.allSettled(envios);
@@ -250,5 +622,10 @@ module.exports = {
   obterChavePublicaPush,
   assinarPushUsuario,
   removerAssinaturaPushUsuario,
-  enviarNotificacaoPushParaPartidas
+  obterPreferenciaPushPartidasAoVivoUsuario,
+  atualizarPreferenciaPushPartidasAoVivoUsuario,
+  obterPreferenciaPushNovosAgendamentosUsuario,
+  atualizarPreferenciaPushNovosAgendamentosUsuario,
+  enviarNotificacaoPushParaPartidas,
+  atualizarNotificacoesPushFilaAgendamentosPendentes
 };

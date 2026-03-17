@@ -10,20 +10,52 @@ self.addEventListener('push', (event) => {
     };
   }
 
-  const title = String(payload?.title || 'Atualizacao de partida');
+  const tag = String(payload?.tag || 'notificacao-geral');
+  if (payload?.closeTagOnly) {
+    event.waitUntil(
+      self.registration.getNotifications({ tag }).then((notificacoes) => {
+        notificacoes.forEach((notificacao) => notificacao.close());
+      })
+    );
+    return;
+  }
+
+  const closeTagPrefix = String(payload?.closeTagPrefix || '').trim();
+  if (closeTagPrefix) {
+    event.waitUntil(
+      self.registration.getNotifications().then((notificacoes) => {
+        notificacoes.forEach((notificacao) => {
+          const notificationTag = String(notificacao?.tag || '').trim();
+          if (notificationTag.startsWith(closeTagPrefix)) {
+            notificacao.close();
+          }
+        });
+      })
+    );
+    return;
+  }
+
+  const title = String(payload?.title || 'Nova notificacao');
   const icon = String(payload?.icon || '/logo.png');
   const image = String(payload?.image || '').trim();
+  const actions = Array.isArray(payload?.actions)
+    ? payload.actions
+      .map((item) => ({
+        action: String(item?.action || '').trim(),
+        title: String(item?.title || '').trim()
+      }))
+      .filter((item) => item.action && item.title)
+    : [];
   const options = {
     body: String(payload?.body || ''),
     icon,
     badge: String(payload?.badge || '/logo.png'),
     image: image || undefined,
-    tag: String(payload?.tag || 'partida-live'),
+    tag,
     renotify: Boolean(payload?.renotify),
     requireInteraction: Boolean(payload?.requireInteraction),
-    actions: [
-      { action: 'abrir_partida', title: 'Abrir partida' }
-    ],
+    silent: Boolean(payload?.silent),
+    actions,
     data: payload?.data || {}
   };
 
