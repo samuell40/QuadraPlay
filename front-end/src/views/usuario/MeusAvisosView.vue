@@ -4,6 +4,19 @@
 
     <main class="conteudo-meus-avisos">
       <div class="page-shell">
+        <section class="page-header">
+          <div class="header-copy">
+            <div class="header-topline">
+              <h1 class="titulo-principal">Meus avisos</h1>
+              <div class="resumo-chip">
+                <span class="resumo-valor">{{ totalPendentes }}</span>
+                <span class="resumo-texto">Avisos pendentes</span>
+              </div>
+            </div>
+            <p class="subtitulo">Acompanhe atualizações das quadras e visualize o histórico no mesmo painel.</p>
+          </div>
+        </section>
+
         <section class="partidas-alert-card" :class="{ ativo: preferenciaNotificacaoPartidasAoVivo }">
           <div class="partidas-alert-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none">
@@ -49,19 +62,6 @@
                       : 'Ativar alertas'
               }}
             </button>
-          </div>
-        </section>
-
-        <section class="page-header">
-          <div class="header-copy">
-            <div class="header-topline">
-              <h1 class="titulo-principal">Meus avisos</h1>
-              <div class="resumo-chip">
-                <span class="resumo-valor">{{ totalPendentes }}</span>
-                <span class="resumo-texto">Avisos pendentes</span>
-              </div>
-            </div>
-            <p class="subtitulo">Acompanhe atualizações das quadras e visualize o histórico no mesmo painel.</p>
           </div>
         </section>
 

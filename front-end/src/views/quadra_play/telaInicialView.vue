@@ -12,7 +12,12 @@
               <h2 class="title">Campeonatos</h2>
               <a class="header-subtitle">Filtre por modalidade para acompanhar e gerenciar os campeonatos cadastrados.</a>
             </div>
-            <button v-if="!isMesario" class="btn-add" @click="abrirModalAdicionarCampeonato">
+            <button
+              v-if="!isMesario"
+              class="btn-add"
+              :disabled="isAberturaCampeonatoEmAndamento"
+              @click="abrirModalAdicionarCampeonato"
+            >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
                 class="bi bi-plus-circle-fill btn-add-icon" viewBox="0 0 16 16" aria-hidden="true">
                 <path
@@ -23,12 +28,24 @@
             </button>
           </div>
           <div v-if="!isLoading" class="abas-container">
-            <div class="aba" :class="{ ativa: modalidadeSelecionada === null }" @click="selecionarModalidade(null)">
+            <div
+              class="aba"
+              :class="{ ativa: modalidadeSelecionada === null, 'aba-bloqueada': isAberturaCampeonatoEmAndamento }"
+              @click="selecionarModalidade(null)"
+            >
               Todas
             </div>
 
-            <div class="aba" v-for="modalidade in modalidadesDisponiveis" :key="modalidade.id"
-              :class="{ ativa: modalidadeSelecionada === modalidade.id }" @click="selecionarModalidade(modalidade.id)">
+            <div
+              v-for="modalidade in modalidadesDisponiveis"
+              :key="modalidade.id"
+              class="aba"
+              :class="{
+                ativa: modalidadeSelecionada === modalidade.id,
+                'aba-bloqueada': isAberturaCampeonatoEmAndamento
+              }"
+              @click="selecionarModalidade(modalidade.id)"
+            >
               {{ formatarNomeModalidade(modalidade.nome) }}
             </div>
           </div>
@@ -47,6 +64,7 @@
             v-if="!isMesario"
             type="button"
             class="btn-add btn-add-empty"
+            :disabled="isAberturaCampeonatoEmAndamento"
             @click="abrirModalAdicionarCampeonato"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
@@ -59,12 +77,25 @@
         </div>
 
         <div v-else class="quadras-grid">
-          <div class="card-quadra" v-for="campeonato in campeonatos" :key="campeonato.id"
-            @click="abrirCampeonato(campeonato)">
+          <div
+            class="card-quadra"
+            v-for="campeonato in campeonatos"
+            :key="campeonato.id"
+            :class="{ 'card-quadra-bloqueada': isAberturaCampeonatoEmAndamento && campeonatoAcessandoId !== Number(campeonato.id) }"
+            @click="abrirCampeonato(campeonato)"
+          >
 
-            <div class="status-badge"
-              :class="[classeStatus(campeonato.status), { 'status-editavel': !isMesario && statusEmAndamento(campeonato.status) }]"
-              @click.stop="!isMesario && abrirModalStatus(campeonato)">
+            <div
+              class="status-badge"
+              :class="[
+                classeStatus(campeonato.status),
+                {
+                  'status-editavel': !isMesario && statusEmAndamento(campeonato.status) && !isAberturaCampeonatoEmAndamento,
+                  'status-badge-bloqueado': isAberturaCampeonatoEmAndamento
+                }
+              ]"
+              @click.stop="!isMesario && !isAberturaCampeonatoEmAndamento && abrirModalStatus(campeonato)"
+            >
               <span v-if="statusEmAndamento(campeonato.status)" class="status-live-dot" aria-hidden="true"></span>
               <span>{{ rotuloStatus(campeonato.status) }}</span>
               <svg
@@ -200,6 +231,9 @@ export default {
   computed: {
     isMesario() {
       return Number(this.usuarioLogado?.permissaoId) === 4
+    },
+    isAberturaCampeonatoEmAndamento() {
+      return Boolean(this.campeonatoAcessandoId)
     }
   },
 
@@ -248,20 +282,21 @@ export default {
           : (possuiPartidas ? 'gerenciar_partida' : 'Detalhar_Campeonatos')
 
         store.setCampeonato(campeonatoCompleto);
-        router.push({
+        await router.push({
           name: rotaDestino,
           query: { id: campeonatoId }
         });
       } catch (error) {
         console.error('Erro ao verificar partidas do campeonato:', error)
         store.setCampeonato(campeonato);
-        router.push({ name: this.isMesario ? 'gerenciar_partida' : 'Detalhar_Campeonatos', query: { id: campeonatoId } });
+        await router.push({ name: this.isMesario ? 'gerenciar_partida' : 'Detalhar_Campeonatos', query: { id: campeonatoId } });
       } finally {
         this.campeonatoAcessandoId = null
       }
     },
 
     abrirModalAdicionarCampeonato() {
+      if (this.isAberturaCampeonatoEmAndamento) return
       this.mostrarModal = true;
     },
 
@@ -271,6 +306,7 @@ export default {
     },
 
     selecionarModalidade(id) {
+      if (this.isAberturaCampeonatoEmAndamento) return
       this.modalidadeSelecionada = id
       if (this.isMesario) {
         this.aplicarFiltroCampeonatosMesario()
@@ -336,6 +372,7 @@ export default {
       return 'Tipo não informado'
     },
     abrirModalStatus(campeonato) {
+      if (this.isAberturaCampeonatoEmAndamento) return
       this.campeonatoSelecionadoStatus = campeonato
       this.novoStatusCampeonato = campeonato?.status || 'EM_ANDAMENTO'
       this.mostrarModalStatus = true
@@ -558,10 +595,17 @@ a {
   display: none;
 }
 
-.btn-add:hover {
+.btn-add:hover:not(:disabled) {
   background-color: #2563eb;
   transform: translateY(-1px);
   box-shadow: 0 14px 26px rgba(59, 130, 246, 0.28);
+}
+
+.btn-add:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+  transform: none;
+  box-shadow: none;
 }
 
 .abas-container {
@@ -587,10 +631,17 @@ a {
   border: 1px solid rgba(148, 163, 184, 0.26);
 }
 
-.aba:hover {
+.aba:hover:not(.aba-bloqueada) {
   background: #f8fbff;
   transform: translateY(-1px);
   box-shadow: 0 10px 16px rgba(59, 130, 246, 0.10);
+}
+
+.aba-bloqueada {
+  cursor: not-allowed;
+  opacity: 0.7;
+  transform: none;
+  box-shadow: none;
 }
 
 .aba.ativa {
@@ -622,6 +673,12 @@ a {
 .card-quadra:hover {
   transform: translateY(-4px);
   box-shadow: 0 18px 36px rgba(15, 23, 42, 0.22);
+}
+
+.card-quadra-bloqueada {
+  pointer-events: none;
+  opacity: 0.82;
+  transform: none;
 }
 
 .imagem-quadra {
@@ -718,7 +775,7 @@ a {
   flex: 0 0 auto;
 }
 
-.btn-acessar:hover {
+.btn-acessar:hover:not(:disabled) {
   background-color: #2563eb;
   transform: translateY(-1px);
   box-shadow: 0 14px 26px rgba(59, 130, 246, 0.32);
@@ -783,6 +840,12 @@ a {
 
 .status-badge.status-editavel:hover {
   transform: translateY(-1px);
+}
+
+.status-badge-bloqueado {
+  cursor: not-allowed;
+  opacity: 0.8;
+  transform: none;
 }
 
 .status-live-dot {

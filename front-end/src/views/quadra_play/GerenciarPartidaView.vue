@@ -12,6 +12,7 @@
             <button
               v-if="!isCampeonatoEncerrado"
               class="btn-add-partida-topo btn-add-aartida-header"
+              :disabled="isAberturaPartidaEmAndamento"
               @click="abrirModalTipo"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
@@ -52,7 +53,12 @@
           <div class="filtros-topo">
             <div class="filtro-item">
               <label for="fase-select" class="filtro-titulo">Fase</label>
-              <select id="fase-select" v-model="faseSelecionada" @change="onFaseChange">
+              <select
+                id="fase-select"
+                v-model="faseSelecionada"
+                :disabled="isAberturaPartidaEmAndamento"
+                @change="onFaseChange"
+              >
                 <option disabled value="">Selecione a Fase</option>
                 <option v-for="fase in fases" :key="fase.id" :value="fase.id">
                   {{ fase.nome }}
@@ -62,7 +68,12 @@
 
             <div class="filtro-item">
               <label for="rodada-select" class="filtro-titulo">Rodada</label>
-              <select id="rodada-select" v-model="rodadaSelecionada" @change="onRodadaChange">
+              <select
+                id="rodada-select"
+                v-model="rodadaSelecionada"
+                :disabled="isAberturaPartidaEmAndamento"
+                @change="onRodadaChange"
+              >
                 <option disabled value="">Selecione a Rodada</option>
                 <option v-for="rodada in rodadas" :key="rodada.id" :value="rodada.id">
                   {{ rodada.nome }}
@@ -95,11 +106,20 @@
               :class="classeStatusPartida(partida)">
               <div
                 class="status-topo"
-                :class="{ 'status-topo-clickable': podeAlterarStatus(partida) }"
+                :class="{
+                  'status-topo-clickable': podeAlterarStatus(partida) && !isAberturaPartidaEmAndamento,
+                  'status-topo-bloqueado': isAberturaPartidaEmAndamento
+                }"
                 @click="editarStatus(partida)"
               >
                 <div class="status-pill"
-                  :class="[classeStatusTexto(partida), { 'status-editavel': podeAlterarStatus(partida) }]">
+                  :class="[
+                    classeStatusTexto(partida),
+                    {
+                      'status-editavel': podeAlterarStatus(partida) && !isAberturaPartidaEmAndamento,
+                      'status-bloqueado': isAberturaPartidaEmAndamento
+                    }
+                  ]">
                   <template v-if="partidaEditandoStatus !== partida.id">
                     <span class="texto-status">
                       <span v-if="partida.status === 'EM_ANDAMENTO'" class="status-live-dot" aria-hidden="true"></span>
@@ -168,9 +188,10 @@
                 class="btn-acessar"
                 :class="{
                   'btn-acessar-disabled': isMesario && partida.status === 'FINALIZADA',
-                  'btn-acessar-loading': partidaAcessandoId === partida.id
+                  'btn-acessar-loading': partidaAcessandoId === partida.id,
+                  'btn-acessar-bloqueado': isAberturaPartidaEmAndamento && partidaAcessandoId !== partida.id
                 }"
-                :disabled="(isMesario && partida.status === 'FINALIZADA') || partidaAcessandoId === partida.id"
+                :disabled="(isMesario && partida.status === 'FINALIZADA') || isAberturaPartidaEmAndamento"
                 @click="acessarPartida(partida)"
               >
                 <span class="btn-acessar-content">
@@ -210,7 +231,13 @@
                   </span>
                 </span>
               </button>
-              <button v-else class="btn-acessar" @click="removerPartidaCancelada(partida)">
+              <button
+                v-else
+                class="btn-acessar"
+                :class="{ 'btn-acessar-bloqueado': isAberturaPartidaEmAndamento }"
+                :disabled="isAberturaPartidaEmAndamento"
+                @click="removerPartidaCancelada(partida)"
+              >
                 <span class="btn-acessar-content">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="btn-acessar-icon" viewBox="0 0 16 16" aria-hidden="true">
                     <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
@@ -223,7 +250,12 @@
           </ul>
 
             <div v-else class="vazio">
-              <button v-if="!isCampeonatoEncerrado" class="btn-add-partida-vazio" @click="abrirModalTipo">
+              <button
+                v-if="!isCampeonatoEncerrado"
+                class="btn-add-partida-vazio"
+                :disabled="isAberturaPartidaEmAndamento"
+                @click="abrirModalTipo"
+              >
                 Adicionar partida
               </button>
               <span v-else class="vazio-finalizado-copy">Nenhuma partida cadastrada neste campeonato.</span>
@@ -450,6 +482,10 @@ export default {
       const mes = String(data.getMonth() + 1).padStart(2, '0')
       const dia = String(data.getDate()).padStart(2, '0')
       return `${ano}-${mes}-${dia}`
+    },
+
+    isAberturaPartidaEmAndamento() {
+      return Boolean(this.partidaAcessandoId)
     }
   },
 
@@ -520,7 +556,7 @@ export default {
     },
 
     abrirModalTipo() {
-      if (this.isCampeonatoEncerrado) return
+      if (this.isCampeonatoEncerrado || this.isAberturaPartidaEmAndamento) return
       this.mostrarModalTipo = true
     },
 
@@ -833,7 +869,7 @@ export default {
     },
 
     editarStatus(partida) {
-      if (!this.podeAlterarStatus(partida)) return
+      if (this.isAberturaPartidaEmAndamento || !this.podeAlterarStatus(partida)) return
       const statusAtual = String(partida?.status || '').toUpperCase()
 
       this.partidaSelecionada = partida
@@ -985,6 +1021,7 @@ export default {
       try {
         const partida = this.partidaParaEscalacao
         if (!partida?.id) return
+        this.partidaAcessandoId = Number(partida.id)
 
         const idsTimeA = Array.isArray(selecao?.time1) ? selecao.time1 : []
         const idsTimeB = Array.isArray(selecao?.time2) ? selecao.time2 : []
@@ -1101,6 +1138,8 @@ export default {
     },
 
     async removerPartidaCancelada(partida) {
+      if (this.isAberturaPartidaEmAndamento) return
+
       const partidaId = Number(partida?.id || partida)
       if (!partidaId) return
 
@@ -1342,6 +1381,13 @@ a {
   box-shadow: 0 16px 28px rgba(59, 130, 246, 0.28);
 }
 
+.btn-add-partida-topo:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+  transform: none;
+  box-shadow: none;
+}
+
 .btn-add-partida-icon {
   flex: 0 0 auto;
 }
@@ -1408,6 +1454,13 @@ a {
   border-color: rgba(37, 99, 235, 0.6);
   box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.14);
   background-color: #fff;
+}
+
+.filtros-topo select:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+  background-color: #eef2f7;
+  box-shadow: none;
 }
 
 .filtro-item {
@@ -1542,6 +1595,14 @@ a {
 .status-topo-clickable:hover {
   transform: translateY(-3px);
   box-shadow: 0 14px 30px rgba(15, 23, 42, 0.14);
+}
+
+.status-topo-bloqueado {
+  cursor: not-allowed;
+}
+
+.status-bloqueado {
+  opacity: 0.78;
 }
 
 .status-pill.status-agendada {
@@ -1907,11 +1968,18 @@ a {
   background-color: #cbd5e1;
 }
 
-.btn-acessar.btn-acessar-loading,
-.btn-acessar:disabled:not(.btn-acessar-disabled) {
+.btn-acessar.btn-acessar-loading {
   opacity: 0.82;
   cursor: progress;
   transform: none;
+}
+
+.btn-acessar:disabled:not(.btn-acessar-disabled):not(.btn-acessar-loading),
+.btn-acessar.btn-acessar-bloqueado {
+  opacity: 0.72;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .vazio {
@@ -1941,6 +2009,13 @@ a {
 .btn-add-partida-vazio:hover {
   background-color: #2563eb;
   transform: translateY(-1px);
+}
+
+.btn-add-partida-vazio:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+  transform: none;
+  box-shadow: none;
 }
 
 .modal-status {
