@@ -1011,7 +1011,7 @@ export default {
         this.totalPendentes = this.agendamentos.filter(a => a.status === 'Pendente').length
         this.totalConfirmados = this.agendamentos.filter(a => a.status === 'Confirmado').length
         this.totalCancelados = this.agendamentos.filter(
-          a => a.status === 'Recusado' || a.status === 'Cancelado'
+          a => a.status === 'Recusado' || a.status === 'Cancelado' || a.status === 'Encerrado'
         ).length
 
         this.loading = false

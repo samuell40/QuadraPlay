@@ -105,6 +105,7 @@ const statusClass = computed(() => {
     confirmado: 'is-confirmado',
     recusado: 'is-recusado',
     cancelado: 'is-cancelado',
+    encerrado: 'is-finalizado',
     finalizado: 'is-finalizado',
   }
 

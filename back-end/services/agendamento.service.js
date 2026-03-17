@@ -20,10 +20,12 @@ const ID_PERMISSAO_MESARIO = 4;
 const ID_PERMISSAO_TREINADOR = 5;
 const STATUS_AGENDAMENTO_ATIVOS = ["Pendente", "Confirmado"];
 const INTERVALO_RECUSA_VENCIDOS_MS = 60 * 1000;
+const INTERVALO_ENCERRAMENTO_CONFIRMADOS_MS = 60 * 1000;
 const INTERVALO_AVISO_ENCERRAMENTO_FIXO_MS = 6 * 60 * 60 * 1000;
 const JANELA_ULTIMA_SEMANA_FIXO_MS = 7 * 24 * 60 * 60 * 1000;
 const JANELA_MINIMA_DESMARCACAO_CONFIRMADO_MS = 60 * 60 * 1000;
 let ultimoProcessamentoRecusaVencidos = 0;
+let ultimoProcessamentoEncerramentoConfirmados = 0;
 let ultimoProcessamentoAvisoEncerramentoFixo = 0;
 let processamentoAvisoEncerramentoFixoEmAndamento = false;
 
@@ -125,6 +127,12 @@ const obterChaveDataHora = (data) => {
   const hora = String(data.getHours()).padStart(2, "0");
   const minuto = String(data.getMinutes()).padStart(2, "0");
   return `${ano}-${mes}-${dia} ${hora}:${minuto}`;
+};
+
+const obterInicioDoDia = (referencia = new Date()) => {
+  const inicioDoDia = new Date(referencia);
+  inicioDoDia.setHours(0, 0, 0, 0);
+  return inicioDoDia;
 };
 
 const podeDesmarcarAgendamentoConfirmado = (agendamento, referencia = new Date()) => {
@@ -451,7 +459,7 @@ const enriquecerAgendamentosComResumoEvento = async (agendamentos = []) => {
 };
 
 const listarAgendamentosService = async (usuarioId) => {
-  await recusarAgendamentosVencidos();
+  await sincronizarStatusAutomaticosAgendamentos();
   if (!usuarioId) throw { status: 400, message: "UsuÃ¡rio nÃ£o informado." };
 
   const agendamentos = await prisma.agendamento.findMany({
@@ -463,7 +471,7 @@ const listarAgendamentosService = async (usuarioId) => {
 };
 
 const listarTodosAgendamentosService = async () => {
-  await recusarAgendamentosVencidos();
+  await sincronizarStatusAutomaticosAgendamentos();
 
   const agendamentos = await prisma.agendamento.findMany({
     where: { deletedAt: null },
@@ -475,7 +483,7 @@ const listarTodosAgendamentosService = async () => {
 };
 
 const listarAgendamentosPorQuadraService = async (quadraId) => {
-  await recusarAgendamentosVencidos();
+  await sincronizarStatusAutomaticosAgendamentos();
 
   if (!quadraId) {
     throw { status: 400, message: "Quadra nÃ£o informada." };
@@ -496,7 +504,7 @@ const listarAgendamentosConfirmadosService = async (
   mes,
   dia,
 ) => {
-  await recusarAgendamentosVencidos();
+  await sincronizarStatusAutomaticosAgendamentos();
 
   if (!quadraId) {
     throw { status: 400, message: "Quadra nÃ£o informada." };
@@ -524,7 +532,7 @@ const listarAgendamentosOcupadosService = async (
   mes,
   dia,
 ) => {
-  await recusarAgendamentosVencidos();
+  await sincronizarStatusAutomaticosAgendamentos();
 
   if (!quadraId) {
     throw { status: 400, message: "Quadra nÃ£o informada." };
@@ -550,7 +558,7 @@ const listarAgendamentosConfirmadosSemanaService = async (
   quadraId,
   inicioReferencia,
 ) => {
-  await recusarAgendamentosVencidos();
+  await sincronizarStatusAutomaticosAgendamentos();
 
   if (!quadraId) throw { status: 400, message: "Quadra nÃ£o informada." };
 
@@ -1079,7 +1087,7 @@ const atualizarAgendamentoService = async (id, status, motivoRecusa = null) => {
 };
 
 const listarModalidadesPorQuadraService = async (quadraId) => {
-  await recusarAgendamentosVencidos();
+  await sincronizarStatusAutomaticosAgendamentos();
 
   if (!quadraId) throw { status: 400, message: "Quadra nÃ£o informada." };
 
@@ -1099,7 +1107,7 @@ const listarModalidadesPorQuadraService = async (quadraId) => {
 };
 
 const listarAgendamentosPorTimeService = async (timeId, inicio, fim) => {
-  await recusarAgendamentosVencidos();
+  await sincronizarStatusAutomaticosAgendamentos();
 
   if (!timeId || !inicio || !fim) {
     throw { status: 400, message: "ParÃ¢metros obrigatÃ³rios nÃ£o informados." };
@@ -1195,6 +1203,55 @@ const recusarAgendamentosVencidos = async () => {
   });
 
   ultimoProcessamentoRecusaVencidos = agora.getTime();
+};
+
+const encerrarAgendamentosConfirmadosPassados = async (
+  { forcar = false } = {},
+) => {
+  const agora = new Date();
+
+  if (
+    !forcar &&
+    agora.getTime() - ultimoProcessamentoEncerramentoConfirmados <
+      INTERVALO_ENCERRAMENTO_CONFIRMADOS_MS
+  ) {
+    return 0;
+  }
+
+  const inicioHoje = obterInicioDoDia(agora);
+  const ano = inicioHoje.getFullYear();
+  const mes = inicioHoje.getMonth() + 1;
+  const dia = inicioHoje.getDate();
+
+  const resultado = await prisma.agendamento.updateMany({
+    where: {
+      status: "Confirmado",
+      deletedAt: null,
+      OR: [
+        { datahora: { lt: inicioHoje } },
+        {
+          datahora: null,
+          OR: [
+            { ano: { lt: ano } },
+            { ano, mes: { lt: mes } },
+            { ano, mes, dia: { lt: dia } },
+          ],
+        },
+      ],
+    },
+    data: {
+      status: "Encerrado",
+      motivoRecusa: null,
+    },
+  });
+
+  ultimoProcessamentoEncerramentoConfirmados = agora.getTime();
+  return Number(resultado?.count || 0);
+};
+
+const sincronizarStatusAutomaticosAgendamentos = async () => {
+  await recusarAgendamentosVencidos();
+  await encerrarAgendamentosConfirmadosPassados();
 };
 
 const processarAvisosEncerramentoAgendamentosFixos = async (
@@ -1432,5 +1489,6 @@ module.exports = {
   listarModalidadesPorQuadraService,
   listarAgendamentosPorTimeService,
   recusarAgendamentosVencidos,
+  encerrarAgendamentosConfirmadosPassados,
   processarAvisosEncerramentoAgendamentosFixos,
 };

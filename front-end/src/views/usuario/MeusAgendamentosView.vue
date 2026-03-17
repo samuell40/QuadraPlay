@@ -154,6 +154,7 @@ const ORDEM_STATUS_LISTA = {
   confirmado: 1,
   recusado: 2,
   cancelado: 2,
+  encerrado: 2,
 };
 
 const paginasAtuais = ref({
@@ -177,13 +178,35 @@ const TAB_META = {
   },
   recusados: {
     kicker: "HISTÓRICO",
-    title: "Recusados e cancelados",
-    description: "Consulte as reservas recusadas ou canceladas anteriormente.",
-    empty: "Nenhum agendamento recusado ou cancelado.",
+    title: "Encerrados, recusados e cancelados",
+    description: "Consulte as reservas encerradas, recusadas ou canceladas anteriormente.",
+    empty: "Nenhum agendamento encerrado, recusado ou cancelado.",
   },
 };
 
 const getMetaAba = (tipo) => TAB_META[tipo] || TAB_META.confirmados;
+
+const obterInicioHoje = () => {
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  return hoje;
+};
+
+const normalizarStatusAgendamento = (status, dataObj) => {
+  const statusNormalizado = String(status || "").trim().toLowerCase();
+  if (statusNormalizado === "encerrado") return "encerrado";
+
+  if (
+    statusNormalizado === "confirmado" &&
+    dataObj instanceof Date &&
+    !Number.isNaN(dataObj.getTime()) &&
+    dataObj.getTime() < obterInicioHoje().getTime()
+  ) {
+    return "encerrado";
+  }
+
+  return statusNormalizado;
+};
 
 const getTodosPorTipo = (tipo) => {
   if (tipo === "pendentes") {
@@ -193,7 +216,9 @@ const getTodosPorTipo = (tipo) => {
     return allAgendamentos.value.filter((a) => a.status === "confirmado");
   }
   if (tipo === "recusados") {
-    return allAgendamentos.value.filter((a) => a.status === "recusado" || a.status === "cancelado");
+    return allAgendamentos.value.filter(
+      (a) => a.status === "recusado" || a.status === "cancelado" || a.status === "encerrado"
+    );
   }
   return [];
 };
@@ -284,7 +309,7 @@ const carregarAgendamentos = async () => {
           tipo: a.tipo,
           escola: a.escola || null,
           descricao: a.descricao || null,
-          status: a.status.toLowerCase(),
+          status: normalizarStatusAgendamento(a.status, dataObj),
           codigoVerificacao: a.codigoVerificacao,
           motivoRecusa: a.motivoRecusa,
           datahora: a.datahora,

@@ -9,6 +9,7 @@ const passport = require("./auth/passport");
 const prisma = require('./lib/prisma');
 const { iniciarSocket } = require('./socket');
 const {
+  encerrarAgendamentosConfirmadosPassados,
   processarAvisosEncerramentoAgendamentosFixos,
 } = require('./services/agendamento.service');
 
@@ -242,7 +243,17 @@ app.post("/upload", upload.single("file"), async (req, res) => {
 
 // Inicializa o servidor
 const PORT = process.env.PORT || 3000;
+const INTERVALO_ENCERRAMENTO_AGENDAMENTO_MS = 60 * 60 * 1000;
 const INTERVALO_PROCESSAMENTO_AVISO_FIXO_MS = 6 * 60 * 60 * 1000;
+
+const intervaloEncerramentoAgendamentos = setInterval(() => {
+  encerrarAgendamentosConfirmadosPassados().catch((error) => {
+    console.error(
+      '[agendamento] Erro ao encerrar agendamentos confirmados passados:',
+      error?.message || error,
+    );
+  });
+}, INTERVALO_ENCERRAMENTO_AGENDAMENTO_MS);
 
 const intervaloAvisoEncerramentoFixo = setInterval(() => {
   processarAvisosEncerramentoAgendamentosFixos().catch((error) => {
@@ -255,6 +266,12 @@ const intervaloAvisoEncerramentoFixo = setInterval(() => {
 
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
+  encerrarAgendamentosConfirmadosPassados({ forcar: true }).catch((error) => {
+    console.error(
+      '[agendamento] Erro no processamento inicial de encerramento:',
+      error?.message || error,
+    );
+  });
   processarAvisosEncerramentoAgendamentosFixos({ forcar: true }).catch((error) => {
     console.error(
       '[agendamento-fixo] Erro no processamento inicial de avisos:',
@@ -265,6 +282,7 @@ server.listen(PORT, () => {
 
 async function encerrarServidor(signal) {
   console.log(`${signal} recebido. Encerrando servidor...`);
+  clearInterval(intervaloEncerramentoAgendamentos);
   clearInterval(intervaloAvisoEncerramentoFixo);
 
   server.close(async () => {

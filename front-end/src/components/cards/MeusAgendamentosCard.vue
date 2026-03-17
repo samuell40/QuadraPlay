@@ -116,6 +116,7 @@ export default {
       const labels = {
         pendente: "Pendente",
         confirmado: "Confirmado",
+        encerrado: "Encerrado",
         recusado: "Recusado",
         cancelado: "Cancelado",
       };
@@ -240,6 +241,12 @@ h3 {
   color: #475569;
   background: #e2e8f0;
   border: 1px solid rgba(100, 116, 139, 0.18);
+}
+
+.status.encerrado {
+  color: #1f2937;
+  background: #e5e7eb;
+  border: 1px solid rgba(107, 114, 128, 0.22);
 }
 
 .meta-grid {

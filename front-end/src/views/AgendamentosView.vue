@@ -94,7 +94,7 @@
                 :key="ag.id"
                 :agendamento="normalizarAgendamento(ag)"
                 :loading="loadingCards.includes(ag.id)"
-                :class="{ finalizado: normalizarStatus(ag.status) === 'finalizado' }"
+                :class="{ finalizado: agendamentoEstaEncerrado(ag) }"
                 @confirmar="aceitarAgendamento(ag.id)"
                 @recusar="abrirModalRecusa(ag.id)"
                 @desmarcar="abrirModalDesmarcacao(ag.id)"
@@ -245,6 +245,23 @@ const obterDataAgendamento = (agendamento) => {
   return null
 }
 
+const obterInicioHoje = () => {
+  const hoje = new Date()
+  hoje.setHours(0, 0, 0, 0)
+  return hoje
+}
+
+const agendamentoEstaEncerrado = (agendamento) => {
+  const status = normalizarStatus(agendamento?.status)
+  if (status === 'encerrado' || status === 'finalizado') return true
+  if (status !== 'confirmado') return false
+
+  const dataAgendamento = obterDataAgendamento(agendamento)
+  if (!dataAgendamento) return false
+
+  return dataAgendamento.getTime() < obterInicioHoje().getTime()
+}
+
 const podeDesmarcarAgendamento = (agendamento) => {
   const permissaoId = Number(authStore.usuario?.permissaoId)
   if (!PERFIS_PODEM_DESMARCAR.has(permissaoId)) return false
@@ -334,17 +351,15 @@ const agendamentosFiltrados = computed(() => {
 })
 
 const getTodosPorTipo = (tipo) => {
-  const hoje = new Date()
-  hoje.setHours(0, 0, 0, 0)
-
   return agendamentosFiltrados.value.filter((agendamento) => {
     const status = normalizarStatus(agendamento.status)
 
     if (tipo === 'pendentes') return status === 'pendente'
-    if (tipo === 'recusados') return status === 'recusado' || status === 'cancelado'
+    if (tipo === 'recusados') {
+      return status === 'recusado' || status === 'cancelado' || agendamentoEstaEncerrado(agendamento)
+    }
     if (tipo === 'confirmados') {
-      const dataAgendamento = obterDataAgendamento(agendamento)
-      return status === 'confirmado' && dataAgendamento && dataAgendamento.getTime() >= hoje.getTime()
+      return status === 'confirmado' && !agendamentoEstaEncerrado(agendamento)
     }
 
     return false
@@ -404,7 +419,7 @@ const subtituloAbaAtiva = computed(() => {
   const subtitulos = {
     pendentes: `Revise os pedidos vinculados a ${nomeQuadraOperacao.value} e decida quais horários seguem para confirmação.`,
     confirmados: 'Acompanhe os agendamentos futuros que já estão liberados para operação normal.',
-    recusados: 'Consulte recusas e desmarcações administrativas com seus respectivos motivos.',
+    recusados: 'Consulte agendamentos encerrados, recusas e desmarcações administrativas com seus respectivos registros.',
   }
 
   return subtitulos[abaAtiva.value] || 'Acompanhe os agendamentos vinculados à operação da sua quadra.'
@@ -427,7 +442,7 @@ const tituloEstadoVazio = computed(() => {
   const mensagens = {
     pendentes: 'Nenhum pedido pendente no momento.',
     confirmados: 'Nenhuma reserva futura confirmada.',
-    recusados: 'Nenhum agendamento recusado ou desmarcado.',
+    recusados: 'Nenhum agendamento encerrado, recusado ou desmarcado.',
   }
 
   return mensagens[abaAtiva.value] || 'Nenhum agendamento encontrado.'
@@ -441,7 +456,7 @@ const descricaoEstadoVazio = computed(() => {
   const descricoes = {
     pendentes: 'Quando novos pedidos forem enviados para a quadra, eles aparecerão aqui para análise.',
     confirmados: 'Os agendamentos aprovados para datas futuras ficarão organizados aqui, inclusive os que ainda podem ser desmarcados.',
-    recusados: 'Os pedidos recusados e os horários desmarcados aparecerão aqui com a justificativa informada.',
+    recusados: 'Os agendamentos encerrados, recusados e os horários desmarcados aparecerão aqui com seu respectivo histórico.',
   }
 
   return descricoes[abaAtiva.value] || 'Não há itens para exibir nesta etapa.'
@@ -458,6 +473,7 @@ const mudarPagina = (tipo, delta) => {
 
 const normalizarAgendamento = (agendamento) => ({
   ...agendamento,
+  status: agendamentoEstaEncerrado(agendamento) ? 'Encerrado' : agendamento.status,
   solicitanteNome: agendamento.usuario?.nome || 'Sem usuário',
   solicitantePermissaoId: Number(agendamento.usuario?.permissaoId ?? 0),
   limiteSemanalAtingido: calcularLimiteSemanalAtingido(agendamento),
