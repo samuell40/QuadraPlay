@@ -3,7 +3,12 @@
     <div class="modal-conteudo modal-placar">
       <div class="header-placar">
         <h2 class="title_placar">Jogadores do {{ formatarInicialMaiuscula(time?.nome) }}</h2>
-        <button class="btn-gerenciar" @click="abrirModalGerenciarJogadores" aria-label="Gerenciar Jogadores">
+        <button
+          class="btn-gerenciar"
+          :disabled="modalJogadoresBloqueado"
+          @click="abrirModalGerenciarJogadores"
+          aria-label="Gerenciar Jogadores"
+        >
           <span class="btn-gerenciar-texto">Gerenciar Jogadores</span>
 
           <svg class="btn-gerenciar-icone" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
@@ -15,11 +20,11 @@
 
       </div>
 
-      <div v-if="isLoading" class="loader-container-centralizado">
+      <div v-if="loadingJogadoresAtivo" class="loader-container-centralizado">
         <LoadingState
           size="compact"
-          title="Carregando jogadores"
-          description="Buscando o elenco, as funções e os vinculos do time selecionado."
+          :title="loadingJogadoresTitle"
+          :description="loadingJogadoresDescription"
         />
       </div>
 
@@ -44,7 +49,7 @@
                     <select
                       v-model="j.funcaoId"
                       class="select-funcao"
-                      :disabled="alterandoFuncaoJogadorId === j.id"
+                      :disabled="modalJogadoresBloqueado"
                       @focus="registrarFuncaoAnterior(j)"
                       @change="onChangeFuncaoJogador(j, $event)"
                     >
@@ -91,7 +96,13 @@
         </div>
       </div>
 
-      <button class="btn-cancel-placar" @click="$emit('fechar')">Fechar</button>
+      <button
+        class="btn-cancel-placar"
+        :disabled="modalJogadoresBloqueado"
+        @click="fecharModalJogadores"
+      >
+        {{ modalJogadoresBloqueado ? 'Salvando...' : 'Fechar' }}
+      </button>
     </div>
   </div>
   <input ref="inputTrocarImagem" type="file" accept=".jpg,.jpeg,.png" style="display: none"
@@ -333,6 +344,7 @@ export default {
       funcoes: [],
       isLoading: false,
       alterandoFuncaoJogadorId: null,
+      salvandoNovaPosicao: false,
       funcaoAnteriorPorJogador: {},
       novaFuncaoValue: '__nova_funcao__',
       jogadorImagemAtual: null,
@@ -390,6 +402,20 @@ export default {
     }
   },
   computed: {
+    loadingJogadoresAtivo() {
+      return this.isLoading || this.salvandoNovaPosicao;
+    },
+    loadingJogadoresTitle() {
+      return this.salvandoNovaPosicao ? 'Salvando' : 'Carregando jogadores';
+    },
+    loadingJogadoresDescription() {
+      return this.salvandoNovaPosicao
+        ? 'Criando a nova posição e vinculando ao jogador selecionado.'
+        : 'Buscando o elenco, as funções e os vinculos do time selecionado.';
+    },
+    modalJogadoresBloqueado() {
+      return this.salvandoNovaPosicao || this.alterandoFuncaoJogadorId !== null;
+    },
     modalidadeSelecionadaId() {
       return this.modalidadeSelecionada;
     },
@@ -647,6 +673,7 @@ export default {
       this.gerenciarDropdownPosicoes.remover = null;
     },
     abrirModalGerenciarJogadores() {
+      if (this.modalJogadoresBloqueado) return;
       this.abrirModalGerenciarJogadoresComAcao('adicionarExistente');
     },
     abrirModalGerenciarJogadoresComAcao(acao = 'adicionarExistente') {
@@ -657,6 +684,10 @@ export default {
       this.carregarJogadores(this.time.id);
       this.carregarJogadoresGerenciar();
       this.carregarUsuariosDisponiveisGerenciar();
+    },
+    fecharModalJogadores() {
+      if (this.modalJogadoresBloqueado) return;
+      this.$emit('fechar');
     },
     fecharModalGerenciarJogadores() {
       this.modalGerenciarJogadoresAberto = false;
@@ -1197,6 +1228,8 @@ export default {
           return;
         }
 
+        this.salvandoNovaPosicao = true;
+
         try {
           const resposta = await api.post('/adicionar/funcao', {
             nome: String(value).trim(),
@@ -1215,6 +1248,8 @@ export default {
         } catch (erroCriar) {
           console.error('Erro ao criar função:', erroCriar);
           await Swal.fire('Erro', erroCriar?.response?.data?.message || 'Não foi possível criar a função.', 'error');
+        } finally {
+          this.salvandoNovaPosicao = false;
         }
 
         jogador.funcaoId = funcaoAnterior;
@@ -1368,6 +1403,13 @@ export default {
   background: #2563eb;
   transform: translateY(-1px);
   box-shadow: 0 14px 26px rgba(59, 130, 246, 0.28);
+}
+
+.btn-gerenciar:disabled {
+  opacity: 0.72;
+  cursor: wait;
+  transform: none;
+  box-shadow: none;
 }
 
 .btn-gerenciar:active {
@@ -1615,6 +1657,12 @@ export default {
   background: rgba(37, 99, 235, 0.06);
   border-color: rgba(37, 99, 235, 0.55);
   transform: translateY(-1px);
+}
+
+.btn-cancel-placar:disabled {
+  opacity: 0.72;
+  cursor: wait;
+  transform: none;
 }
 
 .btn-gerenciar-icone {

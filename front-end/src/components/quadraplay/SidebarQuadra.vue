@@ -76,7 +76,7 @@
               <path d="M16 18a4 4 0 0 1 4 4M16 14a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM8 16a4 4 0 0 0-4 4M8 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0 3h8" />
             </svg>
           </span>
-          <span v-if="!isDesktopCollapsed" class="nav-text">Times e Funções</span>
+          <span v-if="!isDesktopCollapsed" class="nav-text">Times e Posições</span>
         </router-link>
 
         <router-link
