@@ -55,6 +55,56 @@
         </article>
       </section>
 
+      <section v-if="podeGerenciarNotificacaoAgendamentos" class="section_push_pref">
+        <div class="push-pref-card" :class="{ ativo: preferenciaNotificacaoAgendamentos }">
+          <div class="push-pref-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path
+                d="M12 3.75a4.5 4.5 0 0 0-4.5 4.5v1.136c0 .646-.214 1.274-.61 1.786l-1.238 1.603A1.75 1.75 0 0 0 7.037 15.5h9.926a1.75 1.75 0 0 0 1.385-2.725l-1.238-1.603a2.997 2.997 0 0 1-.61-1.786V8.25a4.5 4.5 0 0 0-4.5-4.5Z"
+                stroke="currentColor"
+                stroke-width="1.7"
+              />
+              <path
+                d="M9.75 18a2.25 2.25 0 0 0 4.5 0"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+              />
+            </svg>
+          </div>
+
+          <div class="push-pref-copy">
+            <p class="push-pref-kicker">ALERTAS</p>
+            <h2 class="push-pref-title">Novos agendamentos</h2>
+            <p class="push-pref-description">{{ descricaoNotificacaoAgendamentos }}</p>
+          </div>
+
+          <div class="push-pref-actions">
+            <span class="push-pref-status" :class="{ ativo: preferenciaNotificacaoAgendamentos }">
+              {{ statusNotificacaoAgendamentos }}
+            </span>
+
+            <button
+              type="button"
+              class="push-pref-button"
+              :class="{ ativo: preferenciaNotificacaoAgendamentos }"
+              :disabled="carregandoPreferenciaNotificacaoAgendamentos || salvandoPreferenciaNotificacaoAgendamentos"
+              @click="alternarPreferenciaNotificacaoAgendamentos"
+            >
+              {{
+                carregandoPreferenciaNotificacaoAgendamentos
+                  ? 'Carregando...'
+                  : salvandoPreferenciaNotificacaoAgendamentos
+                    ? 'Salvando...'
+                    : preferenciaNotificacaoAgendamentos
+                      ? 'Desativar alertas'
+                      : 'Ativar alertas'
+              }}
+            </button>
+          </div>
+        </div>
+      </section>
+
       <section class="section_avisos">
         <div class="card_avisos_container">
           <div class="panel-head">
@@ -387,6 +437,7 @@ import api from '@/axios'
 import Swal from 'sweetalert2'
 import jsPDF from "jspdf";
 import logoImg from "@/assets/logo.png";
+import { inicializarNotificacoesPush } from '@/services/pushNotifications'
 
 Chart.register(...registerables)
 
@@ -471,6 +522,9 @@ export default {
       filtroOrigem: 'todos',
       enviando: false,
       usuarioLogado: {},
+      preferenciaNotificacaoAgendamentos: false,
+      carregandoPreferenciaNotificacaoAgendamentos: false,
+      salvandoPreferenciaNotificacaoAgendamentos: false,
       novoAviso: {
         titulo: '',
         descricao: '',
@@ -485,6 +539,21 @@ export default {
     },
     podePostar() {
       return this.usuarioLogado?.permissaoId === 1 || this.usuarioLogado?.permissaoId === 2;
+    },
+    podeGerenciarNotificacaoAgendamentos() {
+      return this.usuarioLogado?.permissaoId === 1 || this.usuarioLogado?.permissaoId === 2
+    },
+    statusNotificacaoAgendamentos() {
+      return this.preferenciaNotificacaoAgendamentos ? 'Alertas ativos' : 'Alertas pausados'
+    },
+    descricaoNotificacaoAgendamentos() {
+      const escopo = this.usuarioLogado?.permissaoId === 1 ? 'de todas as quadras' : 'da sua quadra'
+
+      if (this.preferenciaNotificacaoAgendamentos) {
+        return `Você receberá push quando entrarem novos pedidos pendentes ${escopo}.`
+      }
+
+      return `Ative para ser avisado quando um novo pedido de agendamento entrar na fila ${escopo}.`
     },
     listaPendentes() {
       return this.todosAvisos.filter(a => !this.verificarSeLi(a)).sort((a, b) => {
@@ -569,13 +638,82 @@ export default {
       this.carregarQuadrasParaSelect(),
       this.carregarUsuarios(),
       this.carregarTimes(),
-      this.carregarModalidades()
+      this.carregarModalidades(),
+      this.carregarPreferenciaNotificacaoAgendamentos()
     ]);
 
     this.carregarAvisos();
     this.carregarAgendamentos();
   },
   methods: {
+    async carregarPreferenciaNotificacaoAgendamentos() {
+      if (!this.podeGerenciarNotificacaoAgendamentos) return
+
+      this.carregandoPreferenciaNotificacaoAgendamentos = true
+
+      try {
+        const { data } = await api.get('/notificacoes/push/agendamentos/preferencia', { silent: true })
+        this.preferenciaNotificacaoAgendamentos = Boolean(data?.enabled)
+      } catch (error) {
+        console.error('Erro ao carregar a preferencia de notificacao de agendamentos:', error)
+        this.preferenciaNotificacaoAgendamentos = false
+      } finally {
+        this.carregandoPreferenciaNotificacaoAgendamentos = false
+      }
+    },
+    async alternarPreferenciaNotificacaoAgendamentos() {
+      if (
+        !this.podeGerenciarNotificacaoAgendamentos ||
+        this.carregandoPreferenciaNotificacaoAgendamentos ||
+        this.salvandoPreferenciaNotificacaoAgendamentos
+      ) {
+        return
+      }
+
+      const habilitar = !this.preferenciaNotificacaoAgendamentos
+
+      if (habilitar) {
+        const pushAtivo = await inicializarNotificacoesPush()
+
+        if (!pushAtivo) {
+          Swal.fire({
+            icon: 'info',
+            title: 'Ative as notificações do navegador',
+            text: 'Permita notificações para receber os alertas de novos agendamentos.',
+          })
+          return
+        }
+      }
+
+      this.salvandoPreferenciaNotificacaoAgendamentos = true
+
+      try {
+        const { data } = await api.patch(
+          '/notificacoes/push/agendamentos/preferencia',
+          { enabled: habilitar },
+          { silent: true },
+        )
+
+        this.preferenciaNotificacaoAgendamentos = Boolean(data?.enabled)
+
+        Swal.fire(
+          this.preferenciaNotificacaoAgendamentos ? 'Alertas ativados' : 'Alertas pausados',
+          this.preferenciaNotificacaoAgendamentos
+            ? 'Você receberá push quando novos pedidos de agendamento entrarem na fila.'
+            : 'Os alertas de novos agendamentos foram desativados.',
+          'success',
+        )
+      } catch (error) {
+        console.error('Erro ao atualizar a preferencia de notificacao de agendamentos:', error)
+        Swal.fire(
+          'Erro',
+          error?.response?.data?.error || 'Não foi possível atualizar a preferência de notificação.',
+          'error',
+        )
+      } finally {
+        this.salvandoPreferenciaNotificacaoAgendamentos = false
+      }
+    },
     async gerarPDFGraficos() {
       const doc = new jsPDF('p', 'mm', 'a4');
       const pageWidth = doc.internal.pageSize.getWidth();
@@ -1367,6 +1505,139 @@ export default {
   color: #64748b;
 }
 
+.section_push_pref {
+  margin-bottom: 18px;
+}
+
+.push-pref-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 24px;
+  border: 1px solid rgba(37, 99, 235, 0.16);
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(255, 255, 255, 0.95)),
+    #ffffff;
+  box-shadow: 0 14px 30px rgba(37, 99, 235, 0.08);
+}
+
+.push-pref-card.ativo {
+  border-color: rgba(37, 99, 235, 0.24);
+  box-shadow: 0 18px 34px rgba(37, 99, 235, 0.12);
+}
+
+.push-pref-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #2563eb, #60a5fa);
+  color: #ffffff;
+  box-shadow: 0 14px 26px rgba(37, 99, 235, 0.22);
+}
+
+.push-pref-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.push-pref-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.push-pref-kicker {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #2563eb;
+}
+
+.push-pref-title {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.1;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.push-pref-description {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.push-pref-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.push-pref-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.14);
+  color: #475569;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.push-pref-status.ativo {
+  background: rgba(5, 150, 105, 0.12);
+  color: #059669;
+}
+
+.push-pref-button {
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: #0f172a;
+  color: #ffffff;
+  box-shadow: 0 14px 24px rgba(15, 23, 42, 0.16);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.push-pref-button.ativo {
+  background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+  color: #0f172a;
+  box-shadow: 0 12px 22px rgba(148, 163, 184, 0.18);
+}
+
+.push-pref-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.push-pref-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
 .section_totalAgendamentos {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -2131,6 +2402,16 @@ export default {
   .header_actions {
     justify-content: flex-start;
   }
+
+  .push-pref-card {
+    grid-template-columns: 1fr;
+    align-items: flex-start;
+  }
+
+  .push-pref-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
 }
 
 @media (max-width: 768px) {
@@ -2175,6 +2456,36 @@ export default {
   .modal-content {
     padding: 18px;
     border-radius: 22px;
+  }
+
+  .push-pref-card {
+    gap: 12px;
+    padding: 12px;
+    border-radius: 18px;
+  }
+
+  .push-pref-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+  }
+
+  .push-pref-title {
+    font-size: 16px;
+  }
+
+  .push-pref-description {
+    font-size: 12px;
+  }
+
+  .push-pref-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .push-pref-button,
+  .push-pref-status {
+    width: 100%;
   }
 
   .modal-content .modal-header {
