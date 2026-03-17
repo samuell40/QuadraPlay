@@ -563,8 +563,8 @@ export default {
           margemX,
           y,
           pageWidth - margemX * 2,
-          'ObservaÃ§Ã£o',
-          'HorÃ¡rios sujeitos a alteraÃ§Ãµes com aviso prÃ©vio.',
+          'Observação',
+          'Horários sujeitos a alterações com aviso prévio.',
           {
             altura: 12.8,
             fillColor: [255, 247, 237],
