@@ -139,6 +139,35 @@ export function salvarPreferenciaLocalNotificacaoPartidasAoVivo(enabled, options
   return ativo
 }
 
+export async function sincronizarPreferenciaNotificacaoPartidasNoServiceWorker(enabled) {
+  if (typeof window === 'undefined') return false
+  if (!('serviceWorker' in navigator)) return false
+
+  try {
+    const registration = await registrarServiceWorker()
+    const worker =
+      navigator.serviceWorker.controller ||
+      registration?.active ||
+      registration?.waiting ||
+      registration?.installing
+
+    if (!worker || typeof worker.postMessage !== 'function') {
+      return false
+    }
+
+    worker.postMessage({
+      type: 'PUSH_PREFS_UPDATE',
+      preferencias: {
+        partidasEnabled: Boolean(enabled)
+      }
+    })
+
+    return true
+  } catch (_) {
+    return false
+  }
+}
+
 export async function removerAssinaturaPushLocal() {
   if (!possuiSuportePush()) return false
 

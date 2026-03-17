@@ -27,7 +27,8 @@ import {
   inicializarNotificacoesPush,
   lerPreferenciaLocalNotificacaoPartidasAoVivo,
   removerAssinaturaPushLocal,
-  salvarPreferenciaLocalNotificacaoPartidasAoVivo
+  salvarPreferenciaLocalNotificacaoPartidasAoVivo,
+  sincronizarPreferenciaNotificacaoPartidasNoServiceWorker
 } from '@/services/pushNotifications'
 import {
   getDataVersion,
@@ -221,6 +222,8 @@ export default {
           broadcast: options.broadcast !== false
         })
       }
+
+      sincronizarPreferenciaNotificacaoPartidasNoServiceWorker(ativo)
 
       if (!ativo && options.fecharNotificacoes) {
         this.fecharNotificacoesNativasPartidas()

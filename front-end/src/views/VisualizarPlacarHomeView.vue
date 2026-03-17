@@ -252,6 +252,7 @@ import {
   inicializarNotificacoesPush,
   lerPreferenciaLocalNotificacaoPartidasAoVivo,
   salvarPreferenciaLocalNotificacaoPartidasAoVivo,
+  sincronizarPreferenciaNotificacaoPartidasNoServiceWorker,
   solicitarPermissaoNotificacaoNativa
 } from '@/services/pushNotifications'
 import { useAuthStore } from '@/store'
@@ -452,6 +453,8 @@ export default {
           broadcast: options.broadcast !== false
         })
       }
+
+      sincronizarPreferenciaNotificacaoPartidasNoServiceWorker(ativo)
     },
 
     async carregarPreferenciaNotificacaoPartidasAoVivo() {

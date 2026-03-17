@@ -172,8 +172,8 @@ function montarPayloadFecharNotificacoesPushPorPrefixo(prefixo, url = '/visualiz
 function montarTituloFilaAgendamentosPendentes(quantidade = 0) {
   const total = Math.max(0, Number(quantidade || 0));
   return total === 1
-    ? 'Ha 1 agendamento aguardando aprovacao'
-    : `Ha ${total} agendamentos aguardando aprovacao`;
+    ? '1 agendamento aguardando aprovação'
+    : `${total} agendamentos aguardando aprovação`;
 }
 
 function montarPayloadNotificacaoAgendamentosPendentes({
@@ -292,7 +292,7 @@ async function obterUsuarioElegivelPushNovosAgendamentos(usuarioId) {
   });
 
   if (!usuario || !usuario.ativo || usuario.deletedAt) {
-    throw criarErroPush('Usuario nao encontrado para essa preferencia.', 404);
+    throw criarErroPush('Usuario não encontrado para essa preferencia.', 404);
   }
 
   if (!PERFIS_PODEM_RECEBER_NOTIFICACAO_AGENDAMENTO.has(Number(usuario.permissaoId))) {
