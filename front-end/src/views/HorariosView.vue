@@ -535,20 +535,46 @@ export default {
       }
 
       const desenharResumoSuperior = (y) => {
+        const larguraWifi = 104
+
         desenharLegendaAbaixoDaGrade(y)
 
-        doc.setFont('helvetica', 'normal')
-        doc.setFontSize(7.2)
-        doc.setTextColor(...cores.muted)
-        doc.text(
-          'Internet: LOGIN METODAO | SENHA desafio2022 | Horarios sujeitos a alteracoes com aviso previo.',
-          pageWidth - margemX,
-          y,
-          { align: 'right' }
+        desenharCampoInformativo(
+          pageWidth - margemX - larguraWifi,
+          y - 5.8,
+          larguraWifi,
+          'Wi-Fi da quadra',
+          'LOGIN: METODAO | SENHA: desafio2022',
+          {
+            altura: 11.6,
+            fillColor: [239, 246, 255],
+            borderColor: [147, 197, 253],
+            titleColor: [29, 78, 216],
+            bodyColor: [30, 64, 175],
+            accentColor: [37, 99, 235],
+          }
         )
       }
 
       void desenharInformacoesExtras
+
+      const desenharAvisoAbaixoDaGrade = (y) => {
+        desenharCampoInformativo(
+          margemX,
+          y,
+          pageWidth - margemX * 2,
+          'ObservaÃ§Ã£o',
+          'HorÃ¡rios sujeitos a alteraÃ§Ãµes com aviso prÃ©vio.',
+          {
+            altura: 12.8,
+            fillColor: [255, 247, 237],
+            borderColor: [253, 186, 116],
+            titleColor: [194, 65, 12],
+            bodyColor: [154, 52, 18],
+            accentColor: [234, 88, 12],
+          }
+        )
+      }
 
       const desenharRodape = (paginaAtual, totalPaginas) => {
         doc.setDrawColor(...cores.border)
@@ -638,8 +664,22 @@ export default {
       const limiteTruncagemReserva = layoutMuitoCompacto ? 14 : layoutCompacto ? 18 : 22
       const inicioTabelaY = 43
       const margemInferiorTabela = 16
-      const fonteTabela = layoutMuitoCompacto ? 5.6 : layoutCompacto ? 6.2 : 6.9
-      const paddingTabela = layoutMuitoCompacto ? 0.7 : layoutCompacto ? 0.9 : 1.1
+      const fonteTabela = layoutMuitoCompacto ? 5.8 : layoutCompacto ? 6.4 : 7.1
+      const paddingTabela = layoutMuitoCompacto ? 0.82 : layoutCompacto ? 0.98 : 1.18
+      const alturaCabecalhoPrincipal = layoutMuitoCompacto ? 5.5 : layoutCompacto ? 6.3 : 7.2
+      const alturaCabecalhoSecundario = layoutMuitoCompacto ? 4.4 : layoutCompacto ? 5.1 : 5.8
+      const espacoReservadoAbaixo = 31
+      const alturaCorpoBase = layoutMuitoCompacto ? 4.15 : layoutCompacto ? 4.75 : 5.35
+      const alturaCorpoMaxima = layoutMuitoCompacto ? 5 : layoutCompacto ? 5.6 : 6.25
+      const alturaCorpoTabela = maxSlots.value > 0
+        ? Math.max(
+          alturaCorpoBase,
+          Math.min(
+            alturaCorpoMaxima,
+            (pageHeight - inicioTabelaY - espacoReservadoAbaixo - alturaCabecalhoPrincipal - alturaCabecalhoSecundario) / maxSlots.value
+          )
+        )
+        : alturaCorpoBase
       const estilosColunas = {}
       const totalColunasTabela = diasAtivos * 2
 
@@ -731,17 +771,19 @@ export default {
               data.cell.styles.fillColor = cores.primary
               data.cell.styles.textColor = cores.white
               data.cell.styles.fontStyle = 'bold'
-              data.cell.styles.minCellHeight = layoutMuitoCompacto ? 5.2 : layoutCompacto ? 6 : 7
+              data.cell.styles.minCellHeight = alturaCabecalhoPrincipal
             }
 
             if (data.section === 'head' && data.row.index === 1) {
               data.cell.styles.fillColor = cores.surface
               data.cell.styles.textColor = cores.muted
               data.cell.styles.fontStyle = 'bold'
-              data.cell.styles.minCellHeight = layoutMuitoCompacto ? 4.1 : layoutCompacto ? 4.7 : 5.4
+              data.cell.styles.minCellHeight = alturaCabecalhoSecundario
             }
 
             if (data.section === 'body') {
+              data.cell.styles.minCellHeight = alturaCorpoTabela
+
               if (colIndex % 2 === 0) {
                 data.cell.styles.fillColor = [255, 255, 255]
                 data.cell.styles.textColor = text === '--' ? cores.emptyText : [51, 65, 85]
@@ -767,6 +809,12 @@ export default {
             }
           }
         })
+
+        const paginaAviso = doc.getNumberOfPages()
+        doc.setPage(paginaAviso)
+        desenharAvisoAbaixoDaGrade(
+          Math.min((doc.lastAutoTable?.finalY || inicioTabelaY) + 6, pageHeight - 24)
+        )
 
       }
 
