@@ -187,7 +187,7 @@ import {
   salvarPreferenciaLocalNotificacaoPartidasAoVivo,
   sincronizarPreferenciaNotificacaoPartidasNoServiceWorker,
   solicitarPermissaoNotificacaoNativa,
-} from "@/services/pushNotifications";
+} from "@/utils/pushNotifications";
 
 const TAB_META = {
   naoLidos: {

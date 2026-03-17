@@ -1,4 +1,4 @@
-import { bumpDataVersion } from '@/services/dataVersion';
+import { bumpDataVersion } from '@/utils/dataVersion';
 
 const AUTH_STORAGE_KEYS = [
   'token',

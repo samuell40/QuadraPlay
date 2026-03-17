@@ -21,7 +21,7 @@ import api from '@/axios'
 import {
   EVENTO_NOTIFICACAO_PARTIDA_AO_VIVO,
   obterSocket
-} from '@/services/socket'
+} from '@/utils/socket'
 import {
   EVENTO_PREFERENCIA_PUSH_PARTIDAS,
   inicializarNotificacoesPush,
@@ -29,11 +29,11 @@ import {
   removerAssinaturaPushLocal,
   salvarPreferenciaLocalNotificacaoPartidasAoVivo,
   sincronizarPreferenciaNotificacaoPartidasNoServiceWorker
-} from '@/services/pushNotifications'
+} from '@/utils/pushNotifications'
 import {
   getDataVersion,
   subscribeDataVersion
-} from '@/services/dataVersion'
+} from '@/utils/dataVersion'
 
 const SOCKET_DEBUG = import.meta.env.DEV
 

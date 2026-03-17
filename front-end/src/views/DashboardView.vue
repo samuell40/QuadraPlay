@@ -437,7 +437,7 @@ import api from '@/axios'
 import Swal from 'sweetalert2'
 import jsPDF from "jspdf";
 import logoImg from "@/assets/logo.png";
-import { inicializarNotificacoesPush } from '@/services/pushNotifications'
+import { inicializarNotificacoesPush } from '@/utils/pushNotifications'
 
 Chart.register(...registerables)
 

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { bumpDataVersion } from './services/dataVersion';
+import { bumpDataVersion } from './utils/dataVersion';
 import { limparDadosAutenticacao, obterSessaoAutenticada } from './utils/authToken';
 
 export const useAuthStore = defineStore('auth', {

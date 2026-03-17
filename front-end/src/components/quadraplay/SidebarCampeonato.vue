@@ -243,7 +243,7 @@
 <script>
 import router from "@/router";
 import { useCampeonatoStore } from "@/storecampeonato";
-import PerfilUsuarioModal from "@/components/shared/PerfilUsuarioModal.vue";
+import PerfilUsuarioModal from "@/components/compartilhar_estatisticas_usuario/PerfilUsuarioModal.vue";
 
 const SIDEBAR_COLLAPSED_KEY = "sidebar_collapsed";
 const SIDEBAR_TOGGLE_EVENT = "quadraplay:toggle-sidebar";

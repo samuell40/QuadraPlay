@@ -1,4 +1,4 @@
-﻿import { io } from 'socket.io-client'
+import { io } from 'socket.io-client'
 import api from '@/axios'
 
 export const EVENTO_CAMPEONATO_ATUALIZADO = 'campeonato:atualizado'

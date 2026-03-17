@@ -418,13 +418,13 @@ import {
   salvarPreferenciaLocalNotificacaoPartidasAoVivo,
   sincronizarPreferenciaNotificacaoPartidasNoServiceWorker,
   solicitarPermissaoNotificacaoNativa
-} from '@/services/pushNotifications'
+} from '@/utils/pushNotifications'
 import {
   EVENTO_CAMPEONATO_ATUALIZADO,
   obterSocket,
   inscreverCampeonatoSocket,
   desinscreverCampeonatoSocket
-} from '@/services/socket'
+} from '@/utils/socket'
 
 const STATUS_CONFIG = {
   FINALIZADA: { label: 'ENCERRADA', card: 'card-finalizada', text: 'status-finalizada' },

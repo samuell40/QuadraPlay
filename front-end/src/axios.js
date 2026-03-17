@@ -1,7 +1,7 @@
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import router from './router';
-import { bumpDataVersion } from './services/dataVersion';
+import { bumpDataVersion } from './utils/dataVersion';
 import { limparDadosAutenticacao } from './utils/authToken';
 
 const isDev = import.meta.env.DEV;

@@ -225,7 +225,7 @@ import {
   obterSocket,
   inscreverCampeonatoSocket,
   desinscreverCampeonatoSocket
-} from '@/services/socket'
+} from '@/utils/socket'
 import { ordenarPartidasPorStatusEDataDesc } from '@/utils/partidaOrdenacao'
 
 export default {

@@ -271,7 +271,7 @@ import {
   obterSocket,
   inscreverCampeonatoSocket,
   desinscreverCampeonatoSocket
-} from '@/services/socket'
+} from '@/utils/socket'
 import { ordenarPartidasPorStatusEDataDesc } from '@/utils/partidaOrdenacao'
 import heroLogo from '@/assets/logo.png'
 import 'vue3-carousel/dist/carousel.css'

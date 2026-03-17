@@ -41,7 +41,7 @@
 </template>
 
 <script>
-import PerfilUsuarioModal from '@/components/shared/PerfilUsuarioModal.vue'
+import PerfilUsuarioModal from '@/components/compartilhar_estatisticas_usuario/PerfilUsuarioModal.vue'
 
 export default {
   name: 'NavBarUse',
