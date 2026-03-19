@@ -33,7 +33,7 @@
             <strong class="partidas-info-title">Gerenciamento de notificações de partidas</strong>
             <p class="partidas-info-description">
               Caso deseje ativar ou desativar as notificações de partidas, acesse a tela
-              <strong>Meus Avisos</strong> para realizar esse gerenciamento de forma centralizada.
+              <strong>Meus Avisos!</strong>
             </p>
           </div>
         </div>
