@@ -1749,6 +1749,11 @@ a {
   color: #f8fafc;
 }
 
+.filtros-card .filtro-select option {
+  color: #0f172a;
+  background: #ffffff;
+}
+
 /* filtros */
 .filtros-topo {
   display: grid;
@@ -1800,6 +1805,12 @@ a {
   border-color: rgba(37, 99, 235, 0.6);
   box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.14);
   background: #fff;
+}
+
+.filtros-card .filtro-select:focus {
+  background: rgba(59, 130, 246, 0.32);
+  border-color: rgba(191, 219, 254, 0.58);
+  color: #f8fafc;
 }
 
 .filtro-select:disabled {
