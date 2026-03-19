@@ -256,6 +256,7 @@
                       :value="mod.id"
                       :disabled="salvandoCadastro"
                     />
+                    <span class="checkbox-mark" aria-hidden="true"></span>
                     <span>{{ formatarNomeModalidade(mod.nome) }}</span>
                   </label>
                 </div>
@@ -357,6 +358,7 @@
                       :value="mod.id"
                       :disabled="salvandoEdicao"
                     />
+                    <span class="checkbox-mark" aria-hidden="true"></span>
                     <span>{{ formatarNomeModalidade(mod.nome) }}</span>
                   </label>
                 </div>
@@ -1266,8 +1268,29 @@ export default {
 }
 
 .input-file {
-  min-height: auto;
-  padding: 11px 12px;
+  min-height: 52px;
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+.input-file::file-selector-button {
+  margin-right: 12px;
+  padding: 10px 14px;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 12px;
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  color: #1d4ed8;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.input-file:hover::file-selector-button {
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  border-color: rgba(37, 99, 235, 0.28);
 }
 
 .checkbox-list {
@@ -1281,11 +1304,12 @@ export default {
 }
 
 .checkbox-item {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   min-height: 40px;
-  padding: 8px 10px;
+  padding: 10px 12px;
   border-radius: 14px;
   background: #ffffff;
   border: 1px solid rgba(148, 163, 184, 0.16);
@@ -1293,10 +1317,58 @@ export default {
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
+  transition: border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
 }
 
 .checkbox-item input {
-  margin: 0;
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.checkbox-mark {
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  border: 1.5px solid rgba(148, 163, 184, 0.5);
+  background: #ffffff;
+  flex: 0 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.checkbox-mark::after {
+  content: "";
+  width: 9px;
+  height: 5px;
+  border-left: 2px solid #ffffff;
+  border-bottom: 2px solid #ffffff;
+  transform: rotate(-45deg) scale(0);
+  transform-origin: center;
+  transition: transform 0.16s ease;
+}
+
+.checkbox-item:hover {
+  transform: translateY(-1px);
+  border-color: rgba(59, 130, 246, 0.24);
+  background: #f8fbff;
+  box-shadow: 0 10px 18px rgba(37, 99, 235, 0.08);
+}
+
+.checkbox-item input:checked + .checkbox-mark {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  border-color: transparent;
+  box-shadow: 0 8px 16px rgba(37, 99, 235, 0.2);
+}
+
+.checkbox-item input:checked + .checkbox-mark::after {
+  transform: rotate(-45deg) scale(1);
+}
+
+.checkbox-item input:focus-visible + .checkbox-mark {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.14);
 }
 
 .erro-modalidade-cadastro {

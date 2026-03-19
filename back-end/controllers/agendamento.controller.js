@@ -18,7 +18,7 @@ const criarAgendamentoController = async (req, res) => {
   try {
     const usuarioId = req.user?.id || req.body.usuarioId;
     if (!usuarioId)
-      return res.status(400).json({ error: "UsuÃ¡rio nÃ£o informado." });
+      return res.status(400).json({ error: "Usuário não informado." });
 
     const {
       datahora,
@@ -74,7 +74,7 @@ const atualizarAgendamentosFixosController = async (req, res) => {
     const listaAgendamentos = Array.isArray(req.body) ? req.body : lote;
 
     if (!usuarioId) {
-      return res.status(400).json({ error: "UsuÃ¡rio nÃ£o informado." });
+      return res.status(400).json({ error: "Usuário não informado." });
     }
 
     const resultados = await atualizarAgendamentosFixosService(
@@ -122,7 +122,7 @@ const listarAgendamentosPorQuadraController = async (req, res) => {
     const { quadraId } = req.params;
 
     if (!quadraId) {
-      return res.status(400).json({ message: "Quadra nÃ£o informada" });
+      return res.status(400).json({ message: "Quadra não informada" });
     }
     const agendamentos = await listarAgendamentosPorQuadraService(quadraId);
     return res.status(200).json(agendamentos);
@@ -140,7 +140,7 @@ const listarAgendamentosAdminController = async (req, res) => {
     if (!quadraId) {
       return res
         .status(400)
-        .json({ message: "UsuÃ¡rio nÃ£o estÃ¡ vinculado a nenhuma quadra." });
+        .json({ message: "Usuário não está vinculado a nenhuma quadra." });
     }
 
     const agendamentos = await listarAgendamentosPorQuadraService(quadraId);
@@ -287,7 +287,7 @@ const listarAgendamentosPorTimeController = async (req, res) => {
     const { inicio, fim } = req.query;
 
     if (!timeId) {
-      return res.status(400).json({ message: "Time nÃ£o informado." });
+      return res.status(400).json({ message: "Time não informado." });
     }
 
     const agendamentos = await listarAgendamentosPorTimeService(

@@ -18,9 +18,7 @@
         </button>
 
         <div class="logo-container">
-          <div class="logo-badge">
-            <img src="@/assets/logo.png" alt="QuadraPlay" class="logo-img" />
-          </div>
+          <img src="@/assets/logo.png" alt="QuadraPlay" class="logo-img" />
           <div class="logo-copy">
             <span class="logo-text">Campeonatos</span>
           </div>
@@ -202,23 +200,12 @@ export default {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
-.logo-badge {
-  width: 46px;
-  height: 46px;
-  flex: 0 0 46px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 15px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
-}
-
 .logo-img {
-  width: 38px;
-  height: 38px;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
   object-fit: cover;
-  border-radius: 12px;
+  border-radius: 999px;
 }
 
 .logo-copy {
@@ -363,16 +350,10 @@ export default {
     padding: 4px 10px 4px 5px;
   }
 
-  .logo-badge {
-    width: 40px;
-    height: 40px;
-    flex-basis: 40px;
-    border-radius: 13px;
-  }
-
   .logo-img {
-    width: 33px;
-    height: 33px;
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
   }
 
   .logo-eyebrow {

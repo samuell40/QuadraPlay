@@ -1094,12 +1094,18 @@ onBeforeUnmount(() => {
 @media (max-width: 768px) {
   .header-topline {
     align-items: center;
-    gap: 10px;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: nowrap;
   }
 
   .titulo-agendamento {
-    font-size: 26px;
-    line-height: 1.04;
+    font-size: 20px;
+    line-height: 1.02;
+    letter-spacing: +0.02em;
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
   }
 
   .subtitulo-agendamento,
@@ -1111,22 +1117,23 @@ onBeforeUnmount(() => {
   .btn-acao-topo {
     width: auto;
     min-width: fit-content;
-    height: 40px;
-    padding: 0 12px;
+    height: 38px;
+    padding: 0 9px;
     border-radius: 999px;
-    gap: 6px;
+    gap: 4px;
+    flex: 0 0 auto;
   }
 
   .btn-acao-texto {
     display: inline;
     white-space: nowrap;
-    font-size: 11px;
+    font-size: 9px;
     letter-spacing: 0.01em;
   }
 
   .btn-acao-icone {
-    width: 14px;
-    height: 14px;
+    width: 13px;
+    height: 13px;
   }
 
   .tabs-card {
@@ -1136,29 +1143,29 @@ onBeforeUnmount(() => {
   .abas-config-container-agendamento {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px;
+    gap: 5px;
   }
 
   .aba-config-agendamento {
     width: 100%;
-    padding: 10px 6px;
-    font-size: 10px;
-    gap: 4px;
-    overflow: hidden;
+    min-height: 42px;
+    padding: 8px 4px;
+    font-size: 8px;
+    gap: 2px;
   }
 
   .aba-config-agendamento > span:first-child {
     text-align: center;
-    line-height: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    line-height: 1.05;
+    font-size: 8px;
+    white-space: nowrap;
   }
 
   .badge-total {
-    min-width: 18px;
-    height: 18px;
-    padding: 0 5px;
-    font-size: 9px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    font-size: 8px;
   }
 
   .section-agendamento {

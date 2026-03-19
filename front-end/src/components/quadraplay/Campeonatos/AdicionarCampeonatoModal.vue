@@ -75,7 +75,7 @@
   <div v-if="aberto && !mostrarModalTipo && !mostrarModalTimes && !mostrarModalAgenda" class="modal-overlay" @click.self="cancelarCadastro">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>Adicionar campeonato</h2>
+        <h2 class="modal-title-campeonato">Adicionar campeonato</h2>
         <button type="button" class="btn-close-x" :disabled="carregandoModalidades || carregandoQuadras || carregandoTimes || salvandoCadastro" @click="cancelarCadastro">x</button>
       </div>
 
@@ -107,7 +107,7 @@
           <div class="form-group">
             <label for="quadra">Quadra</label>
             <select id="quadra" v-model="quadraSelecionada" :disabled="!modalidadeSelecionada || carregandoQuadras || carregandoTimes || salvandoCadastro" required>
-              <option value="" disabled v-if="!modalidadeSelecionada">Selecione uma modalidade primeiro</option>
+              <option value="" disabled v-if="!modalidadeSelecionada">Selecione antes</option>
               <option value="" disabled v-else-if="carregandoQuadras">Carregando quadras...</option>
               <option value="" disabled v-else>Selecione a quadra</option>
               <option v-for="quadra in quadras" :key="quadra.id" :value="quadra.id">
@@ -777,20 +777,36 @@ import { obterFotoTime } from '@/utils/timeImagem'
   line-height: 1.5;
 }
 
+.modal-title-campeonato {
+  font-size: 26px;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
 .btn-close-x {
-  width: 34px;
-  height: 34px;
-  border: 1px solid #3b82f6;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(37, 99, 235, 0.24);
   border-radius: 999px;
   background: #fff;
   color: #3b82f6;
-  font-size: 20px;
+  font-size: 19px;
   line-height: 1;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 40px;
+  padding: 0;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
-.modal-escolha-tipo-campeonato .btn-close-x:hover {
-  background: rgba(59, 130, 246, 0.08);
+.btn-close-x:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  transform: translateY(-1px);
 }
 
 .form-group {
@@ -822,6 +838,34 @@ import { obterFotoTime } from '@/utils/timeImagem'
   background: #fff;
   font-size: 15px;
   color: #0f172a;
+}
+
+.form-group input[type="file"] {
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  color: #475569;
+  background: #f8fbff;
+}
+
+.form-group input[type="file"]::file-selector-button {
+  margin-right: 12px;
+  padding: 10px 16px;
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(59, 130, 246, 0.16));
+  color: #1d4ed8;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.form-group input[type="file"]::file-selector-button:hover {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.14), rgba(59, 130, 246, 0.22));
+  border-color: rgba(37, 99, 235, 0.26);
+  transform: translateY(-1px);
 }
 
 .texto-ajuda {
@@ -1337,6 +1381,69 @@ import { obterFotoTime } from '@/utils/timeImagem'
 @media (max-width: 768px) {
   .modal-content {
     padding: 22px 18px;
+  }
+
+  .modal-header {
+    align-items: center;
+    gap: 10px;
+  }
+
+  .modal-header .modal-title-campeonato {
+    font-size: 21px !important;
+    line-height: 1.02;
+    font-weight: bold;
+    letter-spacing: -0.03em;
+    white-space: nowrap;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .header-escolha-tipo .titulo-escolha-tipo {
+    font-size: 24px !important;
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+    max-width: 200px;
+    min-width: 0;
+  }
+
+  .form-group {
+    margin-bottom: 12px;
+  }
+
+  .form-row {
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .form-row .form-group {
+    margin-bottom: 0;
+  }
+
+  .form-group input,
+  .form-group select {
+    min-height: 44px;
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+
+  .form-group select {
+    padding-right: 30px;
+  }
+
+  #quadra {
+    font-size: 11px;
+    letter-spacing: -0.01em;
+  }
+
+  .form-group input[type="file"] {
+    font-size: 12px;
+    gap: 8px;
+  }
+
+  .form-group input[type="file"]::file-selector-button {
+    margin-right: 10px;
+    padding: 9px 12px;
+    font-size: 12px;
   }
 
   .form-row,

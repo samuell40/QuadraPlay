@@ -14,8 +14,8 @@
 
               <span class="texto-mobile-lines">
                 <span class="linha-mobile">Agende sua</span>
-                <span class="linha-mobile">Quadra</span>
-                <span class="linha-mobile linha-mobile-em">em <span class="destaque_sublinhado">São Vicente</span></span>
+                <span class="linha-mobile">quadra em</span>
+                <span class="linha-mobile destaque_sublinhado linha-mobile-sao-vicente">São Vicente</span>
                 <span class="linha-mobile">de forma</span>
                 <span class="linha-mobile segunda-linha linha-mobile-rapida">Rápida e Fácil.</span>
               </span>
@@ -79,7 +79,14 @@
               />
             </template>
             <template v-else>
-              <button class="btn-prev" @click="prev">&lt;</button>
+              <button class="carousel-nav carousel-nav-prev" type="button" aria-label="Quadra anterior" @click="prev">
+                <span class="carousel-nav-hit" aria-hidden="true"></span>
+                <span class="carousel-nav-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M15 6 9 12l6 6" />
+                  </svg>
+                </span>
+              </button>
               <Carousel ref="carousel" :itemsToShow="1" :wrapAround="true" :mouseDrag="true" :autoplay="3000"
                 :pauseAutoplayOnHover="true" :transition="600" :breakpoints="{ 768: { itemsToShow: 3 } }" class="carousel">
                 <Slide v-for="quadra in quadras" :key="quadra.id">
@@ -112,7 +119,14 @@
                   </div>
                 </Slide>
               </Carousel>
-              <button class="btn-next" @click="next">&gt;</button>
+              <button class="carousel-nav carousel-nav-next" type="button" aria-label="Próxima quadra" @click="next">
+                <span class="carousel-nav-hit" aria-hidden="true"></span>
+                <span class="carousel-nav-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="m9 6 6 6-6 6" />
+                  </svg>
+                </span>
+              </button>
             </template>
           </section>
         </div>
@@ -227,7 +241,7 @@
             <ListaPartidas
               :partidas="partidasHomeTop5"
               :loading="isLoadingPartidas"
-              empty-title="Nenhuma partida disponivel no momento."
+              empty-title="Nenhuma partida disponível no momento."
               quadra-class="nome-quadra-home"
               @time-click="abrirModalPartidasTime"
             />
@@ -247,8 +261,11 @@
       <PartidasDoTimeModal v-model="mostrarModalPartidasTime" :time="timeSelecionadoPartidas" :partidas="partidas"
         :fase-nome="nomeFaseSelecionada" :rodada-nome="nomeRodadaSelecionada" :campeonato-nome="nomeCampeonato"
         :loading="isLoadingPartidas" />
-      <button v-if="mostrarBotaoTopo" type="button" class="btn-topo" @click="subirPagina">
-        &uarr;
+      <button v-if="mostrarBotaoTopo" type="button" class="btn-topo" aria-label="Voltar ao topo" @click="subirPagina">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 19V5" />
+          <path d="m6 11 6-6 6 6" />
+        </svg>
       </button>
       <Footer />
     </div>
@@ -428,6 +445,7 @@ export default {
     window.addEventListener('resize', onResize)
     this._onResize = onResize
     window.addEventListener('scroll', this.atualizarVisibilidadeBotaoTopo, { passive: true })
+    this.atualizarVisibilidadeBotaoTopo()
 
     await Promise.all([
       this.carregarQuadras(),
@@ -964,8 +982,8 @@ a {
 
 .hero-grid {
   display: grid;
-  grid-template-columns: minmax(520px, 760px) clamp(220px, 22vw, 300px);
-  gap: clamp(16px, 2.2vw, 32px);
+  grid-template-columns: minmax(0, 1.25fr) clamp(220px, 22vw, 300px);
+  gap: clamp(28px, 3vw, 46px);
   justify-content: center;
   align-items: center;
 }
@@ -990,14 +1008,12 @@ a {
   font-family: "Montserrat";
   font-size: clamp(37px, 4.25vw, 62px);
   font-weight: 900;
-  line-height: 0.98;
-  letter-spacing: 0.015em;
+  line-height: 0.96;
+  letter-spacing: -0.03em;
   text-align: left;
   display: inline-block;
   margin: 0;
   text-shadow: 0 10px 34px rgba(2, 6, 23, 0.55);
-  transform: scaleX(1.08);
-  transform-origin: left top;
 }
 
 .texto-mobile-lines {
@@ -1027,11 +1043,13 @@ a {
 }
 
 .hero-subtitle {
-  margin: 10px 0 0;
+  margin: 14px 0 0;
   color: rgba(226, 232, 240, 0.92);
   font-size: 16px;
-  line-height: 1.5;
-  max-width: 540px;
+  line-height: 1.7;
+  max-width: 520px;
+  text-align: justify;
+  text-wrap: pretty;
 }
 
 .hero-metrics {
@@ -1112,6 +1130,7 @@ a {
   position: relative;
   z-index: 2;
   padding-left: 0;
+  align-self: center;
 }
 
 .hero-visual {
@@ -1120,27 +1139,45 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
+  isolation: isolate;
 }
 
 .hero-ring {
-  width: clamp(190px, 19vw, 270px);
+  position: relative;
+  width: clamp(204px, 20vw, 286px);
   aspect-ratio: 1 / 1;
   border-radius: 999px;
   display: grid;
   place-items: center;
+  padding: 12px;
   background:
-    radial-gradient(circle at 38% 34%, rgba(219, 234, 254, 0.92), rgba(96, 165, 250, 0.25) 58%, rgba(29, 78, 216, 0.45)),
-    linear-gradient(135deg, rgba(15, 23, 42, 0.55), rgba(37, 99, 235, 0.35));
-  border: 4px solid rgba(191, 219, 254, 0.85);
+    radial-gradient(circle, rgba(191, 219, 254, 0.34) 0%, rgba(96, 165, 250, 0.26) 44%, rgba(37, 99, 235, 0.2) 68%, rgba(29, 78, 216, 0.22) 100%);
   box-shadow:
-    0 18px 38px rgba(8, 47, 122, 0.42),
-    0 0 0 11px rgba(147, 197, 253, 0.1);
+    0 16px 30px rgba(8, 47, 122, 0.26),
+    0 0 0 5px rgba(96, 165, 250, 0.1),
+    0 0 18px rgba(59, 130, 246, 0.18);
+}
+
+.hero-ring::before {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border-radius: inherit;
+  border: 2px solid rgba(219, 234, 254, 0.5);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    0 0 18px rgba(147, 197, 253, 0.18);
+  pointer-events: none;
 }
 
 .hero-logo {
-  width: 98%;
-  height: 98%;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
+  object-position: center center;
+  transform: translate(-1.2%, 1.6%);
   filter: drop-shadow(0 8px 16px rgba(15, 23, 42, 0.32));
 }
 
@@ -1316,6 +1353,8 @@ a {
   font-size: 13px;
   line-height: 1.55;
   max-width: 64ch;
+  text-align: justify;
+  text-wrap: pretty;
 }
 
 .agendamento {
@@ -1325,55 +1364,102 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  padding: 0 10px;
+  padding: 0 2px;
+  overflow: hidden;
+  border-radius: 28px;
 }
 
 .carousel {
   flex: 1;
-  width: auto;
+  width: 100%;
   overflow: hidden;
 }
 
 .carousel .carousel__slide {
-  padding: 0 10px;
+  padding: 0 8px;
   box-sizing: border-box;
 }
 
-.btn-prev,
-.btn-next {
-  position: static;
-  background: rgba(241, 245, 249, 0.96);
-  color: #475569;
-  border: 1px solid rgba(148, 163, 184, 0.3);
+.carousel-nav {
+  position: absolute;
+  top: 50%;
   width: 40px;
   height: 40px;
-  border-radius: 999px;
-  font-size: 20px;
-  font-weight: 300;
-  line-height: 1;
+  border: none;
+  background: transparent;
+  padding: 0;
   cursor: pointer;
-  transition: 0.18s ease;
-  flex: 0 0 40px;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-50%);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.carousel-nav-prev {
+  left: 12px;
+  justify-content: flex-start;
+}
+
+.carousel-nav-next {
+  right: 12px;
+  justify-content: flex-end;
+}
+
+.carousel-nav-hit {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  transition: background-color 0.18s ease;
+}
+
+.carousel-nav::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  transition: background-color 0.18s ease;
+}
+
+.carousel-nav-icon {
+  position: relative;
+  z-index: 1;
+  width: 28px;
+  height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  z-index: 6;
+  margin: 0 14px;
+  color: rgba(255, 255, 255, 0.96);
+  transition: color 0.18s ease, transform 0.18s ease;
 }
 
-.btn-prev {
-  margin-right: 2px;
+.carousel-nav-icon svg {
+  width: 100%;
+  height: 100%;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
 }
 
-.btn-next {
-  margin-left: 2px;
+.carousel-nav:hover::before,
+.carousel-nav:focus-visible::before,
+.carousel-nav:hover .carousel-nav-hit,
+.carousel-nav:focus-visible .carousel-nav-hit {
+  background: rgba(8, 15, 37, 0.28);
 }
 
-.btn-prev:hover,
-.btn-next:hover {
-  background: #e2e8f0;
-  border-color: rgba(59, 130, 246, 0.35);
-  color: #1d4ed8;
+.carousel-nav:hover .carousel-nav-icon,
+.carousel-nav:focus-visible .carousel-nav-icon {
+  color: #ffffff;
+  transform: scale(1.08);
+}
+
+.carousel-nav:focus-visible {
+  outline: none;
 }
 
 .btn-topo {
@@ -1386,23 +1472,43 @@ a {
   border-radius: 999px;
   background: #3b82f6;
   color: #fff;
-  font-size: 22px;
-  font-weight: 700;
-  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
   z-index: 1100;
+  transition: background-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
 }
 
-.btn-topo:hover { background: #2563eb; }
+.btn-topo svg {
+  width: 19px;
+  height: 19px;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+.btn-topo:hover,
+.btn-topo:focus-visible {
+  background: #2563eb;
+  transform: translateY(-3px);
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.35);
+}
+
+.btn-topo:focus-visible {
+  outline: none;
+}
 
 .card {
   position: relative;
   overflow: hidden;
-  width: calc(100% - 18px);
-  max-width: 360px;
+  width: 100%;
+  max-width: 420px;
   margin: 0 auto;
-  height: 272px;
+  height: 300px;
   background: #08153d;
   border: 1px solid rgba(191, 219, 254, 0.34);
   border-radius: 26px;
@@ -1435,7 +1541,8 @@ a {
   height: 100%;
   object-fit: cover;
   display: block;
-  filter: brightness(0.92) contrast(1.04) saturate(0.82);
+  object-position: center center;
+  filter: brightness(0.92) contrast(1.04) saturate(0.88);
   transition: transform 0.35s ease, filter 0.3s ease;
 }
 
@@ -1833,6 +1940,7 @@ a {
   }
 
   .linha-mobile-em,
+  .linha-mobile-sao-vicente,
   .linha-mobile-rapida {
     white-space: nowrap;
   }
@@ -1844,22 +1952,23 @@ a {
   }
 
   .hero-grid {
-    grid-template-columns: minmax(0, 1.06fr) minmax(132px, 0.94fr);
-    align-items: center;
-    gap: 10px;
+    grid-template-columns: minmax(0, 1fr) minmax(128px, 150px);
+    align-items: start;
+    gap: 18px;
   }
 
   .hero-copy {
     min-width: 0;
-    padding-top: 2px;
+    padding-top: 4px;
   }
 
   .hero-subtitle {
-    margin-top: 10px;
+    margin-top: 14px;
     font-size: 13px;
-    line-height: 1.48;
-    max-width: 220px;
+    line-height: 1.62;
+    max-width: 100%;
     white-space: normal;
+    text-align: justify;
   }
 
   .hero-metrics {
@@ -1916,19 +2025,27 @@ a {
   .hero-visual {
     display: flex;
     width: auto;
-    min-height: 0;
-    justify-content: flex-end;
+    min-height: 152px;
+    justify-content: center;
     align-items: flex-start;
-    padding-top: 2px;
+    padding-top: 4px;
   }
 
   .hero-ring {
-    width: min(35vw, 150px);
+    width: min(37vw, 162px);
     flex-shrink: 0;
-    transform: translateY(-40px);
+    transform: none;
+    padding: 10px;
     box-shadow:
-      0 16px 34px rgba(8, 47, 122, 0.38),
-      0 0 0 9px rgba(147, 197, 253, 0.1);
+      0 14px 28px rgba(8, 47, 122, 0.22),
+      0 0 0 4px rgba(96, 165, 250, 0.1),
+      0 0 16px rgba(59, 130, 246, 0.16);
+  }
+
+  .hero-logo {
+    width: 100%;
+    height: 100%;
+    transform: translate(-1%, 1.4%);
   }
 
   .quadras-section {
@@ -1941,7 +2058,11 @@ a {
     bottom: 14px;
     width: 40px;
     height: 40px;
-    font-size: 20px;
+  }
+
+  .btn-topo svg {
+    width: 17px;
+    height: 17px;
   }
 
   .quadras-shell {
@@ -1961,44 +2082,29 @@ a {
   }
 
   .agendamento {
-    gap: 8px;
-    padding: 0 4px;
+    padding: 0;
   }
 
   .carousel .carousel__slide {
-    padding: 0 4px;
+    padding: 0 6px;
   }
 
-  .btn-prev,
-  .btn-next {
-    position: static;
-    top: auto;
+  .carousel-nav {
     width: 36px;
     height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transform: none;
-    z-index: 1;
-    flex: 0 0 36px;
-    font-size: 18px;
-    background: rgba(248, 250, 252, 0.96);
-    box-shadow: 0 8px 14px rgba(15, 23, 42, 0.12);
   }
 
-  .btn-prev {
-    margin-right: 2px;
-  }
-
-  .btn-next {
-    margin-left: 2px;
+  .carousel-nav-icon {
+    width: 22px;
+    height: 22px;
+    margin: 0 8px;
   }
 
   .card {
     width: 100%;
     max-width: none;
     margin: 0;
-    height: 306px;
+    height: 336px;
     border-radius: 24px;
   }
 
@@ -2094,7 +2200,7 @@ a {
 
 @media (max-width: 420px) {
   .hero-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(122px, 40vw);
+    grid-template-columns: minmax(0, 1fr) minmax(112px, 34vw);
     gap: 8px;
   }
 
@@ -2103,12 +2209,18 @@ a {
   }
 
   .hero-ring {
-    width: min(32vw, 128px);
-    transform: translateY(-42px);
+    width: min(36vw, 142px);
+    padding: 9px;
+  }
+
+  .hero-logo {
+    width: 100%;
+    height: 100%;
+    transform: translate(-0.8%, 1.2%);
   }
 
   .hero-subtitle {
-    max-width: 200px;
+    max-width: 205px;
   }
 
   .hero-metrics {
@@ -2128,10 +2240,12 @@ a {
   }
 
   .card {
-    height: 286px;
+    height: 318px;
   }
 }
 </style>
+
+
 
 
 
