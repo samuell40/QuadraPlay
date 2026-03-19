@@ -687,9 +687,10 @@ export default {
 
 .sem-dados-centralizado {
   text-align: center;
-  padding: 40px 0;
+  padding: 40px 24px;
   font-size: 16px;
   color: #6b7280;
+  line-height: 1.5;
 }
 
 .glossario-placar {
@@ -845,6 +846,10 @@ export default {
     font-size: 11px;
     line-height: 1.25;
     white-space: normal;
+  }
+
+  .sem-dados-centralizado {
+    padding: 32px 18px;
   }
 
   .placar-table.mobile-compact-no-scroll {

@@ -504,7 +504,7 @@ const enriquecerAgendamentosComResumoEvento = async (agendamentos = []) => {
 
 const listarAgendamentosService = async (usuarioId) => {
   await sincronizarStatusAutomaticosAgendamentos();
-  if (!usuarioId) throw { status: 400, message: "UsuÃ¡rio nÃ£o informado." };
+  if (!usuarioId) throw { status: 400, message: "Usuário não informado." };
 
   const agendamentos = await prisma.agendamento.findMany({
     where: { usuarioId, deletedAt: null },
@@ -530,7 +530,7 @@ const listarAgendamentosPorQuadraService = async (quadraId) => {
   await sincronizarStatusAutomaticosAgendamentos();
 
   if (!quadraId) {
-    throw { status: 400, message: "Quadra nÃ£o informada." };
+    throw { status: 400, message: "Quadra não informada." };
   }
 
   const agendamentos = await prisma.agendamento.findMany({
@@ -551,7 +551,7 @@ const listarAgendamentosConfirmadosService = async (
   await sincronizarStatusAutomaticosAgendamentos();
 
   if (!quadraId) {
-    throw { status: 400, message: "Quadra nÃ£o informada." };
+    throw { status: 400, message: "Quadra não informada." };
   }
 
   const agendamentos = await prisma.agendamento.findMany({
@@ -579,7 +579,7 @@ const listarAgendamentosOcupadosService = async (
   await sincronizarStatusAutomaticosAgendamentos();
 
   if (!quadraId) {
-    throw { status: 400, message: "Quadra nÃ£o informada." };
+    throw { status: 400, message: "Quadra não informada." };
   }
 
   const agendamentos = await prisma.agendamento.findMany({
@@ -604,14 +604,14 @@ const listarAgendamentosConfirmadosSemanaService = async (
 ) => {
   await sincronizarStatusAutomaticosAgendamentos();
 
-  if (!quadraId) throw { status: 400, message: "Quadra nÃ£o informada." };
+  if (!quadraId) throw { status: 400, message: "Quadra não informada." };
 
   const dataBase = inicioReferencia
     ? new Date(`${inicioReferencia}T00:00:00`)
     : new Date();
 
   if (Number.isNaN(dataBase.getTime())) {
-    throw { status: 400, message: "Data inicial invalida." };
+    throw { status: 400, message: "Data inválida." };
   }
 
   const inicioSemana = startOfWeek(dataBase, { weekStartsOn: 1 });
@@ -688,12 +688,12 @@ const criarAgendamentoService = async ({
   } else {
     throw {
       status: 400,
-      message: "Data/Hora invÃ¡lida ou campos obrigatÃ³rios faltando.",
+      message: "Data/Hora inválida ou campos obrigatórios faltando.",
     };
   }
 
   if (isNaN(dataInicio.getTime())) {
-    throw { status: 400, message: "Data invÃ¡lida." };
+    throw { status: 400, message: "Data inválida." };
   }
 
   const diaCalc = dataInicio.getDate();
@@ -782,7 +782,7 @@ const criarAgendamentoService = async ({
   if (dataInicio < agora) {
     throw {
       status: 400,
-      message: "NÃ£o Ã© possÃ­vel realizar agendamentos no passado.",
+      message: "Não é possível realizar agendamentos no passado.",
     };
   }
 
@@ -805,12 +805,12 @@ const criarAgendamentoService = async ({
       : Promise.resolve(null),
   ]);
 
-  if (!quadra) throw { status: 400, message: "Quadra nÃ£o existe." };
+  if (!quadra) throw { status: 400, message: "Quadra não existe." };
   if (quadra.interditada) {
     throw {
       status: 400,
       message:
-        "Essa quadra estÃ¡ interditada no momento. NÃ£o Ã© possÃ­vel agendar.",
+        "Essa quadra está interditada no momento. Não é possível agendar.",
     };
   }
   if (exigeModalidade && !modalidade) {
@@ -889,7 +889,7 @@ const criarAgendamentoService = async ({
 
     throw {
       status: 400,
-      message: `AntecedÃªncia mÃ­nima nÃ£o respeitada. Para ${tipoUpper}, o agendamento deve ser feito com pelo menos ${tempoTexto} de antecedÃªncia.`,
+      message: `Antecedência mínima não respeitada. Para ${tipoUpper}, o agendamento deve ser feito com pelo menos ${tempoTexto} de antecedência.`,
     };
   }
 
@@ -936,7 +936,7 @@ const criarAgendamentoService = async ({
         throw {
           status: 400,
           message:
-            "Este time jÃ¡ atingiu o limite de 2 horÃ¡rios FIXOS nesta semana. Tente agendar como horÃ¡rio avulso.",
+            "Este time já atingiu o limite de 2 horários FIXOS nesta semana. Tente agendar como horário avulso.",
         };
       }
     }
@@ -968,7 +968,7 @@ const criarAgendamentoService = async ({
   if (conflito) {
     throw {
       status: 409,
-      message: "HorÃ¡rio jÃ¡ agendado ou conflito de horÃ¡rio.",
+      message: "Horário já agendado ou conflito de horário.",
     };
   }
 
@@ -1032,13 +1032,13 @@ const criarAgendamentoService = async ({
 };
 
 const cancelarAgendamentoService = async (id) => {
-  if (!id) throw { status: 400, message: "ID do agendamento obrigatÃ³rio." };
+  if (!id) throw { status: 400, message: "ID do agendamento obrigatório." };
 
   const agendamento = await prisma.agendamento.findUnique({
     where: { id: Number(id) },
   });
   if (!agendamento)
-    throw { status: 404, message: "Agendamento nÃ£o encontrado." };
+    throw { status: 404, message: "Agendamento não encontrado." };
 
   await prisma.agendamento.delete({ where: { id: Number(id) } });
 
@@ -1054,7 +1054,7 @@ const desmarcarAgendamentoService = async (
   usuarioResponsavel = {},
   motivoRecusa = null,
 ) => {
-  if (!id) throw { status: 400, message: "ID do agendamento obrigatorio." };
+  if (!id) throw { status: 400, message: "ID do agendamento obrigatório." };
 
   const permissaoId = Number(usuarioResponsavel?.permissaoId);
   const quadraResponsavelId = Number(usuarioResponsavel?.quadraId);
@@ -1075,7 +1075,7 @@ const desmarcarAgendamentoService = async (
   });
 
   if (!agendamento || agendamento.deletedAt) {
-    throw { status: 404, message: "Agendamento nao encontrado." };
+    throw { status: 404, message: "Agendamento não encontrado." };
   }
 
   if (permissaoId === ID_PERMISSAO_ADMINISTRADOR) {
@@ -1107,21 +1107,21 @@ const desmarcarAgendamentoService = async (
 
 const atualizarAgendamentoService = async (id, status, motivoRecusa = null) => {
   if (!id || !status)
-    throw { status: 400, message: "ID e status sÃ£o obrigatÃ³rios." };
+    throw { status: 400, message: "ID e status são obrigatórios." };
 
   const agendamento = await prisma.agendamento.findUnique({
     where: { id: Number(id) },
   });
 
   if (!agendamento)
-    throw { status: 404, message: "Agendamento nÃ£o encontrado." };
+    throw { status: 404, message: "Agendamento não encontrado." };
 
   const statusNormalizado = String(status || "").trim();
   const aceitaMotivo = ["Recusado", "Cancelado"].includes(statusNormalizado);
   const motivoNormalizado = String(motivoRecusa || "").trim();
   const justificativa =
     statusNormalizado === "Recusado" && !motivoNormalizado
-      ? "O administrador da quadra nÃ£o informou um motivo especÃ­fico."
+      ? "O administrador da quadra não informou um motivo específico."
       : motivoNormalizado || null;
 
   const atualizado = await prisma.agendamento.update({
@@ -1153,7 +1153,7 @@ const atualizarAgendamentoService = async (id, status, motivoRecusa = null) => {
 const listarModalidadesPorQuadraService = async (quadraId) => {
   await sincronizarStatusAutomaticosAgendamentos();
 
-  if (!quadraId) throw { status: 400, message: "Quadra nÃ£o informada." };
+  if (!quadraId) throw { status: 400, message: "Quadra não informada." };
 
   try {
     const quadra = await prisma.quadra.findUnique({
@@ -1161,7 +1161,7 @@ const listarModalidadesPorQuadraService = async (quadraId) => {
       include: { modalidades: true },
     });
 
-    if (!quadra) throw { status: 404, message: "Quadra nÃ£o encontrada." };
+    if (!quadra) throw { status: 404, message: "Quadra não encontrada." };
 
     return quadra.modalidades;
   } catch (err) {
@@ -1174,7 +1174,7 @@ const listarAgendamentosPorTimeService = async (timeId, inicio, fim) => {
   await sincronizarStatusAutomaticosAgendamentos();
 
   if (!timeId || !inicio || !fim) {
-    throw { status: 400, message: "ParÃ¢metros obrigatÃ³rios nÃ£o informados." };
+    throw { status: 400, message: "Parâmetros obrigatórios não informados." };
   }
 
   const dataInicio = new Date(inicio);
@@ -1475,7 +1475,7 @@ const atualizarAgendamentosFixosService = async (agendamentos, usuarioId) => {
   if (false) {
     throw {
       status: 400,
-      message: "Time nÃ£o identificado para agendamento fixo.",
+      message: "Time não identificado para agendamento fixo.",
     };
   }
 

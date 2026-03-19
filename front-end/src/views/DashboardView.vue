@@ -335,7 +335,7 @@
               </div>
 
               <div class="form-group">
-                <label class="label-input">Titulo</label>
+                <label class="label-input">Título</label>
                 <input v-model="novoAviso.titulo" placeholder="Digite o título do aviso" class="input-estilizado" />
               </div>
 
@@ -2236,6 +2236,11 @@ export default {
   border: 1px solid rgba(148, 163, 184, 0.18);
   box-shadow: 0 24px 48px rgba(15, 23, 42, 0.2);
   overflow: hidden;
+  font-family: "Montserrat", sans-serif;
+}
+
+.modal-content :is(h1, h2, h3, h4, h5, h6, p, label, span, input, select, textarea, button) {
+  font-family: "Montserrat", sans-serif;
 }
 
 .modal-form {
@@ -2263,8 +2268,10 @@ export default {
   border: 1px solid rgba(37, 99, 235, 0.24);
   background: #ffffff;
   color: #2563eb;
-  font-size: 18px;
-  line-height: 1;
+  font-family: "Montserrat", sans-serif;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 0;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -2427,7 +2434,8 @@ export default {
   .title,
   .section-title,
   .modal-title {
-    font-size: 24px;
+    font-size: 22px;
+    margin-bottom: 4px;
     line-height: 1.12;
   }
 

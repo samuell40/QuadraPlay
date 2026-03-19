@@ -851,6 +851,9 @@ a {
 }
 
 .aba {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 54px;
   padding: 14px 18px;
   border: 1px solid rgba(148, 163, 184, 0.26);
@@ -860,6 +863,9 @@ a {
   font-size: 15px;
   font-weight: 700;
   line-height: 1.35;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
   cursor: pointer;
   transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, color 0.18s ease;
 }
@@ -925,13 +931,24 @@ a {
 .filtro-select {
   width: 100%;
   min-height: 48px;
-  padding: 11px 14px;
+  padding: 11px 42px 11px 14px;
   border-radius: 14px;
   border: 1px solid rgba(148, 163, 184, 0.34);
   background: #f8fafc;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' stroke='%2364748b' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 12px 12px;
   color: #0f172a;
   font: inherit;
   transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+.filtro-select option {
+  font-size: 14px;
 }
 
 .filtro-select:hover {
@@ -1145,13 +1162,9 @@ a {
     line-height: 1.45;
   }
 
-  .abas-container {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .campeonatos-card .abas-container {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    display: flex;
+    flex-wrap: wrap;
     gap: 8px;
   }
 
@@ -1165,10 +1178,13 @@ a {
 
   .campeonatos-card .aba {
     min-height: 42px;
-    padding: 6px 4px;
-    border-radius: 12px;
+    width: auto;
+    max-width: 100%;
+    padding: 8px 12px;
+    border-radius: 14px;
     font-size: 11px;
-    line-height: 1.2;
+    line-height: 1.25;
+    flex: 0 1 auto;
   }
 
   .filtros-topo {
@@ -1181,8 +1197,15 @@ a {
   }
 
   .filtro-select {
-    padding: 10px 12px;
+    min-height: 44px;
+    padding: 10px 32px 10px 10px;
     border-radius: 12px;
+    background-position: right 12px center;
+    font-size: 11px;
+  }
+
+  .filtro-select option {
+    font-size: 11px;
   }
 
   .artilharia-table thead th,

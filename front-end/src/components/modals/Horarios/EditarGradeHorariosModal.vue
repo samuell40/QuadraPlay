@@ -137,6 +137,7 @@
               <div class="dias-checks">
                 <label v-for="(dia, idx) in diasSemanaNomes" :key="idx" class="chk-item">
                   <input v-model="diasParaReplicar" type="checkbox" :value="idx" :disabled="idx === diaSelecionado">
+                  <span class="checkbox-mark" aria-hidden="true"></span>
                   <span>{{ dia }}</span>
                 </label>
               </div>
@@ -795,11 +796,12 @@ input:checked + .slider:before {
 }
 
 .chk-item {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   min-height: 40px;
-  padding: 8px 10px;
+  padding: 10px 12px;
   border-radius: 14px;
   border: 1px solid rgba(148, 163, 184, 0.18);
   background: #f8fafc;
@@ -807,6 +809,66 @@ input:checked + .slider:before {
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
+  transition: border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.chk-item input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.checkbox-mark {
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  border: 1.5px solid rgba(148, 163, 184, 0.5);
+  background: #ffffff;
+  flex: 0 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.checkbox-mark::after {
+  content: "";
+  width: 9px;
+  height: 5px;
+  border-left: 2px solid #ffffff;
+  border-bottom: 2px solid #ffffff;
+  transform: rotate(-45deg) scale(0);
+  transform-origin: center;
+  transition: transform 0.16s ease;
+}
+
+.chk-item:hover {
+  transform: translateY(-1px);
+  border-color: rgba(59, 130, 246, 0.24);
+  background: #f8fbff;
+  box-shadow: 0 10px 18px rgba(37, 99, 235, 0.08);
+}
+
+.chk-item input:checked + .checkbox-mark {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  border-color: transparent;
+  box-shadow: 0 8px 16px rgba(37, 99, 235, 0.2);
+}
+
+.chk-item input:checked + .checkbox-mark::after {
+  transform: rotate(-45deg) scale(1);
+}
+
+.chk-item input:focus-visible + .checkbox-mark {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.14);
+}
+
+.chk-item input:disabled + .checkbox-mark {
+  opacity: 0.5;
+}
+
+.chk-item input:disabled ~ span:last-child {
+  opacity: 0.6;
 }
 
 .add-horario-form {

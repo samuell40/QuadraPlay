@@ -275,7 +275,7 @@
         </button>
       </div>
     </div>
-    <div v-if="mostrarEditar" class="modal-overlay">
+    <div v-if="mostrarEditar" class="modal-overlay" @click.self="fecharEditar">
       <div class="modal-content modal-content-edicao">
         <div class="modal-header-edicao">
           <h2>Alterar Permissões</h2>
@@ -1070,6 +1070,10 @@ export default {
   font-size: 16px;
   font-weight: 700;
   padding: 12px 14px;
+  text-align: center;
+  line-height: 1.2;
+  white-space: normal;
+  overflow-wrap: anywhere;
   cursor: pointer;
   transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
@@ -1607,36 +1611,42 @@ select:focus {
 }
 
 .abas-container {
-  display: flex;
-  flex-wrap: nowrap;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   padding: 10px;
   border-radius: 14px;
   background: #f8fafc;
   border: 1px solid rgba(15, 23, 42, 0.08);
   margin-bottom: 14px;
-  overflow-x: auto;
 }
 
 .aba {
-  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-width: 0;
+  min-height: 52px;
   text-align: center;
   padding: 10px 12px;
   border-radius: 12px;
   cursor: pointer;
   background: transparent;
   font-weight: 800;
-  line-height: 1.25;
+  font-size: 13px;
+  line-height: 1.18;
   color: #334155;
   transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease, color 0.2s ease;
   user-select: none;
   border: 1px solid transparent;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .aba:hover {
   background: rgba(59, 130, 246, 0.08);
   transform: translateY(-1px);
+  border-color: rgba(59, 130, 246, 0.16);
 }
 
 .aba.ativa {
@@ -2281,15 +2291,15 @@ select:focus {
   }
 
   .abas-container {
-    flex-wrap: wrap;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
     padding: 8px;
   }
 
   .aba {
-    flex: 1 1 48%;
-    font-size: 13px;
-    padding: 10px 8px;
+    min-height: 56px;
+    font-size: 12px;
+    padding: 8px 10px;
   }
 
   select {
@@ -2390,19 +2400,17 @@ select:focus {
   }
 
   .abas-config-container {
-    gap: 8px;
-    padding: 5px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    padding: 6px;
   }
 
   .aba-config {
-    flex: 1 1 0;
-    min-width: 0;
-    padding: 9px 6px;
-    font-size: 15px;
-    line-height: 1.15;
-    text-align: center;
-    white-space: normal;
-    overflow-wrap: anywhere;
+    min-height: 42px;
+    padding: 5px 8px;
+    font-size: 13px;
+    line-height: 1.1;
   }
 
   .search-shell {
@@ -2630,15 +2638,26 @@ select:focus {
   }
 
   .abas-container {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
     padding: 8px;
   }
 
   .aba {
-    flex: 1 1 48%;
-    font-size: 13px;
-    padding: 10px 8px;
+    min-height: 50px;
+    font-size: 11px;
+    padding: 8px 6px;
+    white-space: nowrap;
+    overflow-wrap: normal;
+    word-break: normal;
+    letter-spacing: -0.01em;
+  }
+
+  .aba:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: min(220px, 100%);
   }
 
   select {

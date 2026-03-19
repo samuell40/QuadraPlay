@@ -41,7 +41,7 @@ function siglaTime(nome = '') {
 
   const partes = texto
     .split(/\s+/)
-    .map((p) => p.replace(/[^A-Za-zÀ-ÿ0-9]/g, ''))
+    .map((p) => p.replace(/[^\p{L}0-9]/gu, ''))
     .filter(Boolean);
 
   if (!partes.length) return 'TIME';

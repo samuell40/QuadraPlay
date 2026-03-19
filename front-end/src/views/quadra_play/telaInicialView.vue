@@ -751,6 +751,7 @@ a {
   transition: transform 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease;
   text-transform: uppercase;
   letter-spacing: 0.12em;
+  line-height: 1;
   box-shadow: 0 10px 18px rgba(59, 130, 246, 0.25);
 }
 
@@ -759,6 +760,8 @@ a {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  width: 100%;
+  line-height: 1;
 }
 
 .btn-acessar-spinner {
@@ -773,6 +776,7 @@ a {
 
 .btn-acessar-icon {
   flex: 0 0 auto;
+  display: block;
 }
 
 .btn-acessar:hover:not(:disabled) {

@@ -924,6 +924,7 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  text-align: center;
   cursor: pointer;
   transition: transform 0.15s ease, background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
@@ -1198,18 +1199,22 @@ onMounted(async () => {
 
   .aba-config {
     min-width: 0;
-    padding: 10px 6px;
-    font-size: 12px;
-    gap: 6px;
+    min-height: 64px;
+    padding: 8px 4px;
+    font-size: 11px;
+    line-height: 1.15;
+    gap: 4px;
     flex: none;
-    white-space: nowrap;
+    flex-direction: column;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   .badge-total {
-    min-width: 22px;
-    height: 20px;
-    padding: 0 6px;
-    font-size: 10px;
+    min-width: 20px;
+    height: 18px;
+    padding: 0 5px;
+    font-size: 9px;
   }
 
   .state-card,

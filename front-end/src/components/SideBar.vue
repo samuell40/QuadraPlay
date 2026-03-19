@@ -153,16 +153,23 @@ export default {
       isMobile: false,
       usuario: null,
       openCategory: localStorage.getItem("openCategory") ?? "agendamentos",
+      touchStartX: 0,
+      touchStartY: 0,
+      touchStartSidebarVisible: false,
     };
   },
   mounted() {
     window.addEventListener("resize", this.handleResize);
+    window.addEventListener("touchstart", this.handleTouchStart, { passive: true });
+    window.addEventListener("touchend", this.handleTouchEnd, { passive: true });
     this.handleResize();
     this.usuario = JSON.parse(localStorage.getItem("usuario") || "null");
     this.sincronizarCategoriaComRota(this.$route.path);
   },
   beforeUnmount() {
     window.removeEventListener("resize", this.handleResize);
+    window.removeEventListener("touchstart", this.handleTouchStart);
+    window.removeEventListener("touchend", this.handleTouchEnd);
   },
   watch: {
     "$route.path"(novoPath) {
@@ -225,6 +232,36 @@ export default {
     handleResize() {
       this.isMobile = window.innerWidth <= 768;
       this.sidebarVisible = !this.isMobile;
+    },
+    handleTouchStart(event) {
+      if (!this.isMobile || !event.changedTouches?.length) return;
+      const touch = event.changedTouches[0];
+      this.touchStartX = touch.clientX;
+      this.touchStartY = touch.clientY;
+      this.touchStartSidebarVisible = this.sidebarVisible;
+    },
+    handleTouchEnd(event) {
+      if (!this.isMobile || !event.changedTouches?.length) return;
+
+      const touch = event.changedTouches[0];
+      const deltaX = touch.clientX - this.touchStartX;
+      const deltaY = touch.clientY - this.touchStartY;
+      const movimentoHorizontal = Math.abs(deltaX);
+      const movimentoVertical = Math.abs(deltaY);
+
+      if (movimentoHorizontal < 70 || movimentoHorizontal <= movimentoVertical) return;
+
+      const iniciouNaBordaEsquerda = this.touchStartX <= 28;
+      const iniciouNaAreaSidebar = this.touchStartSidebarVisible && this.touchStartX <= 320;
+
+      if (!this.touchStartSidebarVisible && iniciouNaBordaEsquerda && deltaX > 0) {
+        this.sidebarVisible = true;
+        return;
+      }
+
+      if (this.touchStartSidebarVisible && iniciouNaAreaSidebar && deltaX < 0) {
+        this.sidebarVisible = false;
+      }
     },
   },
 };
