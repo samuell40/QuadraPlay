@@ -415,17 +415,17 @@ export default {
         {
           id: 'quadras',
           valor: this.formatarNumeroResumo(this.resumoHero.totalQuadras),
-          rotulo: 'quadras cadastradas',
+          rotulo: 'Quadras Cadastradas',
         },
         {
           id: 'reservas',
           valor: this.formatarNumeroResumo(this.resumoHero.totalReservas, { prefixoMais: true }),
-          rotulo: 'reservas',
+          rotulo: 'Reservas Confirmadas',
         },
         {
           id: 'usuarios',
           valor: this.formatarNumeroResumo(this.resumoHero.totalUsuarios, { prefixoMais: true }),
-          rotulo: 'usuarios cadastrados',
+          rotulo: 'Usuarios Cadastrados',
         },
       ]
     },
