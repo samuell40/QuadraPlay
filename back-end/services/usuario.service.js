@@ -513,7 +513,7 @@ async function getResumoPublicoHome() {
     prisma.agendamento.count({
       where: {
         deletedAt: null,
-        status: { in: ['Pendente', 'Confirmado'] },
+        status: { in: ['Confirmado', 'Encerrado'] },
       },
     }),
     prisma.usuario.count({
