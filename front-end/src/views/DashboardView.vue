@@ -607,7 +607,7 @@ export default {
     },
     agendamentosConfirmados() {
       return (Array.isArray(this.agendamentos) ? this.agendamentos : [])
-        .filter(a => String(a?.status || '').toUpperCase() === 'CONFIRMADO')
+        .filter(a => this.statusContaComoConfirmado(a?.status))
     },
     temDadosGraficoModalidade() {
       return this.agendamentosConfirmados.length > 0
@@ -646,6 +646,17 @@ export default {
     this.carregarAgendamentos();
   },
   methods: {
+    normalizarStatusAgendamento(status) {
+      return String(status || '').trim().toUpperCase()
+    },
+    statusContaComoConfirmado(status) {
+      const statusNormalizado = this.normalizarStatusAgendamento(status)
+      return statusNormalizado === 'CONFIRMADO' || statusNormalizado === 'ENCERRADO'
+    },
+    statusContaComoRecusado(status) {
+      const statusNormalizado = this.normalizarStatusAgendamento(status)
+      return statusNormalizado === 'RECUSADO' || statusNormalizado === 'CANCELADO'
+    },
     async carregarPreferenciaNotificacaoAgendamentos() {
       if (!this.podeGerenciarNotificacaoAgendamentos) return
 
@@ -1145,12 +1156,12 @@ export default {
           if (a.data) return new Date(a.data).getFullYear() === anoAtual
           return false
         })
-        this.totalAgendamentos = this.agendamentos.length
         this.totalPendentes = this.agendamentos.filter(a => a.status === 'Pendente').length
-        this.totalConfirmados = this.agendamentos.filter(a => a.status === 'Confirmado').length
+        this.totalConfirmados = this.agendamentos.filter(a => this.statusContaComoConfirmado(a.status)).length
         this.totalCancelados = this.agendamentos.filter(
-          a => a.status === 'Recusado' || a.status === 'Cancelado' || a.status === 'Encerrado'
+          a => this.statusContaComoRecusado(a.status)
         ).length
+        this.totalAgendamentos = this.totalPendentes + this.totalConfirmados + this.totalCancelados
 
         this.loading = false
         await nextTick()
