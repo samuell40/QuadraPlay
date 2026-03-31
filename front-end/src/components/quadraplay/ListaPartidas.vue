@@ -30,7 +30,12 @@
         <div class="conteudo-partida">
           <div class="time lado">
             <img v-if="partida.timeA?.foto" :src="partida.timeA.foto" alt="Escudo Time A" />
-            <button type="button" class="nome-time nome-time-btn" @click.stop="abrirModalPartidasTime(partida.timeA)">
+            <button
+              type="button"
+              class="nome-time nome-time-btn"
+              :class="{ 'nome-time-sigla': usarSiglaTimes }"
+              @click.stop="abrirModalPartidasTime(partida.timeA)"
+            >
               {{ rotuloTime(partida.timeA) }}
             </button>
           </div>
@@ -47,7 +52,12 @@
 
           <div class="time lado">
             <img v-if="partida.timeB?.foto" :src="partida.timeB.foto" alt="Escudo Time B" />
-            <button type="button" class="nome-time nome-time-btn" @click.stop="abrirModalPartidasTime(partida.timeB)">
+            <button
+              type="button"
+              class="nome-time nome-time-btn"
+              :class="{ 'nome-time-sigla': usarSiglaTimes }"
+              @click.stop="abrirModalPartidasTime(partida.timeB)"
+            >
               {{ rotuloTime(partida.timeB) }}
             </button>
           </div>
@@ -338,6 +348,16 @@ export default {
   text-align: left;
   display: inline-block;
   max-width: 100%;
+}
+
+.nome-time-sigla {
+  width: 3ch;
+  min-width: 3ch;
+  max-width: 3ch;
+  overflow: visible;
+  text-overflow: clip;
+  text-align: center;
+  flex: 0 0 3ch;
 }
 
 .nome-time-btn:hover {
