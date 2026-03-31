@@ -372,6 +372,10 @@ export default {
         .trim()
     },
 
+    obterTimestampRecenciaCampeonato(campeonato) {
+      return new Date(campeonato?.createdAt || campeonato?.dataInicio || 0).getTime()
+    },
+
     conectarSocket() {
       this.socket = obterSocket()
 
@@ -490,7 +494,9 @@ export default {
       this.isLoading = true
       try {
         const { data } = await api.get('/todos/campeonatos')
-        this.campeonatos = Array.isArray(data) ? data : []
+        this.campeonatos = (Array.isArray(data) ? data : [])
+          .slice()
+          .sort((a, b) => this.obterTimestampRecenciaCampeonato(b) - this.obterTimestampRecenciaCampeonato(a))
         if (this.campeonatos.length) {
           await this.selecionarCampeonato(this.campeonatos[0].id)
         }

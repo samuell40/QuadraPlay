@@ -152,7 +152,7 @@
         :loading="isLoadingPartidas"
       />
       <ModalConfiguracoesPlacar
-        v-if="campeonato && !isCampeonatoEncerrado"
+        v-if="modalConfiguracoes && campeonato && !isCampeonatoEncerrado"
         v-model="modalConfiguracoes"
         :campeonato="campeonato"
         :times-placar="Array.isArray(timesPlacar) ? timesPlacar : []"
@@ -167,7 +167,7 @@
       />
 
       <ModalConfigurarGrupos
-        v-if="campeonato"
+        v-if="modalGrupos && campeonato"
         v-model="modalGrupos"
         :campeonato-id="campeonato.id"
         @salvo="atualizarGruposClassificacao"

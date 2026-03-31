@@ -255,32 +255,51 @@ export default {
         .map(chave => mapa.get(chave))
         .filter(Boolean)
     },
+    timesPorId() {
+      const mapa = new Map()
+
+      for (const time of Array.isArray(this.times) ? this.times : []) {
+        const timeId = this.obterIdTime(time)
+        if (!Number.isInteger(timeId) || timeId <= 0 || mapa.has(timeId)) continue
+        mapa.set(timeId, time)
+      }
+
+      return mapa
+    },
     gruposParaExibicao() {
       if (!this.temTabela || !this.gruposConfig || !Array.isArray(this.gruposConfig.grupos)) {
         return []
       }
 
       const idsUsados = new Set()
-      const grupos = this.gruposConfig.grupos
-        .map((grupo, indice) => {
-          const idsGrupo = new Set(
-            (Array.isArray(grupo?.timeIds) ? grupo.timeIds : [])
-              .map(id => Number(id))
-              .filter(id => Number.isInteger(id) && id > 0)
-          )
+      const grupos = []
 
-          const timesGrupo = this.times.filter(time => idsGrupo.has(this.obterIdTime(time)))
-          timesGrupo.forEach(time => idsUsados.add(this.obterIdTime(time)))
+      this.gruposConfig.grupos.forEach((grupo, indice) => {
+        const timeIds = (Array.isArray(grupo?.timeIds) ? grupo.timeIds : [])
+          .map(id => Number(id))
+          .filter(id => Number.isInteger(id) && id > 0)
 
-          return {
-            id: String(grupo?.id || `grupo-${indice + 1}`),
-            nome: String(grupo?.nome || '').trim() || `Grupo ${indice + 1}`,
-            times: timesGrupo
-          }
+        const timesGrupo = []
+        timeIds.forEach((timeId) => {
+          const time = this.timesPorId.get(timeId)
+          if (!time) return
+          idsUsados.add(timeId)
+          timesGrupo.push(time)
         })
-        .filter(grupo => grupo.times.length)
 
-      const timesSemGrupo = this.times.filter(time => !idsUsados.has(this.obterIdTime(time)))
+        if (!timesGrupo.length) return
+
+        grupos.push({
+          id: String(grupo?.id || `grupo-${indice + 1}`),
+          nome: String(grupo?.nome || '').trim() || `Grupo ${indice + 1}`,
+          times: timesGrupo
+        })
+      })
+
+      const timesSemGrupo = this.times.filter(time => {
+        const timeId = this.obterIdTime(time)
+        return !idsUsados.has(timeId)
+      })
       if (timesSemGrupo.length) {
         grupos.push({
           id: 'sem-grupo',

@@ -477,6 +477,9 @@ export default {
         .replace(/[\u0300-\u036f]/g, '')
         .trim()
     },
+    obterTimestampRecenciaCampeonato(campeonato) {
+      return new Date(campeonato?.createdAt || campeonato?.dataInicio || 0).getTime()
+    },
     formatarNumeroResumo(valor, opcoes = {}) {
       if (this.isLoadingResumoHero) {
         return '...'
@@ -610,11 +613,7 @@ export default {
         const campeonatos = Array.isArray(data) ? data : []
         const maisRecente = campeonatos
           .slice()
-          .sort((a, b) => {
-            const dataA = new Date(a?.dataInicio || a?.createdAt || 0).getTime()
-            const dataB = new Date(b?.dataInicio || b?.createdAt || 0).getTime()
-            return dataB - dataA
-          })[0]
+          .sort((a, b) => this.obterTimestampRecenciaCampeonato(b) - this.obterTimestampRecenciaCampeonato(a))[0]
 
         this.campeonatoAtual = maisRecente || null
         this.campeonatoId = this.campeonatoAtual?.id
