@@ -65,7 +65,7 @@
   </div>
 
   <!-- MODAL DE CRIAR PARTIDA -->
-  <div v-if="mostrarModalPartida" class="modal-overlay" @click.self="mostrarModalPartida = false">
+  <div v-if="mostrarModalPartida && !mostrarModalJogadores" class="modal-overlay" @click.self="mostrarModalPartida = false">
     <div class="modal-content modal-times">
       <div class="modal-header">
         <span class="title">{{ modoCriacaoPartida === 'AGENDAR' ? 'Agendar Partida' : 'Adicionar Partida' }}</span>

@@ -31,7 +31,7 @@
           <div class="time lado">
             <img v-if="partida.timeA?.foto" :src="partida.timeA.foto" alt="Escudo Time A" />
             <button type="button" class="nome-time nome-time-btn" @click.stop="abrirModalPartidasTime(partida.timeA)">
-              {{ partida.timeA?.nome }}
+              {{ rotuloTime(partida.timeA) }}
             </button>
           </div>
 
@@ -48,7 +48,7 @@
           <div class="time lado">
             <img v-if="partida.timeB?.foto" :src="partida.timeB.foto" alt="Escudo Time B" />
             <button type="button" class="nome-time nome-time-btn" @click.stop="abrirModalPartidasTime(partida.timeB)">
-              {{ partida.timeB?.nome }}
+              {{ rotuloTime(partida.timeB) }}
             </button>
           </div>
         </div>
@@ -99,7 +99,9 @@ export default {
     enableScroll: { type: Boolean, default: false },
     quadraClass: { type: String, default: '' },
     emptyAlign: { type: String, default: 'center' },
-    emptyCard: { type: Boolean, default: false }
+    emptyCard: { type: Boolean, default: false },
+    usarSiglaTimes: { type: Boolean, default: false },
+    tamanhoSiglaTime: { type: Number, default: 3 }
   },
   emits: ['time-click'],
   data() {
@@ -118,6 +120,20 @@ export default {
         nome: time?.nome ?? time?.time?.nome ?? '',
         foto: time?.foto ?? time?.time?.foto ?? ''
       })
+    },
+    rotuloTime(time) {
+      const nome = String(time?.nome ?? time?.time?.nome ?? '').trim()
+      if (!this.usarSiglaTimes) return nome
+
+      const tamanho = Math.max(1, Number(this.tamanhoSiglaTime) || 3)
+      const sigla = nome
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9]/g, '')
+        .toUpperCase()
+        .slice(0, tamanho)
+
+      return sigla || nome.slice(0, tamanho).toUpperCase()
     },
     abrirModalPartida(partida) {
       const status = String(partida?.status || '').toUpperCase()

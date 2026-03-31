@@ -243,6 +243,8 @@
               :loading="isLoadingPartidas"
               empty-title="Nenhuma partida disponível no momento."
               quadra-class="nome-quadra-home"
+              usar-sigla-times
+              :tamanho-sigla-time="3"
               @time-click="abrirModalPartidasTime"
             />
 
