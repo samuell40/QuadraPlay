@@ -391,6 +391,52 @@ function statusCampeonatoEncerrado(status) {
   return STATUS_CAMPEONATO_ENCERRADO.has(String(status || '').toUpperCase());
 }
 
+async function encerrarPartidasAbertasDoCampeonato(tx, campeonatoId) {
+  const id = Number(campeonatoId);
+  if (!id) return [];
+
+  const agora = new Date();
+  const partidasEmAndamento = await tx.partida.findMany({
+    where: {
+      campeonatoId: id,
+      status: 'EM_ANDAMENTO'
+    },
+    select: {
+      id: true,
+      faseId: true
+    }
+  });
+
+  if (partidasEmAndamento.length) {
+    await tx.partida.updateMany({
+      where: {
+        id: { in: partidasEmAndamento.map((partida) => Number(partida.id)) }
+      },
+      data: {
+        status: 'FINALIZADA',
+        ultimaEdicaoEm: agora
+      }
+    });
+  }
+
+  await tx.partida.updateMany({
+    where: {
+      campeonatoId: id,
+      status: { in: ['AGENDADA', 'ADIADA'] }
+    },
+    data: {
+      status: 'CANCELADA',
+      ultimaEdicaoEm: agora
+    }
+  });
+
+  return [...new Set(
+    partidasEmAndamento
+      .map((partida) => Number(partida.faseId || 0))
+      .filter((faseId) => faseId > 0)
+  )];
+}
+
 function faseEhEliminatoria(nomeFase) {
   const nomeNormalizado = normalizarTexto(nomeFase);
   return /(eliminat|mata ?mata|playoff)/.test(nomeNormalizado);
@@ -2076,7 +2122,16 @@ async function atualizarDadosCampeonato(campeonatoId, dados) {
     throw new Error('A data final do campeonato nao pode ser menor que a data inicial.');
   }
 
+  const campeonatoSeraFinalizado =
+    payload.status === 'FINALIZADO' &&
+    !statusCampeonatoEncerrado(existente.status);
+
+  if (campeonatoSeraFinalizado && payload.dataFim == null) {
+    payload.dataFim = existente.dataFim || new Date();
+  }
+
   const agendamentosRecusadosParaNotificar = [];
+  let fasesComPartidasFinalizadas = [];
 
   const atualizado = await prisma.$transaction(async (tx) => {
     if (houveAtualizacaoAgenda) {
@@ -2163,6 +2218,10 @@ async function atualizarDadosCampeonato(campeonatoId, dados) {
       }
     }
 
+    if (campeonatoSeraFinalizado) {
+      fasesComPartidasFinalizadas = await encerrarPartidasAbertasDoCampeonato(tx, id);
+    }
+
     return tx.campeonato.update({
       where: { id },
       data: payload,
@@ -2182,6 +2241,12 @@ async function atualizarDadosCampeonato(campeonatoId, dados) {
       }
     });
   });
+
+  if (fasesComPartidasFinalizadas.length > 0) {
+    await Promise.all(
+      fasesComPartidasFinalizadas.map((faseId) => partidaService.recalcularPlacarCampeonatoFase(id, faseId))
+    );
+  }
 
   if (agendamentosRecusadosParaNotificar.length > 0) {
     const envios = agendamentosRecusadosParaNotificar
@@ -2214,20 +2279,32 @@ async function finalizarCampeonato(campeonatoId) {
 
   if (!existente) throw new Error('Campeonato nao encontrado');
 
-  const atualizado = await prisma.campeonato.update({
-    where: { id },
-    data: {
-      status: 'FINALIZADO',
-      dataFim: existente.dataFim || new Date()
-    },
-    include: {
-      modalidade: true,
-      quadra: true,
-      times: true,
-      partidas: true,
-      placares: true
-    }
+  let fasesComPartidasFinalizadas = [];
+
+  const atualizado = await prisma.$transaction(async (tx) => {
+    fasesComPartidasFinalizadas = await encerrarPartidasAbertasDoCampeonato(tx, id);
+
+    return tx.campeonato.update({
+      where: { id },
+      data: {
+        status: 'FINALIZADO',
+        dataFim: existente.dataFim || new Date()
+      },
+      include: {
+        modalidade: true,
+        quadra: true,
+        times: true,
+        partidas: true,
+        placares: true
+      }
+    });
   });
+
+  if (fasesComPartidasFinalizadas.length > 0) {
+    await Promise.all(
+      fasesComPartidasFinalizadas.map((faseId) => partidaService.recalcularPlacarCampeonatoFase(id, faseId))
+    );
+  }
 
   return {
     ...atualizado,

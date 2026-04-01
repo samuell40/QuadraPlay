@@ -2754,6 +2754,7 @@ module.exports = {
   criarPartida,
   iniciarPartida,
   finalizarPartida,
+  recalcularPlacarCampeonatoFase,
   atualizarParcial,
   incrementarPlacar,
   retornarPartida,
