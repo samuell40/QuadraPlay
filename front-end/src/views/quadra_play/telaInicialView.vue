@@ -152,7 +152,17 @@
                     v-if="campeonatoAcessandoId !== Number(campeonato.id)"
                     class="btn-acessar-arrow"
                     aria-hidden="true"
-                  >&gt;</span>
+                  >
+                    <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path
+                        d="M6 3.5L10.5 8L6 12.5"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </span>
                 </span>
               </button>
             </div>
@@ -749,12 +759,13 @@ a {
   color: #fff;
   border: none;
   min-height: 46px;
-  padding: 0 12px;
+  padding: 0 18px;
   cursor: pointer;
   border-radius: 16px;
   font-size: 13px;
   font-weight: 800;
   width: 100%;
+  position: relative;
   transition: transform 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease;
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -763,15 +774,15 @@ a {
 }
 
 .btn-acessar-content {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  position: relative;
+  display: flex;
   align-items: center;
+  justify-content: center;
   width: 100%;
   line-height: 1;
 }
 
 .btn-acessar-main {
-  grid-column: 2;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -794,11 +805,23 @@ a {
 }
 
 .btn-acessar-arrow {
-  justify-self: end;
-  font-size: 18px;
-  font-weight: 900;
-  line-height: 1;
-  opacity: 0.95;
+  position: absolute;
+  right: -2px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: rgba(255, 255, 255, 0.82);
+  pointer-events: none;
+}
+
+.btn-acessar-arrow svg {
+  width: 16px;
+  height: 16px;
+  display: block;
 }
 
 .btn-acessar:hover:not(:disabled) {
