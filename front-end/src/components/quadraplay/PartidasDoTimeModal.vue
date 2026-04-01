@@ -77,7 +77,11 @@
     </div>
   </div>
 
-  <DetalharPartidaModal v-model="mostrarDetalharPartida" :partida-id="partidaSelecionadaId" />
+  <DetalharPartidaModal
+    v-model="mostrarDetalharPartida"
+    :partida-id="partidaSelecionadaId"
+    :partida-status="partidaSelecionadaStatus"
+  />
 </template>
 
 <script>
@@ -116,7 +120,8 @@ export default {
   data() {
     return {
       mostrarDetalharPartida: false,
-      partidaSelecionadaId: null
+      partidaSelecionadaId: null,
+      partidaSelecionadaStatus: ''
     }
   },
   computed: {
@@ -143,7 +148,13 @@ export default {
       if (!value) {
         this.mostrarDetalharPartida = false
         this.partidaSelecionadaId = null
+        this.partidaSelecionadaStatus = ''
       }
+    },
+    mostrarDetalharPartida(value) {
+      if (value) return
+      this.partidaSelecionadaId = null
+      this.partidaSelecionadaStatus = ''
     }
   },
   methods: {
@@ -160,6 +171,7 @@ export default {
       const id = Number(partida?.id ?? partida)
       if (!Number.isFinite(id) || id <= 0) return
       this.partidaSelecionadaId = id
+      this.partidaSelecionadaStatus = String(partida?.status || '')
       this.mostrarDetalharPartida = true
     },
     statusLabel(partida) {

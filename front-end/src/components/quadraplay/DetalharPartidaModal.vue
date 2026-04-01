@@ -4,6 +4,7 @@
       <div v-if="loadingDetalhePartida" class="modal-loader-shell">
         <LoadingState
           size="compact"
+          :theme="temaLoadingDetalhe"
           title="Carregando detalhes da partida"
           description="Buscando placar, escalação e estatísticas do confronto selecionado."
         />
@@ -189,7 +190,8 @@ export default {
   components: { LoadingState },
   props: {
     modelValue: { type: Boolean, default: false },
-    partidaId: { type: [Number, String], default: null }
+    partidaId: { type: [Number, String], default: null },
+    partidaStatus: { type: String, default: '' }
   },
   emits: ['update:modelValue'],
   data() {
@@ -265,10 +267,13 @@ export default {
       })
     },
     statusExibicaoPartidaAtual() {
-      return obterStatusExibicaoPartida(this.partidaDetalhada)
+      return obterStatusExibicaoPartida(this.partidaDetalhada || this.partidaStatus)
     },
     partidaTemaClasse() {
       return STATUS_CONFIG[this.statusExibicaoPartidaAtual]?.card || ''
+    },
+    temaLoadingDetalhe() {
+      return ['FINALIZADA', 'CANCELADA'].includes(this.statusExibicaoPartidaAtual) ? 'danger' : 'default'
     }
   },
   watch: {
