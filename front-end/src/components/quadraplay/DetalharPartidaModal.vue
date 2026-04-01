@@ -1,6 +1,6 @@
 <template>
   <div v-if="modelValue" class="modal-overlay" @click.self="fecharModalPartida">
-    <div class="modal-partida">
+    <div class="modal-partida" :class="partidaTemaClasse">
       <div v-if="loadingDetalhePartida" class="modal-loader-shell">
         <LoadingState
           size="compact"
@@ -263,6 +263,12 @@ export default {
         month: '2-digit',
         year: 'numeric'
       })
+    },
+    statusExibicaoPartidaAtual() {
+      return obterStatusExibicaoPartida(this.partidaDetalhada)
+    },
+    partidaTemaClasse() {
+      return STATUS_CONFIG[this.statusExibicaoPartidaAtual]?.card || ''
     }
   },
   watch: {
@@ -1147,10 +1153,38 @@ export default {
 }
 
 .modal-partida {
+  --modal-surface-accent: rgba(59, 130, 246, 0.18);
+  --modal-surface-end: #f5f9ff;
+  --modal-border-color: rgba(59, 130, 246, 0.24);
+  --modal-title-color: #245ec8;
+  --modal-close-border: rgba(59, 130, 246, 0.55);
+  --modal-close-color: #3b82f6;
+  --modal-close-hover-bg: rgba(59, 130, 246, 0.08);
+  --modal-close-hover-border: rgba(59, 130, 246, 0.35);
+  --modal-close-hover-color: #2563eb;
+  --modal-heading-color: #245ec8;
+  --modal-info-color: #4b5563;
+  --modal-quadra-color: #1f2937;
+  --modal-team-color: #0f2f70;
+  --modal-goleadores-color: #7e7e7e;
+  --modal-image-border: #dbeafe;
+  --modal-result-color: #2c62c7;
+  --modal-date-color: #1d4ed8;
+  --modal-player-box-border: rgba(148, 163, 184, 0.28);
+  --modal-player-box-bg: rgba(255, 255, 255, 0.96);
+  --modal-empty-color: #64748b;
+  --modal-number-border: #93c5fd;
+  --modal-number-bg: #eff6ff;
+  --modal-number-color: #1d4ed8;
+  --modal-footer-bg: linear-gradient(100deg, #12265f 0%, #1a3d90 58%, #2c66ef 100%);
+  --modal-footer-divider: rgba(191, 219, 254, 0.45);
+  --modal-share-bg: linear-gradient(135deg, #0e2160 0%, #163780 52%, #244db1 100%);
+  --modal-share-border: rgba(96, 165, 250, 0.34);
+  --modal-share-hover-shadow: rgba(37, 99, 235, 0.34);
   background:
-    radial-gradient(120% 75% at 50% 100%, rgba(59, 130, 246, 0.18) 0%, rgba(59, 130, 246, 0) 70%),
-    linear-gradient(180deg, #ffffff 0%, #f5f9ff 100%);
-  border: 1px solid rgba(59, 130, 246, 0.24);
+    radial-gradient(120% 75% at 50% 100%, var(--modal-surface-accent) 0%, rgba(59, 130, 246, 0) 70%),
+    linear-gradient(180deg, #ffffff 0%, var(--modal-surface-end) 100%);
+  border: 1px solid var(--modal-border-color);
   border-radius: 24px;
   padding: 20px;
   width: min(760px, 100%);
@@ -1164,6 +1198,69 @@ export default {
   gap: 12px;
   overflow-y: auto;
   box-shadow: 0 26px 60px rgba(15, 23, 42, 0.28);
+}
+
+.modal-partida.partida-finalizada,
+.modal-partida.partida-cancelada {
+  --modal-surface-accent: rgba(248, 113, 113, 0.16);
+  --modal-surface-end: #fff5f5;
+  --modal-border-color: rgba(220, 38, 38, 0.28);
+  --modal-title-color: #b91c1c;
+  --modal-close-border: rgba(248, 113, 113, 0.58);
+  --modal-close-color: #dc2626;
+  --modal-close-hover-bg: rgba(239, 68, 68, 0.12);
+  --modal-close-hover-border: rgba(220, 38, 38, 0.35);
+  --modal-close-hover-color: #b91c1c;
+  --modal-heading-color: #b91c1c;
+  --modal-info-color: #7c2d12;
+  --modal-quadra-color: #7f1d1d;
+  --modal-team-color: #991b1b;
+  --modal-goleadores-color: #b45309;
+  --modal-image-border: #fecaca;
+  --modal-result-color: #dc2626;
+  --modal-date-color: #b91c1c;
+  --modal-player-box-border: rgba(248, 113, 113, 0.3);
+  --modal-player-box-bg: linear-gradient(180deg, rgba(254, 242, 242, 0.92), rgba(255, 255, 255, 0.98));
+  --modal-empty-color: #991b1b;
+  --modal-number-border: #fca5a5;
+  --modal-number-bg: #fef2f2;
+  --modal-number-color: #b91c1c;
+  --modal-footer-bg: linear-gradient(100deg, #6f1212 0%, #991b1b 54%, #dc2626 100%);
+  --modal-footer-divider: rgba(254, 202, 202, 0.5);
+  --modal-share-bg: linear-gradient(135deg, #7f1d1d 0%, #b91c1c 56%, #ef4444 100%);
+  --modal-share-border: rgba(254, 202, 202, 0.34);
+  --modal-share-hover-shadow: rgba(220, 38, 38, 0.32);
+}
+
+.modal-partida.partida-andamento {
+  --modal-surface-accent: rgba(34, 197, 94, 0.16);
+  --modal-surface-end: #f2fff6;
+  --modal-border-color: rgba(22, 163, 74, 0.28);
+  --modal-title-color: #15803d;
+  --modal-close-border: rgba(34, 197, 94, 0.52);
+  --modal-close-color: #16a34a;
+  --modal-close-hover-bg: rgba(34, 197, 94, 0.12);
+  --modal-close-hover-border: rgba(22, 163, 74, 0.35);
+  --modal-close-hover-color: #15803d;
+  --modal-heading-color: #15803d;
+  --modal-info-color: #166534;
+  --modal-quadra-color: #14532d;
+  --modal-team-color: #166534;
+  --modal-goleadores-color: #4d7c0f;
+  --modal-image-border: #86efac;
+  --modal-result-color: #16a34a;
+  --modal-date-color: #15803d;
+  --modal-player-box-border: rgba(34, 197, 94, 0.28);
+  --modal-player-box-bg: linear-gradient(180deg, rgba(240, 253, 244, 0.94), rgba(255, 255, 255, 0.98));
+  --modal-empty-color: #166534;
+  --modal-number-border: #86efac;
+  --modal-number-bg: #f0fdf4;
+  --modal-number-color: #15803d;
+  --modal-footer-bg: linear-gradient(100deg, #14532d 0%, #166534 54%, #16a34a 100%);
+  --modal-footer-divider: rgba(187, 247, 208, 0.48);
+  --modal-share-bg: linear-gradient(135deg, #14532d 0%, #166534 52%, #16a34a 100%);
+  --modal-share-border: rgba(134, 239, 172, 0.34);
+  --modal-share-hover-shadow: rgba(22, 163, 74, 0.3);
 }
 
 .conteudo-partida {
@@ -1182,7 +1279,7 @@ export default {
 .titulo-partida {
   font-size: clamp(24px, 2.7vw, 36px);
   line-height: 1.1;
-  color: #245ec8;
+  color: var(--modal-title-color);
   margin: 0;
   letter-spacing: -0.03em;
   font-weight: 800;
@@ -1192,10 +1289,10 @@ export default {
 .btn-close-x {
   width: 36px;
   height: 36px;
-  border: 1px solid rgba(59, 130, 246, 0.55);
+  border: 1px solid var(--modal-close-border);
   border-radius: 999px;
   background: #fff;
-  color: #3b82f6;
+  color: var(--modal-close-color);
   font-size: 20px;
   line-height: 1;
   cursor: pointer;
@@ -1205,9 +1302,9 @@ export default {
 }
 
 .btn-close-x:hover {
-  background: rgba(239, 68, 68, 0.08);
-  border-color: rgba(239, 68, 68, 0.35);
-  color: #ef4444;
+  background: var(--modal-close-hover-bg);
+  border-color: var(--modal-close-hover-border);
+  color: var(--modal-close-hover-color);
   transform: translateY(-1px);
 }
 
@@ -1222,7 +1319,7 @@ export default {
 .time-mobile-title {
   font-size: 18px;
   font-weight: 800;
-  color: #245ec8;
+  color: var(--modal-heading-color);
 }
 
 .placar-modal .time {
@@ -1238,7 +1335,7 @@ export default {
 .goleadores-linha {
   margin: 0;
   width: 100%;
-  color: #7e7e7e;
+  color: var(--modal-goleadores-color);
   font-size: 12px;
   font-weight: 600;
   display: flex;
@@ -1256,20 +1353,20 @@ export default {
   height: 62px;
   border-radius: 50%;
   object-fit: cover;
-  border: 1px solid #dbeafe;
+  border: 1px solid var(--modal-image-border);
   box-shadow: 0 8px 14px rgba(15, 23, 42, 0.14);
 }
 
 .placar-modal .time strong {
   font-size: 24px;
   line-height: 1.1;
-  color: #0f2f70;
+  color: var(--modal-team-color);
 }
 
 .resultado {
   font-size: clamp(40px, 5.4vw, 74px);
   font-weight: 800;
-  color: #2c62c7;
+  color: var(--modal-result-color);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1295,7 +1392,7 @@ export default {
   border-radius: 999px;
   border: none;
   background: transparent;
-  color: #1d4ed8;
+  color: var(--modal-date-color);
   font-size: clamp(20px, 2.3vw, 30px);
   font-weight: 900;
   letter-spacing: 0.6px;
@@ -1311,7 +1408,7 @@ export default {
 
 .infos p {
   margin: 0;
-  color: #4b5563;
+  color: var(--modal-info-color);
   font-size: 14px;
 }
 
@@ -1321,7 +1418,7 @@ export default {
 
 .quadra-linha {
   font-weight: 700;
-  color: #1f2937;
+  color: var(--modal-quadra-color);
 }
 
 .loader {
@@ -1354,10 +1451,10 @@ export default {
 }
 
 .jogadores-time {
-  border: 1px solid rgba(148, 163, 184, 0.28);
+  border: 1px solid var(--modal-player-box-border);
   border-radius: 16px;
   padding: 8px;
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--modal-player-box-bg);
   min-height: 74px;
 }
 
@@ -1366,7 +1463,7 @@ export default {
   text-align: center;
   font-size: 13px;
   font-weight: 700;
-  color: #64748b;
+  color: var(--modal-empty-color);
 }
 
 .jogador-item {
@@ -1420,9 +1517,9 @@ export default {
   height: 28px;
   padding: 0 10px;
   border-radius: 999px;
-  border: 1px solid #93c5fd;
-  background: #eff6ff;
-  color: #1d4ed8;
+  border: 1px solid var(--modal-number-border);
+  background: var(--modal-number-bg);
+  color: var(--modal-number-color);
   font-size: 18px;
   font-weight: 900;
   line-height: 1;
@@ -1499,7 +1596,7 @@ export default {
   padding: 22px 18px 14px;
   border: 0;
   border-radius: 0 0 24px 24px;
-  background: linear-gradient(100deg, #12265f 0%, #1a3d90 58%, #2c66ef 100%);
+  background: var(--modal-footer-bg);
   clip-path: polygon(0 22px, 40px 0, calc(100% - 40px) 0, 100% 22px, 100% 100%, 0 100%);
   overflow: hidden;
 }
@@ -1511,13 +1608,13 @@ export default {
   right: 28px;
   top: 10px;
   height: 1px;
-  background: rgba(191, 219, 254, 0.45);
+  background: var(--modal-footer-divider);
 }
 
 .btn-compartilhar {
-  background: linear-gradient(135deg, #0e2160 0%, #163780 52%, #244db1 100%);
+  background: var(--modal-share-bg);
   color: #ffffff;
-  border: 1px solid rgba(96, 165, 250, 0.34);
+  border: 1px solid var(--modal-share-border);
   border-radius: 999px;
   cursor: pointer;
   min-height: 48px;
@@ -1534,7 +1631,7 @@ export default {
 
 .btn-compartilhar:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 16px 28px rgba(37, 99, 235, 0.34);
+  box-shadow: 0 16px 28px var(--modal-share-hover-shadow);
 }
 
 .btn-compartilhar:disabled {

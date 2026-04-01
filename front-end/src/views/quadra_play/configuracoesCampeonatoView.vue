@@ -356,7 +356,7 @@
       </template>
     </div>
 
-    <button v-if="mostrarBotaoTopo" type="button" class="btn-topo" @click="subirPagina">
+    <button v-if="mostrarBotaoTopo" type="button" class="btn-topo" :class="{ finalizado: isCampeonatoEncerrado }" @click="subirPagina">
       ↑
     </button>
   </div>
@@ -1718,10 +1718,21 @@ a {
   cursor: pointer;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
   z-index: 1100;
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .btn-topo:hover {
   background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.btn-topo.finalizado {
+  background: linear-gradient(180deg, #dc2626 0%, #b91c1c 100%);
+  box-shadow: 0 12px 24px rgba(185, 28, 28, 0.3);
+}
+
+.btn-topo.finalizado:hover {
+  background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%);
 }
 
 .loader-container-centralizado {
