@@ -29,12 +29,12 @@
           />
         </div>
 
-        <div v-else-if="!anosDisponiveis.length" class="feedback-card feedback-card-empty">
-          Nenhum campeonato passado encontrado.
+        <div v-else-if="!anosDisponiveis.length" class="feedback-card feedback-empty-state">
+          <p class="feedback-empty-title">Nenhum campeonato passado encontrado.</p>
         </div>
 
-        <div v-else-if="!campeonatosFiltrados.length" class="feedback-card feedback-card-empty">
-          Nenhum campeonato encontrado para o ano selecionado.
+        <div v-else-if="!campeonatosFiltrados.length" class="feedback-card feedback-empty-state">
+          <p class="feedback-empty-title">Nenhum campeonato encontrado para o ano selecionado.</p>
         </div>
 
         <section v-else class="historico-grid">
@@ -360,14 +360,40 @@ export default {
 }
 
 .feedback-card {
-  padding: 22px;
-  border-radius: 20px;
-  border: 1px solid rgba(248, 113, 113, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 140px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 24px;
   background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+  color: #64748b;
+  font-weight: 700;
+}
+
+.feedback-card-loading {
+  flex-direction: column;
+  gap: 14px;
+}
+
+.feedback-empty-state {
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px;
 }
 
 .feedback-card-empty {
   color: #64748b;
+  text-align: center;
+}
+
+.feedback-empty-title {
+  margin: 0;
+  color: #475569;
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
 }
 
 .historico-grid {
@@ -559,6 +585,15 @@ export default {
   .historico-grid {
     grid-template-columns: 1fr;
     gap: 12px;
+  }
+
+  .feedback-card {
+    min-height: 120px;
+    border-radius: 20px;
+  }
+
+  .feedback-empty-title {
+    font-size: 17px;
   }
 
   .card-thumb-wrap {
