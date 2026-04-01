@@ -150,6 +150,7 @@
         :rodada-nome="nomeRodadaSelecionada"
         :campeonato-nome="campeonato?.nome || ''"
         :loading="isLoadingPartidas"
+        :encerrado="isCampeonatoEncerrado"
       />
       <ModalConfiguracoesPlacar
         v-if="modalConfiguracoes && campeonato && !isCampeonatoEncerrado"

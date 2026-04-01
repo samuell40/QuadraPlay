@@ -1,6 +1,6 @@
 <template>
   <div v-if="modelValue && !mostrarDetalharPartida" class="modal-overlay" @click.self="fechar">
-    <div class="modal-content">
+    <div class="modal-content" :class="{ encerrado }">
       <div class="modal-header">
         <h2 class="modal-title">
           Partidas do {{ timeSelecionado?.nome || '-' }}
@@ -22,6 +22,7 @@
       <div v-if="loading" class="loader-container-centralizado">
         <LoadingState
           size="compact"
+          :theme="encerrado ? 'danger' : 'default'"
           title="Carregando partidas do time"
           description="Buscando os confrontos relacionados ao time selecionado nesta navegação."
         />
@@ -31,7 +32,7 @@
         Nenhuma partida desse time na fase/rodada selecionada.
       </div>
 
-      <ul v-else class="lista-partidas">
+      <ul v-else class="lista-partidas" :class="{ encerrado }">
         <li v-for="partida in partidasDoTime" :key="partida.id" class="card-partida"
           :class="statusClassCard(partida)" @click="abrirDetalharPartida(partida)">
           <div class="match-ribbon" :class="statusClassRibbon(partida)">
@@ -108,7 +109,8 @@ export default {
     faseNome: { type: String, default: '' },
     rodadaNome: { type: String, default: '' },
     campeonatoNome: { type: String, default: '' },
-    loading: { type: Boolean, default: false }
+    loading: { type: Boolean, default: false },
+    encerrado: { type: Boolean, default: false }
   },
   emits: ['update:modelValue'],
   data() {
@@ -212,6 +214,10 @@ export default {
   border: 2px solid #3b82f6;
 }
 
+.modal-content.encerrado {
+  border-color: #dc2626;
+}
+
 .modal-content>* {
   min-width: 0;
 }
@@ -228,6 +234,10 @@ export default {
   font-size: 24px;
 }
 
+.modal-content.encerrado .modal-title {
+  color: #b91c1c;
+}
+
 .btn-close {
   width: 32px;
   height: 32px;
@@ -238,9 +248,18 @@ export default {
   cursor: pointer;
 }
 
+.modal-content.encerrado .btn-close {
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
 .contexto-filtro {
   color: #64748b;
   margin: 0 0 12px;
+}
+
+.modal-content.encerrado .contexto-filtro {
+  color: #7f1d1d;
 }
 
 .lista-partidas {
@@ -258,6 +277,11 @@ export default {
   background: #fff;
 }
 
+.lista-partidas.encerrado {
+  border-color: #f87171;
+  background: linear-gradient(180deg, rgba(254, 242, 242, 0.72), #ffffff 22%);
+}
+
 .lista-partidas>.card-partida:only-child {
   grid-column: 1 / -1;
 }
@@ -271,6 +295,10 @@ export default {
   overflow: visible;
   cursor: pointer;
   transition: transform 0.2s ease;
+}
+
+.modal-content.encerrado .card-partida {
+  border-color: #dc2626;
 }
 
 .card-partida:hover {
@@ -443,6 +471,10 @@ export default {
   text-align: center;
 }
 
+.modal-content.encerrado .quadra-linha {
+  color: #b91c1c;
+}
+
 .data-linha {
   margin-top: 2px;
   color: #334155;
@@ -482,6 +514,10 @@ export default {
   align-items: center;
   min-height: 120px;
   color: #64748b;
+}
+
+.modal-content.encerrado .sem-dados {
+  color: #7f1d1d;
 }
 
 .loader {

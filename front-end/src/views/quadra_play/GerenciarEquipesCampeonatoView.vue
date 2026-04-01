@@ -90,6 +90,7 @@
             <button
               type="button"
               class="btn-jogadores btn-jogadores-principal btn-jogadores-bloco"
+              :class="{ finalizado: isCampeonatoEncerrado }"
               @click.stop="abrirModalJogadoresEquipe(equipe)"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="btn-jogadores-icon" viewBox="0 0 16 16" aria-hidden="true">
@@ -172,7 +173,7 @@
       </div>
 
       <div v-if="mostrarModalJogadores" class="modal-overlay" @click.self="fecharModalJogadores">
-        <div class="modal-content">
+        <div class="modal-content modal-jogadores-campeonato" :class="{ finalizado: isCampeonatoEncerrado }">
           <div class="modal-header">
             <div class="modal-header-copy">
               <h2 class="titulo-modal">{{ tituloJogadores }}</h2>
@@ -977,6 +978,18 @@ export default {
   border-color: transparent;
 }
 
+.btn-jogadores-principal.finalizado {
+  background: linear-gradient(135deg, #b91c1c, #ef4444);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 10px 18px rgba(185, 28, 28, 0.2);
+}
+
+.btn-jogadores-principal.finalizado:hover {
+  background: linear-gradient(135deg, #991b1b, #dc2626);
+  border-color: transparent;
+}
+
 .btn-jogadores-bloco {
   width: 100%;
 }
@@ -1386,6 +1399,55 @@ export default {
   line-height: 1;
   cursor: pointer;
   flex: 0 0 auto;
+}
+
+.modal-jogadores-campeonato.finalizado {
+  border-color: rgba(248, 113, 113, 0.45);
+  box-shadow: 0 22px 56px rgba(127, 29, 29, 0.24);
+}
+
+.modal-jogadores-campeonato.finalizado .titulo-modal {
+  color: #b91c1c;
+}
+
+.modal-jogadores-campeonato.finalizado .modal-subtitle {
+  color: #7c2d12;
+}
+
+.modal-jogadores-campeonato.finalizado .btn-close-x {
+  border-color: rgba(248, 113, 113, 0.5);
+  color: #b91c1c;
+}
+
+.modal-jogadores-campeonato.finalizado .tabela-jogadores thead th {
+  background: #fff1f2;
+  color: #7f1d1d;
+  border-top-color: #fecdd3;
+  border-bottom-color: #fecdd3;
+}
+
+.modal-jogadores-campeonato.finalizado .tabela-jogadores thead th:first-child {
+  border-left-color: #fecdd3;
+}
+
+.modal-jogadores-campeonato.finalizado .tabela-jogadores thead th:last-child {
+  border-right-color: #fecdd3;
+}
+
+.modal-jogadores-campeonato.finalizado .tabela-jogadores tbody td {
+  border-bottom-color: #fee2e2;
+}
+
+.modal-jogadores-campeonato.finalizado .jogador-numero-inline {
+  border-color: #fca5a5;
+  background: #fff1f2;
+  color: #b91c1c;
+}
+
+.modal-jogadores-campeonato.finalizado .estado-vazio {
+  border-color: #fecaca;
+  background: #fff5f5;
+  color: #7f1d1d;
 }
 
 @media (min-width: 769px) {

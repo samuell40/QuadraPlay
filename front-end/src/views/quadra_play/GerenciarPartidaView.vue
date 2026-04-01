@@ -34,9 +34,9 @@
       <section
         v-if="podeGerenciarNotificacaoPartidas"
         class="partidas-alert-card"
-        :class="{ ativo: preferenciaNotificacaoPartidasAoVivo }"
+        :class="{ ativo: preferenciaNotificacaoPartidasAoVivo && !isCampeonatoEncerrado, encerrado: isCampeonatoEncerrado }"
       >
-        <div class="partidas-alert-icon" aria-hidden="true">
+        <div class="partidas-alert-icon" :class="{ encerrado: isCampeonatoEncerrado }" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none">
             <path
               d="M12 3.75a4.5 4.5 0 0 0-4.5 4.5v1.136c0 .646-.214 1.274-.61 1.786l-1.238 1.603A1.75 1.75 0 0 0 7.037 15.5h9.926a1.75 1.75 0 0 0 1.385-2.725l-1.238-1.603a2.997 2.997 0 0 1-.61-1.786V8.25a4.5 4.5 0 0 0-4.5-4.5Z"
@@ -53,32 +53,38 @@
         </div>
 
         <div class="partidas-alert-copy">
-          <span class="partidas-alert-kicker">Alertas</span>
+          <span class="partidas-alert-kicker" :class="{ encerrado: isCampeonatoEncerrado }">
+            {{ isCampeonatoEncerrado ? 'Encerrado' : 'Alertas' }}
+          </span>
           <strong class="partidas-alert-title">Notificações de partidas</strong>
           <p class="partidas-alert-description">{{ descricaoPreferenciaNotificacaoPartidas }}</p>
         </div>
 
         <div class="partidas-alert-actions">
-          <span class="partidas-alert-status" :class="{ ativo: preferenciaNotificacaoPartidasAoVivo }">
+          <span
+            class="partidas-alert-status"
+            :class="{ ativo: preferenciaNotificacaoPartidasAoVivo && !isCampeonatoEncerrado, encerrado: isCampeonatoEncerrado }"
+          >
             {{ statusPreferenciaNotificacaoPartidas }}
           </span>
 
+          <span
+            v-if="isCampeonatoEncerrado"
+            class="partidas-alert-summary"
+            :class="{ ativo: preferenciaNotificacaoPartidasAoVivo }"
+          >
+            {{ resumoPreferenciaNotificacaoPartidas }}
+          </span>
+
           <button
+            v-else
             type="button"
             class="partidas-alert-button"
             :class="{ ativo: preferenciaNotificacaoPartidasAoVivo }"
             :disabled="carregandoPreferenciaNotificacaoPartidasAoVivo || salvandoPreferenciaNotificacaoPartidasAoVivo"
             @click="alternarPreferenciaNotificacaoPartidasAoVivo"
           >
-            {{
-              carregandoPreferenciaNotificacaoPartidasAoVivo
-                ? 'Carregando...'
-                : salvandoPreferenciaNotificacaoPartidasAoVivo
-                  ? 'Salvando...'
-                  : preferenciaNotificacaoPartidasAoVivo
-                    ? 'Desativar alertas'
-                    : 'Ativar alertas'
-            }}
+            {{ rotuloAcaoPreferenciaNotificacaoPartidas }}
           </button>
         </div>
       </section>
@@ -552,15 +558,41 @@ export default {
     },
 
     statusPreferenciaNotificacaoPartidas() {
+      if (this.isCampeonatoEncerrado) {
+        return 'Campeonato encerrado'
+      }
+
       return this.preferenciaNotificacaoPartidasAoVivo ? 'Alertas ativos' : 'Alertas pausados'
     },
 
     descricaoPreferenciaNotificacaoPartidas() {
+      if (this.isCampeonatoEncerrado) {
+        return this.preferenciaNotificacaoPartidasAoVivo
+          ? 'Este campeonato foi encerrado, ent\u00e3o novos alertas desta competi\u00e7\u00e3o n\u00e3o ser\u00e3o enviados por esta tela. Sua prefer\u00eancia geral continua ativa para outros campeonatos.'
+          : 'Este campeonato foi encerrado, ent\u00e3o novos alertas desta competi\u00e7\u00e3o n\u00e3o ser\u00e3o enviados por esta tela.'
+      }
+
       if (this.preferenciaNotificacaoPartidasAoVivo) {
         return 'As notificações de partidas estão habilitadas para sua conta administrativa e para este navegador.'
       }
 
       return 'Ative este gerenciamento para receber notificações de criação, início e atualização relevante das partidas.'
+    },
+
+    resumoPreferenciaNotificacaoPartidas() {
+      return this.preferenciaNotificacaoPartidasAoVivo ? 'Prefer\u00eancia geral ativa' : 'Prefer\u00eancia geral pausada'
+    },
+
+    rotuloAcaoPreferenciaNotificacaoPartidas() {
+      if (this.carregandoPreferenciaNotificacaoPartidasAoVivo) {
+        return 'Carregando...'
+      }
+
+      if (this.salvandoPreferenciaNotificacaoPartidasAoVivo) {
+        return 'Salvando...'
+      }
+
+      return this.preferenciaNotificacaoPartidasAoVivo ? 'Desativar alertas' : 'Ativar alertas'
     },
 
     isAberturaPartidaEmAndamento() {
@@ -599,6 +631,7 @@ export default {
 
     async alternarPreferenciaNotificacaoPartidasAoVivo() {
       if (
+        this.isCampeonatoEncerrado ||
         !this.podeGerenciarNotificacaoPartidas ||
         this.carregandoPreferenciaNotificacaoPartidasAoVivo ||
         this.salvandoPreferenciaNotificacaoPartidasAoVivo
@@ -713,6 +746,10 @@ export default {
       const tipo = String(payload?.tipo || '')
       const faseEvento = Number(payload?.faseId)
       const rodadaEvento = Number(payload?.rodadaId)
+
+      if (this.campeonato && payload?.campeonatoStatus) {
+        this.campeonato.status = payload.campeonatoStatus
+      }
 
       const mesmaFase = !faseEvento || Number(this.faseSelecionada) === faseEvento
       const mesmaRodada = !rodadaEvento || Number(this.rodadaSelecionada) === rodadaEvento
@@ -1432,6 +1469,14 @@ a {
   box-shadow: 0 18px 36px rgba(37, 99, 235, 0.12);
 }
 
+.partidas-alert-card.encerrado {
+  border-color: rgba(239, 68, 68, 0.22);
+  background:
+    linear-gradient(135deg, rgba(185, 28, 28, 0.08), rgba(255, 255, 255, 0.96)),
+    #ffffff;
+  box-shadow: 0 18px 36px rgba(185, 28, 28, 0.1);
+}
+
 .partidas-alert-icon {
   width: 50px;
   height: 50px;
@@ -1442,6 +1487,11 @@ a {
   background: linear-gradient(135deg, #2563eb, #60a5fa);
   color: #ffffff;
   box-shadow: 0 16px 28px rgba(37, 99, 235, 0.2);
+}
+
+.partidas-alert-icon.encerrado {
+  background: linear-gradient(135deg, #b91c1c, #f87171);
+  box-shadow: 0 16px 28px rgba(185, 28, 28, 0.2);
 }
 
 .partidas-alert-icon svg {
@@ -1464,10 +1514,18 @@ a {
   text-transform: uppercase;
 }
 
+.partidas-alert-kicker.encerrado {
+  color: #b91c1c;
+}
+
 .partidas-alert-title {
   color: #0f172a;
   font-size: 18px;
   line-height: 1.1;
+}
+
+.partidas-alert-card.encerrado .partidas-alert-title {
+  color: #7f1d1d;
 }
 
 .partidas-alert-description {
@@ -1475,6 +1533,10 @@ a {
   color: #64748b;
   font-size: 13px;
   line-height: 1.5;
+}
+
+.partidas-alert-card.encerrado .partidas-alert-description {
+  color: #7c2d12;
 }
 
 .partidas-alert-actions {
@@ -1500,6 +1562,30 @@ a {
 }
 
 .partidas-alert-status.ativo {
+  background: rgba(5, 150, 105, 0.12);
+  color: #059669;
+}
+
+.partidas-alert-status.encerrado {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+}
+
+.partidas-alert-summary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.14);
+  color: #475569;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.partidas-alert-summary.ativo {
   background: rgba(5, 150, 105, 0.12);
   color: #059669;
 }
@@ -2571,7 +2657,8 @@ a {
   }
 
   .partidas-alert-button,
-  .partidas-alert-status {
+  .partidas-alert-status,
+  .partidas-alert-summary {
     width: 100%;
   }
 
