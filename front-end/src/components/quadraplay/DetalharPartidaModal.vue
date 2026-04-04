@@ -1237,6 +1237,37 @@ export default {
   --modal-share-hover-shadow: rgba(220, 38, 38, 0.32);
 }
 
+.modal-partida.partida-agendada {
+  --modal-surface-accent: rgba(251, 191, 36, 0.18);
+  --modal-surface-end: #fffaf0;
+  --modal-border-color: rgba(245, 158, 11, 0.3);
+  --modal-title-color: #b45309;
+  --modal-close-border: rgba(245, 158, 11, 0.5);
+  --modal-close-color: #d97706;
+  --modal-close-hover-bg: rgba(245, 158, 11, 0.12);
+  --modal-close-hover-border: rgba(217, 119, 6, 0.35);
+  --modal-close-hover-color: #b45309;
+  --modal-heading-color: #b45309;
+  --modal-info-color: #92400e;
+  --modal-quadra-color: #78350f;
+  --modal-team-color: #92400e;
+  --modal-goleadores-color: #a16207;
+  --modal-image-border: #fde68a;
+  --modal-result-color: #d97706;
+  --modal-date-color: #b45309;
+  --modal-player-box-border: rgba(245, 158, 11, 0.24);
+  --modal-player-box-bg: linear-gradient(180deg, rgba(255, 251, 235, 0.94), rgba(255, 255, 255, 0.98));
+  --modal-empty-color: #b45309;
+  --modal-number-border: #fcd34d;
+  --modal-number-bg: #fffbeb;
+  --modal-number-color: #b45309;
+  --modal-footer-bg: linear-gradient(100deg, #92400e 0%, #b45309 54%, #f59e0b 100%);
+  --modal-footer-divider: rgba(253, 230, 138, 0.45);
+  --modal-share-bg: linear-gradient(135deg, #78350f 0%, #b45309 52%, #f59e0b 100%);
+  --modal-share-border: rgba(252, 211, 77, 0.34);
+  --modal-share-hover-shadow: rgba(245, 158, 11, 0.3);
+}
+
 .modal-partida.partida-andamento {
   --modal-surface-accent: rgba(34, 197, 94, 0.16);
   --modal-surface-end: #f2fff6;
