@@ -488,7 +488,7 @@ export default {
         const gap = 4
         const larguraTotal = pageWidth - margemX * 2
         const larguraObservacao = 176
-        const larguraInternet = larguraTotal - larguraObservacao - gap
+        const larguraWifi = larguraTotal - larguraObservacao - gap
 
         desenharCampoInformativo(
           margemX,
@@ -509,51 +509,16 @@ export default {
         desenharCampoInformativo(
           margemX + larguraObservacao + gap,
           y,
-          larguraInternet,
-          'Internet',
-          'LOGIN: METODÃO  |  SENHA: desafio2022',
-          {
-            altura: 13,
-          }
-        )
-      }
-
-      const desenharResumoSuperior = (y) => {
-        const larguraWifi = 104
-
-        desenharCampoInformativo(
-          pageWidth - margemX - larguraWifi,
-          y - 5.8,
           larguraWifi,
           'Wi-Fi da quadra',
           'LOGIN: METODAO | SENHA: desafio2022',
           {
-            altura: 11.6,
+            altura: 13,
             fillColor: [239, 246, 255],
             borderColor: [147, 197, 253],
             titleColor: [29, 78, 216],
             bodyColor: [30, 64, 175],
             accentColor: [37, 99, 235],
-          }
-        )
-      }
-
-      void desenharInformacoesExtras
-
-      const desenharAvisoAbaixoDaGrade = (y) => {
-        desenharCampoInformativo(
-          margemX,
-          y,
-          pageWidth - margemX * 2,
-          'Observação',
-          'Horários sujeitos a alterações com aviso prévio.',
-          {
-            altura: 12.8,
-            fillColor: [255, 247, 237],
-            borderColor: [253, 186, 116],
-            titleColor: [194, 65, 12],
-            bodyColor: [154, 52, 18],
-            accentColor: [234, 88, 12],
           }
         )
       }
@@ -706,8 +671,6 @@ export default {
         body.push(row)
       }
 
-      desenharResumoSuperior(37.8)
-
       if (diasAtivos === 0) {
         doc.setFillColor(...cores.surface)
         doc.setDrawColor(...cores.border)
@@ -726,6 +689,8 @@ export default {
           margemX + 8,
           69
         )
+
+        desenharInformacoesExtras(86)
 
       } else {
         autoTable(doc, {
@@ -794,7 +759,7 @@ export default {
 
         const paginaAviso = doc.getNumberOfPages()
         doc.setPage(paginaAviso)
-        desenharAvisoAbaixoDaGrade(
+        desenharInformacoesExtras(
           Math.min((doc.lastAutoTable?.finalY || inicioTabelaY) + 6, pageHeight - 24)
         )
 
