@@ -453,16 +453,6 @@ export default {
       const PDF_STATUS_DISPONIVEL = 'Disponível'
       const PDF_STATUS_SEM_GRADE = 'Sem grade'
 
-      const desenharLegenda = (x, y, corFundo, corTexto, texto) => {
-        doc.setFillColor(...corFundo)
-        doc.setDrawColor(...cores.border)
-        doc.roundedRect(x, y - 3.7, 7, 5.2, 1.6, 1.6, 'FD')
-        doc.setFont('helvetica', 'bold')
-        doc.setFontSize(7.5)
-        doc.setTextColor(...corTexto)
-        doc.text(texto, x + 10, y)
-      }
-
       const desenharCampoInformativo = (x, y, largura, titulo, texto, opcoes = {}) => {
         const {
           altura = 12,
@@ -528,16 +518,8 @@ export default {
         )
       }
 
-      const desenharLegendaAbaixoDaGrade = (y) => {
-        desenharLegenda(margemX, y, cores.primarySoft, cores.primary, 'Reservado')
-        desenharLegenda(margemX + 54, y, cores.successSoft, cores.success, 'Disponível')
-        desenharLegenda(margemX + 108, y, cores.emptyBg, cores.emptyText, 'Sem grade')
-      }
-
       const desenharResumoSuperior = (y) => {
         const larguraWifi = 104
-
-        desenharLegendaAbaixoDaGrade(y)
 
         desenharCampoInformativo(
           pageWidth - margemX - larguraWifi,
