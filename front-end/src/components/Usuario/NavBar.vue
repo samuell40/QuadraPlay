@@ -258,6 +258,10 @@
                 placeholder="Digite seu e-mail"
               />
             </label>
+
+            <p class="profile-email-note" :class="{ pending: hasPendingEmailChange }">
+              {{ emailNote }}
+            </p>
           </div>
 
           <div class="profile-actions">
@@ -353,6 +357,18 @@ export default {
       return 'Área do usuário'
     },
 
+    hasPendingEmailChange() {
+      return Boolean(String(this.usuarioLogado?.emailPendente || '').trim())
+    },
+
+    emailNote() {
+      if (this.hasPendingEmailChange) {
+        return `Novo e-mail pendente: ${this.usuarioLogado.emailPendente}. Seu acesso continua com ${this.usuarioLogado?.email || 'o e-mail atual'} atÃ© a confirmaÃ§Ã£o.`
+      }
+
+      return 'Se vocÃª trocar o e-mail, vamos enviar um link e um cÃ³digo para confirmar a alteraÃ§Ã£o antes de aplicÃ¡-la.'
+    },
+
     possuiJogadorVinculado() {
       const jogadorIdDireto = Number(this.usuarioLogado?.jogadorId)
       if (Number.isInteger(jogadorIdDireto) && jogadorIdDireto > 0) return true
@@ -436,7 +452,7 @@ export default {
       this.perfilForm = {
         nome: String(this.usuarioLogado?.nome || '').trim(),
         telefone: String(this.usuarioLogado?.telefone || '').trim(),
-        email: String(this.usuarioLogado?.email || '').trim(),
+        email: String(this.usuarioLogado?.emailPendente || this.usuarioLogado?.email || '').trim(),
         foto: String(this.usuarioLogado?.foto || '').trim(),
       }
     },
@@ -490,6 +506,11 @@ export default {
       }
     },
 
+    telefoneValido(valor) {
+      const digitos = String(valor || '').replace(/\D/g, '')
+      return !digitos || digitos.length === 10 || digitos.length === 11
+    },
+
     async uploadFotoPerfil() {
       if (!this.perfilFotoArquivo) {
         return this.perfilForm.foto || null
@@ -520,6 +541,11 @@ export default {
         return
       }
 
+      if (!this.telefoneValido(telefone)) {
+        await Swal.fire('AtenÃ§Ã£o', 'Informe um telefone vÃ¡lido.', 'warning')
+        return
+      }
+
       this.isSalvandoPerfil = true
 
       try {
@@ -543,7 +569,16 @@ export default {
         this.limparPerfilFotoSelecionada()
         this.sincronizarPerfilForm()
 
-        await Swal.fire('Sucesso', 'Perfil atualizado com sucesso.', 'success')
+        const mensagemSucesso =
+          data?.message ||
+          (data?.emailChangePending
+            ? 'Alteracoes salvas. Confirme o novo e-mail para concluir a troca.'
+            : 'Perfil atualizado com sucesso.')
+        const tituloSucesso = data?.emailChangePending ? 'ConfirmaÃ§Ã£o pendente' : 'Sucesso'
+        const iconeSucesso =
+          data?.emailChangePending && !data?.emailConfirmationSent ? 'warning' : 'success'
+
+        await Swal.fire(tituloSucesso, mensagemSucesso, iconeSucesso)
       } catch (err) {
         const mensagem =
           err?.response?.data?.error ||
@@ -1267,6 +1302,17 @@ export default {
   outline: none;
   border-color: rgba(96, 165, 250, 0.85);
   box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.18);
+}
+
+.profile-email-note {
+  margin: 0;
+  color: rgba(191, 219, 254, 0.82);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.profile-email-note.pending {
+  color: #fde68a;
 }
 
 .profile-actions {

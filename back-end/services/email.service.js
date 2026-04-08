@@ -663,6 +663,64 @@ async function enviarEmailVinculoTime(usuario, time, jogador) {
   });
 }
 
+async function enviarEmailConfirmacaoAlteracaoEmail({
+  usuario,
+  emailAtual,
+  emailNovo,
+  codigo,
+  token,
+  expiraEm,
+}) {
+  if (!emailNovo || !token) return;
+
+  const params = new URLSearchParams({
+    token: String(token),
+    email: String(emailNovo),
+  });
+  const linkConfirmacao = buildAppUrl(`/confirmar-email?${params.toString()}`);
+  const expiraEmFormatado = [formatarDataCurta(expiraEm), formatarHoraCurta(expiraEm)]
+    .filter(Boolean)
+    .join(' as ');
+
+  const html = createEmailLayout({
+    preheader: 'Confirme seu novo e-mail no QuadraPlay',
+    eyebrow: 'Seguranca da conta',
+    title: 'Confirme a troca do seu e-mail',
+    recipientName: usuario?.nome,
+    introHtml:
+      renderParagraph(
+        `Recebemos uma solicitacao para trocar o e-mail da sua conta de ${strong(emailAtual || 'email atual')} para ${strong(emailNovo)}.`
+      ) +
+      renderParagraph(
+        'Para concluir a alteracao, clique no botao abaixo ou informe o codigo de confirmacao na tela do QuadraPlay.',
+        { size: 15, color: '#475569', marginBottom: 0 }
+      ),
+    sectionsHtml:
+      renderDetailCard('Dados da solicitacao', [
+        { label: 'E-mail atual', value: emailAtual || '-' },
+        { label: 'Novo e-mail', value: emailNovo },
+        { label: 'Codigo', value: codigo },
+        { label: 'Valido ate', value: expiraEmFormatado || '-' },
+      ]) +
+      renderCallout({
+        tone: 'warning',
+        title: 'Nao reconhece esta solicitacao?',
+        content:
+          'Se voce nao pediu essa alteracao, ignore esta mensagem. O e-mail atual da sua conta permanecera o mesmo ate a confirmacao.',
+      }),
+    ctaLabel: 'Confirmar novo e-mail',
+    ctaUrl: linkConfirmacao,
+    footerNote:
+      'Por seguranca, a troca so acontece depois da confirmacao no novo endereco de e-mail.',
+  });
+
+  return enviarEmail({
+    to: emailNovo,
+    subject: buildSubject('Confirme a troca do seu e-mail'),
+    html,
+  });
+}
+
 async function enviarEmailVinculoMesarioCampeonato(mesario, campeonato) {
   if (!mesario?.email) return;
 
@@ -937,6 +995,7 @@ module.exports = {
   enviarEmail,
   enviarEmailNovaModalidade,
   enviarEmailAlteracaoPermissao,
+  enviarEmailConfirmacaoAlteracaoEmail,
   enviarEmailVinculoTime,
   enviarEmailVinculoMesarioCampeonato,
   enviarEmailVinculoTreinador,

@@ -1,8 +1,56 @@
-const { enviarEmailAlteracaoPermissao, enviarEmailVinculoTime } = require('./email.service');
+const crypto = require('crypto');
+const {
+  enviarEmailAlteracaoPermissao,
+  enviarEmailVinculoTime,
+  enviarEmailConfirmacaoAlteracaoEmail,
+} = require('./email.service');
 const prisma = require('../lib/prisma');
 const { validarNumeroUnicoNoTime } = require('./jogador.service');
 
 const REGEX_EMAIL_BASICO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const REGEX_TELEFONE_DIGITOS = /^\d{10,11}$/;
+const EMAIL_PENDENTE_TTL_MS = 24 * 60 * 60 * 1000;
+
+function normalizarEmail(valor) {
+  return String(valor || '').trim().toLowerCase();
+}
+
+function normalizarTelefone(valor) {
+  return typeof valor === 'string' ? valor.trim() : '';
+}
+
+function extrairDigitosTelefone(valor) {
+  return String(valor || '').replace(/\D/g, '');
+}
+
+function hashTexto(valor) {
+  return crypto.createHash('sha256').update(String(valor || '')).digest('hex');
+}
+
+function gerarDadosConfirmacaoEmail(email, agora = new Date()) {
+  const token = crypto.randomBytes(32).toString('hex');
+  const codigo = crypto.randomBytes(4).toString('hex').toUpperCase();
+  const expiraEm = new Date(agora.getTime() + EMAIL_PENDENTE_TTL_MS);
+
+  return {
+    emailPendente: email,
+    emailPendenteTokenHash: hashTexto(token),
+    emailPendenteCodigoHash: hashTexto(codigo),
+    emailPendenteExpiraEm: expiraEm,
+    token,
+    codigo,
+    expiraEm,
+  };
+}
+
+function limparDadosEmailPendente() {
+  return {
+    emailPendente: null,
+    emailPendenteTokenHash: null,
+    emailPendenteCodigoHash: null,
+    emailPendenteExpiraEm: null,
+  };
+}
 
 function calcularAproveitamento(partidas, vitorias, empates) {
   const totalPartidas = Number(partidas) || 0;
@@ -130,8 +178,9 @@ async function atualizarMeuPerfil({ usuarioId, nome, email, telefone, foto }) {
   }
 
   const nomeNormalizado = String(nome || '').trim();
-  const emailNormalizado = String(email || '').trim().toLowerCase();
-  const telefoneNormalizado = typeof telefone === 'string' ? telefone.trim() : '';
+  const emailNormalizado = normalizarEmail(email);
+  const telefoneNormalizado = normalizarTelefone(telefone);
+  const telefoneDigitos = extrairDigitosTelefone(telefoneNormalizado);
   const fotoInformada = typeof foto === 'string';
   const fotoNormalizada = fotoInformada ? String(foto).trim() : '';
 
@@ -143,7 +192,12 @@ async function atualizarMeuPerfil({ usuarioId, nome, email, telefone, foto }) {
     throw new Error('Informe um email valido.');
   }
 
-  return prisma.$transaction(async (tx) => {
+  if (telefoneNormalizado && !REGEX_TELEFONE_DIGITOS.test(telefoneDigitos)) {
+    throw new Error('Informe um telefone valido.');
+  }
+
+  const resultado = await prisma.$transaction(async (tx) => {
+    const agora = new Date();
     const usuarioDb = await tx.usuario.findFirst({
       where: {
         id: usuarioIdNum,
@@ -160,24 +214,62 @@ async function atualizarMeuPerfil({ usuarioId, nome, email, telefone, foto }) {
       throw new Error('Usuario nao encontrado');
     }
 
-    const emailEmUso = await tx.usuario.findFirst({
-      where: {
-        email: emailNormalizado,
-        id: { not: usuarioIdNum },
-      },
-      select: { id: true },
-    });
-
-    if (emailEmUso) {
-      throw new Error('Este email ja esta em uso por outro usuario.');
-    }
+    const emailAtual = normalizarEmail(usuarioDb.email);
+    const emailPendenteAtual = normalizarEmail(usuarioDb.emailPendente);
+    const pendenciaExpirada = Boolean(
+      usuarioDb.emailPendente &&
+      usuarioDb.emailPendenteExpiraEm &&
+      new Date(usuarioDb.emailPendenteExpiraEm).getTime() <= agora.getTime()
+    );
 
     const dadosAtualizados = {
       nome: nomeNormalizado,
-      email: emailNormalizado,
       telefone: telefoneNormalizado || null,
       ...(fotoInformada ? { foto: fotoNormalizada || null } : {}),
     };
+
+    let mensagem = 'Perfil atualizado com sucesso.';
+    let emailChangePending = false;
+    let precisaEnviarConfirmacao = false;
+    let confirmacaoEmail = null;
+
+    if (emailNormalizado === emailAtual) {
+      if (usuarioDb.emailPendente) {
+        Object.assign(dadosAtualizados, limparDadosEmailPendente());
+        mensagem = 'Perfil atualizado e solicitacao de troca de e-mail cancelada.';
+      }
+    } else {
+      const emailEmUso = await tx.usuario.findFirst({
+        where: {
+          id: { not: usuarioIdNum },
+          ativo: true,
+          deletedAt: null,
+          OR: [
+            { email: emailNormalizado },
+            { emailPendente: emailNormalizado },
+          ],
+        },
+        select: { id: true },
+      });
+
+      if (emailEmUso) {
+        throw new Error('Este email ja esta em uso por outro usuario.');
+      }
+
+      confirmacaoEmail = gerarDadosConfirmacaoEmail(emailNormalizado, agora);
+      Object.assign(dadosAtualizados, {
+        emailPendente: confirmacaoEmail.emailPendente,
+        emailPendenteTokenHash: confirmacaoEmail.emailPendenteTokenHash,
+        emailPendenteCodigoHash: confirmacaoEmail.emailPendenteCodigoHash,
+        emailPendenteExpiraEm: confirmacaoEmail.emailPendenteExpiraEm,
+      });
+      emailChangePending = true;
+      precisaEnviarConfirmacao = true;
+      mensagem =
+        emailNormalizado === emailPendenteAtual && !pendenciaExpirada
+          ? 'Alteracoes salvas. Reenviamos a confirmacao para o novo e-mail informado.'
+          : 'Alteracoes salvas. Enviamos um link e um codigo para confirmar seu novo e-mail.';
+    }
 
     const usuarioAtualizado = await tx.usuario.update({
       where: { id: usuarioIdNum },
@@ -208,6 +300,172 @@ async function atualizarMeuPerfil({ usuarioId, nome, email, telefone, foto }) {
         data: { foto: fotoNormalizada || null },
       });
     }
+
+    return {
+      usuario: usuarioAtualizado,
+      mensagem,
+      emailChangePending,
+      precisaEnviarConfirmacao,
+      confirmacaoEmail,
+      emailAtual,
+    };
+  });
+
+  let emailConfirmationSent = false;
+  let mensagemFinal = resultado.mensagem;
+
+  if (resultado.precisaEnviarConfirmacao && resultado.confirmacaoEmail) {
+    try {
+      await enviarEmailConfirmacaoAlteracaoEmail({
+        usuario: resultado.usuario,
+        emailAtual: resultado.emailAtual,
+        emailNovo: resultado.confirmacaoEmail.emailPendente,
+        codigo: resultado.confirmacaoEmail.codigo,
+        token: resultado.confirmacaoEmail.token,
+        expiraEm: resultado.confirmacaoEmail.expiraEm,
+      });
+      emailConfirmationSent = true;
+    } catch (erroEmail) {
+      console.error('Erro ao enviar email de confirmacao de alteracao de email:', erroEmail);
+      mensagemFinal =
+        'Seus dados foram salvos, mas nao conseguimos enviar o email de confirmacao agora. Salve novamente para reenviar.';
+    }
+  }
+
+  return {
+    usuario: resultado.usuario,
+    message: mensagemFinal,
+    emailChangePending: resultado.emailChangePending,
+    emailConfirmationSent,
+  };
+}
+
+async function confirmarAlteracaoEmail({ token, email, codigo }) {
+  const tokenNormalizado = String(token || '').trim();
+  const emailNormalizado = normalizarEmail(email);
+  const codigoNormalizado = String(codigo || '').trim().toUpperCase();
+
+  if (!tokenNormalizado && (!emailNormalizado || !codigoNormalizado)) {
+    throw new Error('Informe o link de confirmacao ou preencha email e codigo.');
+  }
+
+  return prisma.$transaction(async (tx) => {
+    let usuarioDb = null;
+
+    if (tokenNormalizado) {
+      usuarioDb = await tx.usuario.findFirst({
+        where: {
+          emailPendenteTokenHash: hashTexto(tokenNormalizado),
+          ativo: true,
+          deletedAt: null,
+        },
+        include: {
+          permissao: true,
+          quadra: true,
+          jogador: {
+            select: {
+              id: true,
+              nome: true,
+              foto: true,
+              numero: true,
+              funcao: {
+                select: {
+                  id: true,
+                  nome: true,
+                },
+              },
+            },
+          },
+        },
+      });
+    } else {
+      usuarioDb = await tx.usuario.findFirst({
+        where: {
+          emailPendente: emailNormalizado,
+          emailPendenteCodigoHash: hashTexto(codigoNormalizado),
+          ativo: true,
+          deletedAt: null,
+        },
+        include: {
+          permissao: true,
+          quadra: true,
+          jogador: {
+            select: {
+              id: true,
+              nome: true,
+              foto: true,
+              numero: true,
+              funcao: {
+                select: {
+                  id: true,
+                  nome: true,
+                },
+              },
+            },
+          },
+        },
+      });
+    }
+
+    if (!usuarioDb || !usuarioDb.emailPendente) {
+      throw new Error('Codigo ou link de confirmacao invalido.');
+    }
+
+    const expiraEm = usuarioDb.emailPendenteExpiraEm
+      ? new Date(usuarioDb.emailPendenteExpiraEm)
+      : null;
+
+    if (!expiraEm || Number.isNaN(expiraEm.getTime()) || expiraEm.getTime() <= Date.now()) {
+      await tx.usuario.update({
+        where: { id: usuarioDb.id },
+        data: limparDadosEmailPendente(),
+      });
+      throw new Error('Codigo ou link expirado. Solicite uma nova alteracao de e-mail.');
+    }
+
+    const emailDestino = normalizarEmail(usuarioDb.emailPendente);
+    const emailEmUso = await tx.usuario.findFirst({
+      where: {
+        id: { not: usuarioDb.id },
+        ativo: true,
+        deletedAt: null,
+        OR: [
+          { email: emailDestino },
+          { emailPendente: emailDestino },
+        ],
+      },
+      select: { id: true },
+    });
+
+    if (emailEmUso) {
+      throw new Error('Este email nao esta mais disponivel. Tente informar outro endereco.');
+    }
+
+    const usuarioAtualizado = await tx.usuario.update({
+      where: { id: usuarioDb.id },
+      data: {
+        email: emailDestino,
+        ...limparDadosEmailPendente(),
+      },
+      include: {
+        permissao: true,
+        quadra: true,
+        jogador: {
+          select: {
+            id: true,
+            nome: true,
+            foto: true,
+            numero: true,
+            funcao: {
+              select: {
+                id: true,
+                nome: true,
+              },
+            },
+          },
+        },
+      },
+    });
 
     return usuarioAtualizado;
   });
@@ -273,6 +531,7 @@ async function excluirMinhaConta(usuarioId) {
       data: {
         nome: 'Conta excluida',
         email: emailAnonimizado,
+        ...limparDadosEmailPendente(),
         telefone: null,
         foto: null,
         quadraId: null,
@@ -1135,6 +1394,7 @@ module.exports = {
   cadastrarUsuario,
   atualizarUsuario,
   atualizarMeuPerfil,
+  confirmarAlteracaoEmail,
   excluirMinhaConta,
   getUsuarios,
   getUsuariosResumo,

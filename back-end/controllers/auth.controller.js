@@ -1,7 +1,6 @@
 const passport = require('passport');
-const jwt = require('jsonwebtoken');
-const config = require('../config/app.config');
 const { findUserByEmail } = require('../services/auth.service');
+const { assinarTokenUsuario } = require('../utils/usuarioToken');
 
 const FRONTEND_CALLBACK_BASE =
   process.env.FRONTEND_URL ||
@@ -104,21 +103,7 @@ function callbackLoginGoogle(req, res, next) {
         return res.status(500).json({ erro: 'Dados do usuário incompletos' });
       }
 
-      const tokenPayload = {
-        id: user.id,
-        nome: user.nome,
-        email: user.email,
-        telefone: user.telefone,
-        foto: user.foto,
-        permissaoId: user.permissaoId,
-        permissao: user.permissao,
-        quadraId: user.quadraId,
-        quadra: user.quadra,
-        jogadorId: user.jogadorId ?? null,
-        jogador: user.jogador || null,
-      };
-
-      const token = jwt.sign(tokenPayload, config.jwtSecret, { expiresIn: config.JWT_EXPIRATION });
+      const { payload: tokenPayload, token } = assinarTokenUsuario(user);
       const payload = encodeURIComponent(JSON.stringify({ token, usuario: tokenPayload }));
       const redirectUrl = montarRedirectGoogleCallback(`?data=${payload}`);
       return res.redirect(redirectUrl);

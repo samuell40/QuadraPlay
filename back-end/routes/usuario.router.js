@@ -11,6 +11,8 @@ router.put('/editar/permissao/usuario', [validarJWT], verificarPermissao.devAdmi
 
 router.put('/editar/usuario', [validarJWT], controller.atualizarMeuPerfilController);
 
+router.post('/confirmar/email/usuario', [validarJWT.opcional], controller.confirmarAlteracaoEmailController);
+
 router.delete('/delete/usuario', [validarJWT], controller.excluirMinhaContaController);
 
 router.get('/estatisticas/jogador', [validarJWT], controller.minhasEstatisticasJogadorController);

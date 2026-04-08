@@ -11,6 +11,10 @@ model Usuario {
   id          Int       @id @default(autoincrement())
   nome        String
   email       String    @unique
+  emailPendente String? @unique
+  emailPendenteTokenHash String? @unique
+  emailPendenteCodigoHash String? @db.VarChar(128)
+  emailPendenteExpiraEm DateTime?
   telefone    String?
   permissaoId Int
   foto        String?   @db.VarChar(2048)

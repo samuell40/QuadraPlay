@@ -1,6 +1,5 @@
 const Usuario = require('../services/usuario.service');
-const jwt = require('jsonwebtoken');
-const config = require('../config/app.config');
+const { assinarTokenUsuario } = require('../utils/usuarioToken');
 
 async function cadastrarUsuarioController(req, res) {
   try {
@@ -19,23 +18,7 @@ async function cadastrarUsuarioController(req, res) {
       foto,
     });
 
-    const tokenPayload = {
-      id: cadastro.id,
-      nome: cadastro.nome,
-      email: cadastro.email,
-      telefone: cadastro.telefone,
-      foto: cadastro.foto,
-      permissaoId: cadastro.permissaoId,
-      permissao: cadastro.permissao || null,
-      quadraId: cadastro.quadraId ?? null,
-      quadra: cadastro.quadra || null,
-      jogadorId: cadastro.jogadorId ?? null,
-      jogador: cadastro.jogador || null,
-    };
-
-    const token = jwt.sign(tokenPayload, config.jwtSecret, {
-      expiresIn: config.JWT_EXPIRATION,
-    });
+    const { payload: tokenPayload, token } = assinarTokenUsuario(cadastro);
 
     return res.status(201).json({
       usuario: tokenPayload,
@@ -80,7 +63,7 @@ async function atualizarMeuPerfilController(req, res) {
     const usuarioId = Number(req.user?.id);
     const { nome, email, telefone, foto } = req.body || {};
 
-    const usuarioAtualizado = await Usuario.atualizarMeuPerfil({
+    const resultado = await Usuario.atualizarMeuPerfil({
       usuarioId,
       nome,
       email,
@@ -88,27 +71,14 @@ async function atualizarMeuPerfilController(req, res) {
       foto,
     });
 
-    const tokenPayload = {
-      id: usuarioAtualizado.id,
-      nome: usuarioAtualizado.nome,
-      email: usuarioAtualizado.email,
-      telefone: usuarioAtualizado.telefone,
-      foto: usuarioAtualizado.foto,
-      permissaoId: usuarioAtualizado.permissaoId,
-      permissao: usuarioAtualizado.permissao || null,
-      quadraId: usuarioAtualizado.quadraId ?? null,
-      quadra: usuarioAtualizado.quadra || null,
-      jogadorId: usuarioAtualizado.jogadorId ?? null,
-      jogador: usuarioAtualizado.jogador || null,
-    };
-
-    const token = jwt.sign(tokenPayload, config.jwtSecret, {
-      expiresIn: config.JWT_EXPIRATION,
-    });
+    const { payload: tokenPayload, token } = assinarTokenUsuario(resultado.usuario);
 
     return res.status(200).json({
       usuario: tokenPayload,
       token,
+      message: resultado.message,
+      emailChangePending: Boolean(resultado.emailChangePending),
+      emailConfirmationSent: Boolean(resultado.emailConfirmationSent),
     });
   } catch (err) {
     console.error(err);
@@ -118,6 +88,46 @@ async function atualizarMeuPerfilController(req, res) {
 
     return res.status(status).json({
       error: mensagem,
+    });
+  }
+}
+
+async function confirmarAlteracaoEmailController(req, res) {
+  try {
+    const tokenInformado = req.body?.token ?? req.query?.token;
+    const emailInformado = req.body?.email ?? req.query?.email;
+    const codigoInformado = req.body?.codigo ?? req.query?.codigo;
+
+    const usuarioAtualizado = await Usuario.confirmarAlteracaoEmail({
+      token: tokenInformado,
+      email: emailInformado,
+      codigo: codigoInformado,
+    });
+
+    const usuarioAutenticado = Number(req.user?.id);
+    const mesmoUsuarioAutenticado =
+      Number.isInteger(usuarioAutenticado) &&
+      usuarioAutenticado > 0 &&
+      usuarioAutenticado === Number(usuarioAtualizado.id);
+
+    if (mesmoUsuarioAutenticado) {
+      const { payload: tokenPayload, token } = assinarTokenUsuario(usuarioAtualizado);
+      return res.status(200).json({
+        message: 'E-mail confirmado com sucesso.',
+        usuario: tokenPayload,
+        token,
+      });
+    }
+
+    return res.status(200).json({
+      message: 'E-mail confirmado com sucesso.',
+      email: usuarioAtualizado.email,
+    });
+  } catch (err) {
+    console.error(err);
+
+    return res.status(400).json({
+      error: err.message || 'Erro ao confirmar alteracao de e-mail.',
     });
   }
 }
@@ -292,6 +302,7 @@ module.exports = {
   cadastrarUsuarioController,
   atualizarUsuarioController,
   atualizarMeuPerfilController,
+  confirmarAlteracaoEmailController,
   excluirMinhaContaController,
   listarUsuariosController,
   listarUsuariosResumoController,

@@ -27,7 +27,7 @@ import { obterSessaoAutenticada } from '@/utils/authToken';
 
 const QUADRA_PLAY_LOGIN_KEY = 'quadraPlayLoginAtivo';
 const LAST_AUTH_ROUTE_KEY = 'quadraPlayUltimaRota';
-const ROTAS_EXCECAO_QUADRA_PLAY = new Set(['NaoAutorizado', 'GoogleCallback']);
+const ROTAS_EXCECAO_QUADRA_PLAY = new Set(['NaoAutorizado', 'GoogleCallback', 'ConfirmarEmail']);
 const ROTAS_PUBLICAS_LIBERADAS_QUADRA_PLAY = new Set(['Home', 'visualizar_placarhome', 'times', 'horarios_publico']);
 
 function usuarioPossuiIndicadorJogador(usuario = null) {
@@ -178,6 +178,12 @@ const routes = [
     path: '/cadastro',
     name: 'Cadastro',
     component: CadastroView,
+    meta: { public: true, keepAlive: false },
+  },
+  {
+    path: '/confirmar-email',
+    name: 'ConfirmarEmail',
+    component: () => import('@/views/ConfirmarEmailView.vue'),
     meta: { public: true, keepAlive: false },
   },
   {
