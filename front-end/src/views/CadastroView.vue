@@ -10,6 +10,10 @@
           <label class="form-title">Cadastrar-se</label>
         </div>
 
+        <div v-if="exibirMensagemConclusaoConta" class="cadastro-info-banner">
+          Falta só mais um passo para concluir sua conta.
+        </div>
+
         <div class="form-body">
           <div class="input-group">
             <label>Email</label>
@@ -64,12 +68,16 @@ export default {
         telefone: '',
         imagem: null,
       },
+      exibirMensagemConclusaoConta: false,
       deveAutenticarPosCadastro: false,
     };
   },
   mounted() {
     const emailFromQuery = this.$route.query.email;
     this.deveAutenticarPosCadastro = String(this.$route.query.origem || '') === 'login_google';
+    this.exibirMensagemConclusaoConta =
+      this.deveAutenticarPosCadastro ||
+      String(this.$route.query.etapa || '').trim() === 'concluir_conta';
 
     if (emailFromQuery) {
       this.form.email = emailFromQuery;
@@ -335,6 +343,19 @@ export default {
   font-size: 28px;
   font-weight: bold;
   margin: 0;
+}
+
+.cadastro-info-banner {
+  width: 90%;
+  margin: 0 auto 1.4rem;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(59, 130, 246, 0.14);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  color: #dbeafe;
+  font-size: 14px;
+  line-height: 1.5;
+  box-sizing: border-box;
 }
 
 .input-group {

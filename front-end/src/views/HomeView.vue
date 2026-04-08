@@ -877,17 +877,9 @@ export default {
             origem: 'login_google'
           })
 
-          Swal.fire({
-            icon: 'error',
-            title: 'Conta não encontrada!',
-            text: 'Redirecionando para cadastro...',
-            timer: 3000,
-            timerProgressBar: true,
-            showConfirmButton: false,
-            didOpen: () => Swal.showLoading()
-          }).then(() => {
-            window.location.href = `/cadastro?${queryCadastro.toString()}`
-          })
+          window.removeEventListener('message', listener)
+          if (popup) popup.close()
+          window.location.href = `/cadastro?${queryCadastro.toString()}`
           return
         }
 
