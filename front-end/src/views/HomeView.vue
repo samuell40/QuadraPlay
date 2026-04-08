@@ -861,7 +861,14 @@ export default {
           .filter(Boolean)
         if (!origensPermitidas.includes(event.origin) && event.origin !== window.location.origin) return
 
-        const { token, erro, email, usuario } = event.data
+        const { token, erro, email, usuario, redirecionarPara } = event.data || {}
+
+        if (redirecionarPara) {
+          window.removeEventListener('message', listener)
+          if (popup) popup.close()
+          window.location.href = redirecionarPara
+          return
+        }
 
         if (erro === 'usuario_nao_cadastrado') {
           const queryCadastro = new URLSearchParams({
@@ -1131,8 +1138,9 @@ a {
   min-height: 250px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   isolation: isolate;
+  overflow: visible;
 }
 
 .hero-ring {
@@ -1142,7 +1150,8 @@ a {
   border-radius: 999px;
   display: grid;
   place-items: center;
-  padding: 12px;
+  padding: 16px;
+  transform: translateX(-96px);
   background:
     radial-gradient(circle, rgba(191, 219, 254, 0.34) 0%, rgba(96, 165, 250, 0.26) 44%, rgba(37, 99, 235, 0.2) 68%, rgba(29, 78, 216, 0.22) 100%);
   box-shadow:
@@ -1154,7 +1163,7 @@ a {
 .hero-ring::before {
   content: "";
   position: absolute;
-  inset: 7px;
+  inset: 8px;
   border-radius: inherit;
   border: 2px solid rgba(219, 234, 254, 0.5);
   box-shadow:
@@ -1166,11 +1175,12 @@ a {
 .hero-logo {
   position: relative;
   z-index: 1;
-  width: 100%;
-  height: 100%;
+  width: 96%;
+  height: 96%;
+  display: block;
   object-fit: contain;
   object-position: center center;
-  transform: translate(-1.2%, 1.6%);
+  transform: none;
   filter: drop-shadow(0 8px 16px rgba(15, 23, 42, 0.32));
 }
 
@@ -2049,7 +2059,7 @@ a {
   .hero-logo {
     width: 100%;
     height: 100%;
-    transform: translate(-1%, 1.4%);
+    transform: none;
   }
 
   .quadras-section {
@@ -2220,7 +2230,7 @@ a {
   .hero-logo {
     width: 100%;
     height: 100%;
-    transform: translate(-0.8%, 1.2%);
+    transform: none;
   }
 
   .hero-subtitle {

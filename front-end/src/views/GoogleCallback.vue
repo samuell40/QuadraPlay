@@ -1,4 +1,4 @@
-<template>
+ï»¿<template>
   <div class="google-callback">
     <p>{{ mensagem }}</p>
   </div>
@@ -23,6 +23,15 @@ function montarDestinoPosLogin(usuario) {
   }
 
   return { name: 'Home' };
+}
+
+function montarDestinoCadastro(email = '') {
+  const queryCadastro = new URLSearchParams({
+    email: String(email || ''),
+    origem: 'login_google',
+  });
+
+  return `/cadastro?${queryCadastro.toString()}`;
 }
 
 function extrairPayloadDaURL() {
@@ -54,15 +63,29 @@ export default {
   name: 'GoogleCallback',
   data() {
     return {
-      mensagem: 'Processando login com Google...'
+      mensagem: 'Processando login com Google...',
     };
   },
   async mounted() {
     const payload = extrairPayloadDaURL();
 
     if (!payload) {
-      this.mensagem = 'Não foi possível concluir o login. Redirecionando...';
+      this.mensagem = 'Nao foi possivel concluir o login. Redirecionando...';
       setTimeout(() => router.replace({ name: 'Home' }), 1500);
+      return;
+    }
+
+    if (payload?.erro === 'usuario_nao_cadastrado' && window.opener && !window.opener.closed) {
+      const targetOrigin = window.location.origin || ORIGEM_PADRAO_FRONTEND;
+      const destinoCadastro = montarDestinoCadastro(payload.email);
+
+      try {
+        window.opener.location.replace(`${targetOrigin}${destinoCadastro}`);
+      } catch (_) {
+        window.opener.postMessage({ redirecionarPara: destinoCadastro }, targetOrigin);
+      }
+
+      window.close();
       return;
     }
 
@@ -74,16 +97,12 @@ export default {
     }
 
     if (payload.erro === 'usuario_nao_cadastrado') {
-      const queryCadastro = new URLSearchParams({
-        email: String(payload.email || ''),
-        origem: 'login_google'
-      });
-      window.location.replace(`/cadastro?${queryCadastro.toString()}`);
+      window.location.replace(montarDestinoCadastro(payload.email));
       return;
     }
 
     if (payload.erro === 'codigo_google_invalido') {
-      this.mensagem = 'Código de autenticação expirado. Tente novamente.';
+      this.mensagem = 'Codigo de autenticacao expirado. Tente novamente.';
       setTimeout(() => router.replace({ name: 'Home' }), 1500);
       return;
     }
@@ -96,9 +115,9 @@ export default {
       return;
     }
 
-    this.mensagem = 'Não foi possível concluir o login com Google. Redirecionando...';
+    this.mensagem = 'Nao foi possivel concluir o login com Google. Redirecionando...';
     setTimeout(() => router.replace({ name: 'Home' }), 1500);
-  }
+  },
 };
 </script>
 
@@ -107,4 +126,3 @@ export default {
   padding: 16px;
 }
 </style>
-

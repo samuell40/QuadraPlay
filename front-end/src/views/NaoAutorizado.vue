@@ -66,7 +66,14 @@ export default {
                     .filter(Boolean)
                 if (!origensPermitidas.includes(event.origin) && event.origin !== window.location.origin) return
 
-                const { token, erro, email, usuario } = event.data
+                const { token, erro, email, usuario, redirecionarPara } = event.data || {}
+
+                if (redirecionarPara) {
+                    window.removeEventListener('message', listener)
+                    if (popup) popup.close()
+                    window.location.href = redirecionarPara
+                    return
+                }
 
                 if (erro === 'usuario_nao_cadastrado') {
                     window.removeEventListener('message', listener)
