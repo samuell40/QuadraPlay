@@ -86,12 +86,15 @@
             </small>
           </div>
 
-          <button type="submit" class="cadastro-button" :disabled="!cadastroPodeSerEnviado">
-            <svg viewBox="0 0 16 16" aria-hidden="true" class="cadastro-button-icon">
-              <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
-              <path d="m10.97 4.97-.02.022-3.473 4.425-2.093-2.094a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05" />
-            </svg>
-            <span>Realizar Cadastro</span>
+          <button type="submit" class="cadastro-button" :disabled="!cadastroPodeSerEnviado || salvandoCadastro">
+            <span class="cadastro-button-content">
+              <span v-if="salvandoCadastro" class="cadastro-button-spinner" aria-hidden="true"></span>
+              <svg v-else viewBox="0 0 16 16" aria-hidden="true" class="cadastro-button-icon">
+                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
+                <path d="m10.97 4.97-.02.022-3.473 4.425-2.093-2.094a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05" />
+              </svg>
+              <span>{{ salvandoCadastro ? 'Realizando cadastro...' : 'Realizar Cadastro' }}</span>
+            </span>
           </button>
         </div>
       </form>
@@ -121,6 +124,7 @@ export default {
       previewImagemUrl: '',
       exibirMensagemConclusaoConta: false,
       deveAutenticarPosCadastro: false,
+      salvandoCadastro: false,
     };
   },
   computed: {
@@ -230,10 +234,13 @@ export default {
       this.$router.push('/');
     },
     async cadastrarUsuario() {
+      if (this.salvandoCadastro || !this.cadastroPodeSerEnviado) {
+        return;
+      }
+
+      this.salvandoCadastro = true;
+
       try {
-        if (!this.cadastroPodeSerEnviado) {
-          return;
-        }
 
         let urlImagem = null;
 
@@ -297,6 +304,8 @@ export default {
         });
 
         return;
+      } finally {
+        this.salvandoCadastro = false;
       }
 
       Swal.fire({
@@ -685,10 +694,27 @@ export default {
   transition: transform 0.18s ease, filter 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
 }
 
+.cadastro-button-content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
 .cadastro-button-icon {
   width: 18px;
   height: 18px;
   fill: currentColor;
+  flex-shrink: 0;
+}
+
+.cadastro-button-spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #ffffff;
+  animation: spin 0.7s linear infinite;
   flex-shrink: 0;
 }
 
@@ -702,6 +728,12 @@ export default {
   cursor: not-allowed;
   box-shadow: none;
   filter: grayscale(0.1);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (min-width: 769px) {
@@ -756,17 +788,26 @@ export default {
 
   .form-header {
     min-height: 66px;
-    padding: 0 18px;
+    padding: 0 14px;
+  }
+
+  .header-brand {
+    width: 100%;
+    gap: 10px;
+    flex-wrap: nowrap;
   }
 
   .header-logo {
-    width: 42px;
-    height: 42px;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
   }
 
   .header-title {
-    font-size: 18px;
-    letter-spacing: 0.01em;
+    font-size: clamp(12px, 4.2vw, 17px);
+    letter-spacing: 0;
+    line-height: 1;
+    white-space: nowrap;
   }
 
   .title-container {
