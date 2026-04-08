@@ -21,6 +21,14 @@
               </span>
             </h1>
             <p class="hero-subtitle">Com o Quadra Play SV, você reserva em poucos cliques.</p>
+            <p class="hero-first-access-copy">
+              Primeiro acesso? Use sua conta Google. Se ainda não tiver cadastro, a gente continua o processo em seguida.
+            </p>
+            <div class="hero-first-access-actions">
+              <button type="button" class="btn-primeiro-acesso" @click="irParaPrimeiroAcesso">
+                Primeiro acesso
+              </button>
+            </div>
           </div>
 
           <div class="hero-visual" aria-hidden="true">
@@ -922,6 +930,11 @@ export default {
 
       window.addEventListener('message', listener, false)
     },
+
+    irParaPrimeiroAcesso() {
+      localStorage.removeItem('emailCadastro')
+      router.push({ name: 'Cadastro' })
+    },
   }
 }
 </script>
@@ -1051,6 +1064,45 @@ a {
   max-width: 520px;
   text-align: justify;
   text-wrap: pretty;
+}
+
+.hero-first-access-copy {
+  margin: 12px 0 0;
+  color: rgba(226, 232, 240, 0.76);
+  font-size: 14px;
+  line-height: 1.65;
+  max-width: 520px;
+  text-wrap: pretty;
+}
+
+.hero-first-access-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.btn-primeiro-acesso {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 18px;
+  border: 1px solid rgba(191, 219, 254, 0.24);
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.16);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.2);
+}
+
+.btn-primeiro-acesso:hover {
+  background: rgba(59, 130, 246, 0.26);
+  border-color: rgba(191, 219, 254, 0.38);
+  transform: translateY(-1px);
 }
 
 .hero-metrics {
@@ -1983,6 +2035,23 @@ a {
     text-align: justify;
   }
 
+  .hero-first-access-copy {
+    margin-top: 10px;
+    font-size: 12px;
+    line-height: 1.58;
+    max-width: 100%;
+  }
+
+  .hero-first-access-actions {
+    margin-top: 14px;
+  }
+
+  .btn-primeiro-acesso {
+    min-height: 38px;
+    padding: 0 14px;
+    font-size: 12px;
+  }
+
   .hero-metrics {
     gap: 8px;
     margin-top: 2px;
@@ -2232,6 +2301,10 @@ a {
   }
 
   .hero-subtitle {
+    max-width: 205px;
+  }
+
+  .hero-first-access-copy {
     max-width: 205px;
   }
 

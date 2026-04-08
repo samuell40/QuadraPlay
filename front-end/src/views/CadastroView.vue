@@ -13,7 +13,14 @@
         <div class="form-body">
           <div class="input-group">
             <label>Email</label>
-            <input type="email" v-model="form.email" readonly />
+            <input
+              type="email"
+              v-model.trim="form.email"
+              placeholder="Digite seu email"
+              autocomplete="email"
+              required
+              @input="persistirEmailCadastro"
+            />
           </div>
 
           <div class="input-group">
@@ -85,6 +92,16 @@ export default {
 
       if (this.$refs.inputImagem) {
         this.$refs.inputImagem.value = null;
+      }
+
+      localStorage.removeItem('emailCadastro');
+    },
+    persistirEmailCadastro() {
+      const email = String(this.form.email || '').trim();
+
+      if (email) {
+        localStorage.setItem('emailCadastro', email);
+        return;
       }
 
       localStorage.removeItem('emailCadastro');
