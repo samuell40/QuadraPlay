@@ -527,6 +527,22 @@ export default {
   box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.16);
 }
 
+.input-shell input:-webkit-autofill,
+.input-shell input:-webkit-autofill:hover,
+.input-shell input:-webkit-autofill:focus,
+.input-shell input:-webkit-autofill:active {
+  -webkit-text-fill-color: #ffffff;
+  caret-color: #ffffff;
+  border: 1px solid rgba(96, 165, 250, 0.54);
+  -webkit-box-shadow:
+    0 0 0 1000px rgba(21, 34, 79, 0.96) inset,
+    0 0 0 4px transparent;
+  box-shadow:
+    0 0 0 1000px rgba(21, 34, 79, 0.96) inset,
+    0 0 0 4px transparent;
+  transition: background-color 9999s ease-out, color 9999s ease-out;
+}
+
 .input-icon {
   position: absolute;
   left: 14px;
