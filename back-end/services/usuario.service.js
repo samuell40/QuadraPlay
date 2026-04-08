@@ -29,16 +29,13 @@ function hashTexto(valor) {
 
 function gerarDadosConfirmacaoEmail(email, agora = new Date()) {
   const token = crypto.randomBytes(32).toString('hex');
-  const codigo = crypto.randomBytes(4).toString('hex').toUpperCase();
   const expiraEm = new Date(agora.getTime() + EMAIL_PENDENTE_TTL_MS);
 
   return {
     emailPendente: email,
     emailPendenteTokenHash: hashTexto(token),
-    emailPendenteCodigoHash: hashTexto(codigo),
     emailPendenteExpiraEm: expiraEm,
     token,
-    codigo,
     expiraEm,
   };
 }
@@ -260,7 +257,7 @@ async function atualizarMeuPerfil({ usuarioId, nome, email, telefone, foto }) {
       Object.assign(dadosAtualizados, {
         emailPendente: confirmacaoEmail.emailPendente,
         emailPendenteTokenHash: confirmacaoEmail.emailPendenteTokenHash,
-        emailPendenteCodigoHash: confirmacaoEmail.emailPendenteCodigoHash,
+        emailPendenteCodigoHash: null,
         emailPendenteExpiraEm: confirmacaoEmail.emailPendenteExpiraEm,
       });
       emailChangePending = true;
@@ -268,7 +265,7 @@ async function atualizarMeuPerfil({ usuarioId, nome, email, telefone, foto }) {
       mensagem =
         emailNormalizado === emailPendenteAtual && !pendenciaExpirada
           ? 'Alteracoes salvas. Reenviamos a confirmacao para o novo e-mail informado.'
-          : 'Alteracoes salvas. Enviamos um link e um codigo para confirmar seu novo e-mail.';
+          : 'Alteracoes salvas. Enviamos um link para confirmar seu novo e-mail.';
     }
 
     const usuarioAtualizado = await tx.usuario.update({
@@ -320,7 +317,6 @@ async function atualizarMeuPerfil({ usuarioId, nome, email, telefone, foto }) {
         usuario: resultado.usuario,
         emailAtual: resultado.emailAtual,
         emailNovo: resultado.confirmacaoEmail.emailPendente,
-        codigo: resultado.confirmacaoEmail.codigo,
         token: resultado.confirmacaoEmail.token,
         expiraEm: resultado.confirmacaoEmail.expiraEm,
       });
@@ -340,75 +336,42 @@ async function atualizarMeuPerfil({ usuarioId, nome, email, telefone, foto }) {
   };
 }
 
-async function confirmarAlteracaoEmail({ token, email, codigo }) {
+async function confirmarAlteracaoEmail({ token }) {
   const tokenNormalizado = String(token || '').trim();
-  const emailNormalizado = normalizarEmail(email);
-  const codigoNormalizado = String(codigo || '').trim().toUpperCase();
 
-  if (!tokenNormalizado && (!emailNormalizado || !codigoNormalizado)) {
-    throw new Error('Informe o link de confirmacao ou preencha email e codigo.');
+  if (!tokenNormalizado) {
+    throw new Error('Link de confirmacao invalido.');
   }
 
   return prisma.$transaction(async (tx) => {
-    let usuarioDb = null;
-
-    if (tokenNormalizado) {
-      usuarioDb = await tx.usuario.findFirst({
-        where: {
-          emailPendenteTokenHash: hashTexto(tokenNormalizado),
-          ativo: true,
-          deletedAt: null,
-        },
-        include: {
-          permissao: true,
-          quadra: true,
-          jogador: {
-            select: {
-              id: true,
-              nome: true,
-              foto: true,
-              numero: true,
-              funcao: {
-                select: {
-                  id: true,
-                  nome: true,
-                },
+    const usuarioDb = await tx.usuario.findFirst({
+      where: {
+        emailPendenteTokenHash: hashTexto(tokenNormalizado),
+        ativo: true,
+        deletedAt: null,
+      },
+      include: {
+        permissao: true,
+        quadra: true,
+        jogador: {
+          select: {
+            id: true,
+            nome: true,
+            foto: true,
+            numero: true,
+            funcao: {
+              select: {
+                id: true,
+                nome: true,
               },
             },
           },
         },
-      });
-    } else {
-      usuarioDb = await tx.usuario.findFirst({
-        where: {
-          emailPendente: emailNormalizado,
-          emailPendenteCodigoHash: hashTexto(codigoNormalizado),
-          ativo: true,
-          deletedAt: null,
-        },
-        include: {
-          permissao: true,
-          quadra: true,
-          jogador: {
-            select: {
-              id: true,
-              nome: true,
-              foto: true,
-              numero: true,
-              funcao: {
-                select: {
-                  id: true,
-                  nome: true,
-                },
-              },
-            },
-          },
-        },
-      });
-    }
+      },
+    });
 
     if (!usuarioDb || !usuarioDb.emailPendente) {
-      throw new Error('Codigo ou link de confirmacao invalido.');
+      throw new Error('Link de confirmacao invalido.');
     }
 
     const expiraEm = usuarioDb.emailPendenteExpiraEm
@@ -420,7 +383,7 @@ async function confirmarAlteracaoEmail({ token, email, codigo }) {
         where: { id: usuarioDb.id },
         data: limparDadosEmailPendente(),
       });
-      throw new Error('Codigo ou link expirado. Solicite uma nova alteracao de e-mail.');
+      throw new Error('Link de confirmacao expirado. Solicite uma nova alteracao de e-mail.');
     }
 
     const emailDestino = normalizarEmail(usuarioDb.emailPendente);

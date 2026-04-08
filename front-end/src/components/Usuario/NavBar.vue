@@ -366,7 +366,7 @@ export default {
         return `Novo e-mail pendente: ${this.usuarioLogado.emailPendente}. Seu acesso continua com ${this.usuarioLogado?.email || 'o e-mail atual'} atÃ© a confirmaÃ§Ã£o.`
       }
 
-      return 'Se vocÃª trocar o e-mail, vamos enviar um link e um cÃ³digo para confirmar a alteraÃ§Ã£o antes de aplicÃ¡-la.'
+      return 'Se vocÃª trocar o e-mail, vamos enviar um link para confirmar a alteraÃ§Ã£o antes de aplicÃ¡-la.'
     },
 
     possuiJogadorVinculado() {
@@ -572,7 +572,7 @@ export default {
         const mensagemSucesso =
           data?.message ||
           (data?.emailChangePending
-            ? 'Alteracoes salvas. Confirme o novo e-mail para concluir a troca.'
+            ? 'Alteracoes salvas. Confirme o novo e-mail pelo link enviado para concluir a troca.'
             : 'Perfil atualizado com sucesso.')
         const tituloSucesso = data?.emailChangePending ? 'ConfirmaÃ§Ã£o pendente' : 'Sucesso'
         const iconeSucesso =

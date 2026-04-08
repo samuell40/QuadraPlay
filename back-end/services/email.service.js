@@ -667,7 +667,6 @@ async function enviarEmailConfirmacaoAlteracaoEmail({
   usuario,
   emailAtual,
   emailNovo,
-  codigo,
   token,
   expiraEm,
 }) {
@@ -675,7 +674,6 @@ async function enviarEmailConfirmacaoAlteracaoEmail({
 
   const params = new URLSearchParams({
     token: String(token),
-    email: String(emailNovo),
   });
   const linkConfirmacao = buildAppUrl(`/confirmar-email?${params.toString()}`);
   const expiraEmFormatado = [formatarDataCurta(expiraEm), formatarHoraCurta(expiraEm)]
@@ -692,14 +690,13 @@ async function enviarEmailConfirmacaoAlteracaoEmail({
         `Recebemos uma solicitacao para trocar o e-mail da sua conta de ${strong(emailAtual || 'email atual')} para ${strong(emailNovo)}.`
       ) +
       renderParagraph(
-        'Para concluir a alteracao, clique no botao abaixo ou informe o codigo de confirmacao na tela do QuadraPlay.',
+        'Para concluir a alteracao, clique no botao abaixo. A confirmacao acontece imediatamente.',
         { size: 15, color: '#475569', marginBottom: 0 }
       ),
     sectionsHtml:
       renderDetailCard('Dados da solicitacao', [
         { label: 'E-mail atual', value: emailAtual || '-' },
         { label: 'Novo e-mail', value: emailNovo },
-        { label: 'Codigo', value: codigo },
         { label: 'Valido ate', value: expiraEmFormatado || '-' },
       ]) +
       renderCallout({

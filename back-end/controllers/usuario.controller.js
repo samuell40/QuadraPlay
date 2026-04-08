@@ -95,13 +95,9 @@ async function atualizarMeuPerfilController(req, res) {
 async function confirmarAlteracaoEmailController(req, res) {
   try {
     const tokenInformado = req.body?.token ?? req.query?.token;
-    const emailInformado = req.body?.email ?? req.query?.email;
-    const codigoInformado = req.body?.codigo ?? req.query?.codigo;
 
     const usuarioAtualizado = await Usuario.confirmarAlteracaoEmail({
       token: tokenInformado,
-      email: emailInformado,
-      codigo: codigoInformado,
     });
 
     const usuarioAutenticado = Number(req.user?.id);

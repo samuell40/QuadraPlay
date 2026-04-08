@@ -163,10 +163,10 @@ export default {
     },
     emailNote() {
       if (this.hasPendingEmailChange) {
-        return `Novo e-mail pendente: ${this.usuario.emailPendente}. Seu acesso continua com ${this.usuario?.email || "o e-mail atual"} atÃ© a confirmaÃ§Ã£o.`;
+        return `Novo e-mail pendente: ${this.usuario.emailPendente}. Seu acesso continua com ${this.usuario?.email || "o e-mail atual"} ate a confirmação.`;
       }
 
-      return "Se vocÃª trocar o e-mail, vamos enviar um link e um cÃ³digo para confirmar a alteraÃ§Ã£o antes de aplicÃ¡-la.";
+      return "Ao trocar o e-mail, vamos enviar um link para confirmar a alteração antes de aplica-la.";
     },
   },
   watch: {
@@ -271,7 +271,7 @@ export default {
       }
 
       if (!this.telefoneValido(telefone)) {
-        await Swal.fire("AtenÃ§Ã£o", "Informe um telefone vÃ¡lido.", "warning");
+        await Swal.fire("Atenção", "Informe um númeor de telefone válido.", "warning");
         return;
       }
 
@@ -299,7 +299,7 @@ export default {
         const mensagemSucesso =
           data?.message ||
           (data?.emailChangePending
-            ? "Alteracoes salvas. Confirme o novo e-mail para concluir a troca."
+            ? "Alteracoes salvas. Confirme o novo e-mail pelo link enviado para concluir a troca."
             : "Perfil atualizado com sucesso.");
         const tituloSucesso = data?.emailChangePending ? "ConfirmaÃ§Ã£o pendente" : "Sucesso";
         const iconeSucesso =

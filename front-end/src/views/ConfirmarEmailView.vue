@@ -4,7 +4,7 @@
       <p class="confirmar-email-kicker">Seguranca da conta</p>
       <h1>Confirmar novo e-mail</h1>
       <p class="confirmar-email-copy">
-        Use o link recebido por e-mail ou informe manualmente o codigo de confirmacao.
+        Ao abrir o link recebido por e-mail, a confirmacao acontece automaticamente.
       </p>
 
       <div
@@ -19,37 +19,15 @@
         Validando o link de confirmacao...
       </div>
 
-      <form class="confirmar-email-form" @submit.prevent="confirmarComCodigo">
-        <label class="confirmar-email-field">
-          <span>E-mail</span>
-          <input
-            v-model.trim="email"
-            type="email"
-            maxlength="120"
-            placeholder="Digite o novo e-mail"
-            autocomplete="email"
-          />
-        </label>
-
-        <label class="confirmar-email-field">
-          <span>Codigo</span>
-          <input
-            v-model.trim="codigo"
-            type="text"
-            maxlength="8"
-            placeholder="Digite o codigo"
-            autocomplete="one-time-code"
-          />
-        </label>
-
-        <button
-          type="submit"
-          class="confirmar-email-button"
-          :disabled="carregandoManual"
-        >
-          {{ carregandoManual ? 'Confirmando...' : 'Confirmar com codigo' }}
-        </button>
-      </form>
+      <button
+        v-if="status === 'error' && token"
+        type="button"
+        class="confirmar-email-button"
+        :disabled="carregandoAutomatico"
+        @click="confirmarPorLink"
+      >
+        {{ carregandoAutomatico ? 'Tentando novamente...' : 'Tentar novamente' }}
+      </button>
 
       <button type="button" class="confirmar-email-link" @click="irParaHome">
         Voltar para a tela inicial
@@ -68,10 +46,7 @@ export default {
   data() {
     return {
       token: "",
-      email: "",
-      codigo: "",
       carregandoAutomatico: false,
-      carregandoManual: false,
       status: "idle",
       mensagem: "",
     };
@@ -86,10 +61,12 @@ export default {
   },
   mounted() {
     this.token = String(this.$route.query?.token || "").trim();
-    this.email = String(this.$route.query?.email || "").trim();
 
     if (this.token) {
       this.confirmarPorLink();
+    } else {
+      this.status = "error";
+      this.mensagem = "Link de confirmacao invalido ou incompleto.";
     }
   },
   methods: {
@@ -108,10 +85,7 @@ export default {
       try {
         const { data } = await api.post(
           "/confirmar/email/usuario",
-          {
-            token: this.token,
-            email: this.email,
-          },
+          { token: this.token },
           { silent: true }
         );
 
@@ -126,49 +100,6 @@ export default {
           "Nao foi possivel confirmar o e-mail pelo link.";
       } finally {
         this.carregandoAutomatico = false;
-      }
-    },
-    async confirmarComCodigo() {
-      if (this.carregandoManual) return;
-
-      const email = String(this.email || "").trim().toLowerCase();
-      const codigo = String(this.codigo || "").trim().toUpperCase();
-      const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
-      if (!email || !codigo) {
-        this.status = "error";
-        this.mensagem = "Preencha o e-mail e o codigo para continuar.";
-        return;
-      }
-
-      if (!emailValido) {
-        this.status = "error";
-        this.mensagem = "Informe um e-mail valido.";
-        return;
-      }
-
-      this.carregandoManual = true;
-      this.status = "idle";
-      this.mensagem = "";
-
-      try {
-        const { data } = await api.post(
-          "/confirmar/email/usuario",
-          { email, codigo },
-          { silent: true }
-        );
-
-        await this.aplicarSessaoSeDisponivel(data);
-        this.status = "success";
-        this.mensagem = data?.message || "E-mail confirmado com sucesso.";
-      } catch (err) {
-        this.status = "error";
-        this.mensagem =
-          err?.response?.data?.error ||
-          err?.response?.data?.message ||
-          "Nao foi possivel confirmar o e-mail com esse codigo.";
-      } finally {
-        this.carregandoManual = false;
       }
     },
     irParaHome() {
@@ -252,44 +183,6 @@ export default {
 .confirmar-email-loading {
   color: #bfdbfe;
   font-size: 14px;
-}
-
-.confirmar-email-form {
-  display: grid;
-  gap: 14px;
-}
-
-.confirmar-email-field {
-  display: grid;
-  gap: 6px;
-}
-
-.confirmar-email-field span {
-  font-size: 12px;
-  font-weight: 700;
-  color: #bfdbfe;
-}
-
-.confirmar-email-field input {
-  width: 100%;
-  min-height: 48px;
-  padding: 0 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(96, 165, 250, 0.34);
-  background: rgba(15, 23, 42, 0.55);
-  color: #f8fafc;
-  font: inherit;
-  box-sizing: border-box;
-}
-
-.confirmar-email-field input::placeholder {
-  color: rgba(191, 219, 254, 0.46);
-}
-
-.confirmar-email-field input:focus {
-  outline: none;
-  border-color: rgba(96, 165, 250, 0.88);
-  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.16);
 }
 
 .confirmar-email-button,
