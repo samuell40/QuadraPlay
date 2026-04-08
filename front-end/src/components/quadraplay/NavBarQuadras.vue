@@ -25,7 +25,7 @@
         </div>
       </div>
 
-      <div class="direita-nav">
+      <div v-if="!isMobile" class="direita-nav">
         <a href="#" :class="['login', statusThemeClass]" @click.prevent="sair">
           Sair
         </a>

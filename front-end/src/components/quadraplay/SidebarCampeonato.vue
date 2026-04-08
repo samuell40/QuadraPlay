@@ -217,7 +217,7 @@
           </div>
         </button>
 
-        <button type="button" class="logout-button" @click="logout">
+        <button v-if="isMobile" type="button" class="logout-button" @click="logout">
           <span class="nav-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24">
               <path d="M14 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-2" />
