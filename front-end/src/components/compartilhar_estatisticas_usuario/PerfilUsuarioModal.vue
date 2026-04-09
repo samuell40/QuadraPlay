@@ -16,13 +16,17 @@
         </header>
 
         <div class="profile-avatar-wrap">
-          <div class="profile-avatar-preview">
-            <img
-              v-if="perfilFotoPreview || perfilForm.foto"
-              :src="perfilFotoPreview || perfilForm.foto"
-              :alt="`Foto de ${perfilForm.nome || 'usuario'}`"
-            />
-            <span v-else>{{ userInitial }}</span>
+          <div class="profile-avatar-stack">
+            <div class="profile-avatar-preview">
+              <img
+                v-if="perfilFotoPreview || perfilForm.foto"
+                :src="perfilFotoPreview || perfilForm.foto"
+                :alt="`Foto de ${perfilForm.nome || 'usuario'}`"
+              />
+              <span v-else>{{ userInitial }}</span>
+            </div>
+
+            <p class="profile-role">{{ roleLabel }}</p>
           </div>
 
           <label class="profile-avatar-upload">
@@ -72,7 +76,6 @@
             {{ emailNote }}
           </p>
 
-          <p class="profile-role">{{ roleLabel }}</p>
         </div>
 
         <div class="profile-actions">
@@ -427,8 +430,16 @@ export default {
 
 .profile-avatar-wrap {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
+}
+
+.profile-avatar-stack {
+  width: 74px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
 }
 
 .profile-avatar-preview {
@@ -516,8 +527,15 @@ export default {
 
 .profile-role {
   margin: 0;
+  width: 100%;
   color: rgba(191, 219, 254, 0.8);
-  font-size: 12px;
+  font-size: 10px;
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+  word-break: break-word;
 }
 
 .profile-email-note {
@@ -607,6 +625,11 @@ export default {
   .profile-avatar-wrap {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .profile-avatar-stack {
+    width: 100%;
+    max-width: 74px;
   }
 }
 </style>
