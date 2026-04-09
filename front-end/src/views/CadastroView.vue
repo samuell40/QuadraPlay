@@ -357,15 +357,16 @@ export default {
 .cadastro {
   position: relative;
   display: flex;
+  flex-direction: column;
   width: 100%;
   max-width: 100vw;
   min-height: 100vh;
   min-height: 100dvh;
   padding: 14px 10px;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   overflow-x: clip;
-  overflow-y: hidden;
+  overflow-y: auto;
   box-sizing: border-box;
   background:
     radial-gradient(circle at 50% 108%, rgba(56, 189, 248, 0.26), transparent 22%),
@@ -407,6 +408,7 @@ export default {
   min-width: 0;
   display: flex;
   justify-content: center;
+  margin-block: auto;
   box-sizing: border-box;
 }
 
@@ -779,7 +781,6 @@ export default {
 @media (max-width: 768px) {
   .cadastro {
     padding: 10px 8px;
-    align-items: flex-start;
   }
 
   .form-container {
