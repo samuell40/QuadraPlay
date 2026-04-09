@@ -435,7 +435,8 @@ export default {
 }
 
 .profile-avatar-stack {
-  width: 74px;
+  width: max-content;
+  min-width: 74px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -527,7 +528,7 @@ export default {
 
 .profile-role {
   margin: 0;
-  width: 100%;
+  width: auto;
   color: rgba(191, 219, 254, 0.8);
   font-size: 10px;
   line-height: 1.2;
@@ -535,7 +536,7 @@ export default {
   letter-spacing: 0.08em;
   text-align: center;
   text-transform: uppercase;
-  word-break: break-word;
+  white-space: nowrap;
 }
 
 .profile-email-note {
