@@ -550,7 +550,7 @@ export default {
       const escopo = this.usuarioLogado?.permissaoId === 1 ? 'de todas as quadras' : 'da sua quadra'
 
       if (this.preferenciaNotificacaoAgendamentos) {
-        return `Você receberá push quando entrarem novos pedidos pendentes ${escopo}.`
+        return `Você receberá a notificação quando entrarem novos pedidos pendentes ${escopo}.`
       }
 
       return `Ative para ser avisado quando um novo pedido de agendamento entrar na fila ${escopo}.`
