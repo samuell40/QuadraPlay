@@ -365,8 +365,7 @@ export default {
   padding: 14px 10px;
   justify-content: flex-start;
   align-items: center;
-  overflow-x: clip;
-  overflow-y: auto;
+  overflow: hidden;
   box-sizing: border-box;
   background:
     radial-gradient(circle at 50% 108%, rgba(56, 189, 248, 0.26), transparent 22%),
