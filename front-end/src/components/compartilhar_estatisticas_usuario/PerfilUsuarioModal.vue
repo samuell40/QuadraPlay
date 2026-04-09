@@ -301,7 +301,7 @@ export default {
           (data?.emailChangePending
             ? "Alteracoes salvas. Confirme o novo e-mail pelo link enviado para concluir a troca."
             : "Perfil atualizado com sucesso.");
-        const tituloSucesso = data?.emailChangePending ? "ConfirmaÃ§Ã£o pendente" : "Sucesso";
+        const tituloSucesso = data?.emailChangePending ? "Confirmação pendente" : "Sucesso";
         const iconeSucesso =
           data?.emailChangePending && !data?.emailConfirmationSent ? "warning" : "success";
 
