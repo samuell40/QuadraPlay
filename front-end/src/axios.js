@@ -6,18 +6,7 @@ import { limparDadosAutenticacao } from './utils/authToken';
 
 const isDev = import.meta.env.DEV;
 const METODOS_MUTACAO = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
-const API_BASE_URL_PROD = 'https://quadra-livre-backend.onrender.com';
-
-function resolverBaseUrlApi() {
-  const baseUrlEnv = String(
-    process.env.VUE_APP_API_BASE_URL
-    || process.env.VUE_APP_API_URL
-    || ''
-  ).trim();
-  if (baseUrlEnv) return baseUrlEnv.replace(/\/+$/, '');
-
-  return API_BASE_URL_PROD;
-}
+const API_BASE_URL = process.env.VUE_APP_API_BASE_URL;
 
 function deveInvalidarDados(config = {}) {
   if (!config || config.skipDataVersionBump) return false;
@@ -27,7 +16,7 @@ function deveInvalidarDados(config = {}) {
 }
 
 const api = axios.create({
-  baseURL: resolverBaseUrlApi()
+  baseURL: API_BASE_URL
 });
 
 api.interceptors.request.use(
