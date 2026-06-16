@@ -168,6 +168,8 @@ export default {
       if (this.hasPendingEmailChange) {
         return `Novo e-mail pendente: ${this.usuario.emailPendente}. Seu acesso continua com ${this.usuario?.email || "o e-mail atual"} ate a confirmação.`;
       }
+
+      return "opa";
     },
   },
   watch: {
