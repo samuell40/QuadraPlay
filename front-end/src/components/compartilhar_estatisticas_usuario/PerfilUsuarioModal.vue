@@ -168,8 +168,6 @@ export default {
       if (this.hasPendingEmailChange) {
         return `Novo e-mail pendente: ${this.usuario.emailPendente}. Seu acesso continua com ${this.usuario?.email || "o e-mail atual"} ate a confirmação.`;
       }
-
-      return "Ao trocar o e-mail, vamos enviar um link para confirmar a alteração antes de aplicá-la";
     },
   },
   watch: {
