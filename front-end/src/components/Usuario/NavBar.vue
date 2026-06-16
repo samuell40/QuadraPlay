@@ -366,7 +366,7 @@ export default {
         return `Novo e-mail pendente: ${this.usuarioLogado.emailPendente}. Seu acesso continua com ${this.usuarioLogado?.email || 'o e-mail atual'} atÃ© a confirmaÃ§Ã£o.`
       }
 
-      return 'Se vocÃª trocar o e-mail, vamos enviar um link para confirmar a alteraÃ§Ã£o antes de aplicÃ¡-la.'
+      return 'Se Você trocar o e-mail, vamos enviar um link para confirmar a alteração antes de aplicá-la.'
     },
 
     possuiJogadorVinculado() {
