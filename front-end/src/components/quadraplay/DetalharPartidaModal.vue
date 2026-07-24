@@ -1202,6 +1202,7 @@ export default {
   flex-direction: column;
   gap: 12px;
   overflow-y: auto;
+  overflow-x: hidden;
   box-shadow: 0 26px 60px rgba(15, 23, 42, 0.28);
 }
 
@@ -1356,6 +1357,7 @@ export default {
   font-size: 18px;
   font-weight: 800;
   color: var(--modal-heading-color);
+  min-width: 0;
 }
 
 .placar-modal .time {
@@ -1483,6 +1485,7 @@ export default {
   gap: 10px;
   max-height: 190px;
   overflow-y: auto;
+  overflow-x: auto;
   padding-right: 4px;
 }
 
@@ -1492,6 +1495,7 @@ export default {
   padding: 8px;
   background: var(--modal-player-box-bg);
   min-height: 74px;
+  min-width: 0;
 }
 
 .sem-escalacao {
@@ -1510,6 +1514,7 @@ export default {
   border-bottom: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: 12px;
   box-sizing: border-box;
+  min-width: 0;
 }
 
 .jogador-item.jogador-suspenso {
