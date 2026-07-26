@@ -1201,7 +1201,7 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  overflow-y: auto;
+  overflow-y: hidden;
   overflow-x: hidden;
   box-shadow: 0 26px 60px rgba(15, 23, 42, 0.28);
 }
@@ -1303,7 +1303,9 @@ export default {
 .conteudo-partida {
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
   gap: 4px;
+  min-height: 0;
 }
 
 .header-partida {
@@ -1311,6 +1313,7 @@ export default {
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .titulo-partida {
@@ -1351,6 +1354,7 @@ export default {
   align-items: center;
   gap: 14px;
   margin: 8px 0 12px;
+  flex-shrink: 0;
 }
 
 .time-mobile-title {
@@ -1442,6 +1446,7 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  flex-shrink: 0;
 }
 
 .infos p {
@@ -1483,9 +1488,11 @@ export default {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+  flex: 1 1 auto;
+  min-height: 0;
   max-height: 190px;
   overflow-y: auto;
-  overflow-x: auto;
+  overflow-x: hidden;
   padding-right: 4px;
 }
 
@@ -1630,6 +1637,7 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
+  flex-shrink: 0;
   margin-top: 12px;
   margin-left: -20px;
   margin-right: -20px;
