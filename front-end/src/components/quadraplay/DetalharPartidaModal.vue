@@ -1794,9 +1794,13 @@ export default {
     min-width: 0;
     max-width: 100%;
     max-height: calc(100dvh - 94px);
-    overflow-y: auto;
+    overflow-y: hidden;
     padding: 16px;
     border-radius: 16px;
+  }
+
+  .conteudo-partida {
+    overflow: hidden;
   }
 
   .header-partida {
@@ -1874,8 +1878,13 @@ export default {
     display: flex;
     flex-direction: column;
     gap: 16px;
-    max-height: none;
-    overflow: visible;
+    flex: 1 1 auto;
+    max-height: min(48dvh, 430px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding-right: 4px;
+    overscroll-behavior: contain;
   }
 
   .jogador-item {
