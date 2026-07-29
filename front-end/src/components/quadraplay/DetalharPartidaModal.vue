@@ -1852,6 +1852,9 @@ export default {
   }
 
   .acoes-modal {
+    position: sticky;
+    bottom: -16px;
+    z-index: 2;
     margin-top: 10px;
     margin-left: -16px;
     margin-right: -16px;
