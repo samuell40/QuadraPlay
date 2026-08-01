@@ -985,6 +985,23 @@ a {
   min-width: 0;
 }
 
+.placar-wrapper :deep(.placar thead th) {
+  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+}
+
+.placar-wrapper :deep(.placar thead th:nth-child(odd)) {
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+}
+
+.placar-wrapper :deep(.placar thead th:nth-child(even)) {
+  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+}
+
+.placar-wrapper :deep(.placar thead th:first-child),
+.placar-wrapper :deep(.placar thead th:last-child) {
+  background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
+}
+
 .loader-container-centralizado {
   display: flex;
   justify-content: center;
