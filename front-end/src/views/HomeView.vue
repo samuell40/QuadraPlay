@@ -1839,6 +1839,23 @@ a {
   height: 100%;
 }
 
+.painel-home .placar-wrapper :deep(.placar-table.tema-navegacao .placar thead th) {
+  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+}
+
+.painel-home .placar-wrapper :deep(.placar-table.tema-navegacao .placar thead th:nth-child(odd)) {
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+}
+
+.painel-home .placar-wrapper :deep(.placar-table.tema-navegacao .placar thead th:nth-child(even)) {
+  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+}
+
+.painel-home .placar-wrapper :deep(.placar-table.tema-navegacao .placar thead th:first-child),
+.painel-home .placar-wrapper :deep(.placar-table.tema-navegacao .placar thead th:last-child) {
+  background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
+}
+
 .partidas-wrapper {
   display: flex;
   flex-direction: column;
