@@ -547,7 +547,7 @@ export default {
 }
 
 .placar thead th {
-  background: linear-gradient(135deg, #c91f25 0%, #ef373d 100%);
+  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
   color: white;
   font-weight: 600;
   padding: 9px 6px;
@@ -557,19 +557,19 @@ export default {
 }
 
 .placar thead th:nth-child(odd) {
-  background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%);
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
 }
 
 .placar thead th:nth-child(even) {
-  background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
 }
 
 .placar thead th:first-child {
-  background: linear-gradient(135deg, #b91c1c 0%, #ef4444 100%);
+  background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
 }
 
 .placar thead th:last-child {
-  background: linear-gradient(135deg, #b91c1c 0%, #ef3b42 100%);
+  background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
 }
 
 .placar-table.tema-navegacao {
@@ -680,9 +680,9 @@ export default {
   font-weight: 800;
   font-size: 13px;
   line-height: 1;
-  color: #dc2626;
-  background: rgba(239, 68, 68, 0.14);
-  border: 1px solid rgba(239, 68, 68, 0.28);
+  color: #2563eb;
+  background: rgba(59, 130, 246, 0.14);
+  border: 1px solid rgba(59, 130, 246, 0.2);
 }
 
 .placar-table.tema-finalizado .posicao {
