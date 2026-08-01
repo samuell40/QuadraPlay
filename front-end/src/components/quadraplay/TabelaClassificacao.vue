@@ -904,7 +904,7 @@ export default {
 
   .placar-table.mobile-compact-no-scroll .placar thead th:first-child,
   .placar-table.mobile-compact-no-scroll .placar tbody td:first-child {
-    width: 56%;
+    width: 44%;
     min-width: 0;
     max-width: none;
     padding-right: 0;
@@ -917,9 +917,14 @@ export default {
 
   .placar-table.mobile-compact-no-scroll .placar thead th:not(:first-child),
   .placar-table.mobile-compact-no-scroll .placar tbody td:not(:first-child) {
-    width: auto;
+    width: 10%;
     min-width: 0;
     max-width: none;
+  }
+
+  .placar-table.mobile-compact-no-scroll .placar thead th.col-ultimos,
+  .placar-table.mobile-compact-no-scroll .placar tbody td.ultimos-jogos-cell {
+    width: 16%;
   }
 
   .placar-table.mobile-compact-no-scroll .time-info {
