@@ -399,7 +399,7 @@ export default {
       return 'Toque em um time para abrir o histórico completo de partidas.'
     },
     colunasClassificacaoHome() {
-      return ['pontuacao', 'jogos', 'vitorias', 'derrotas']
+      return ['pontuacao', 'jogos', 'vitorias', 'derrotas', 'ultimosJogos']
     },
     exibirClassificacaoPorGrupoHome() {
       return typeof this.campeonatoAtual?.regras?.exibirClassificacaoPorGrupo === 'boolean'
